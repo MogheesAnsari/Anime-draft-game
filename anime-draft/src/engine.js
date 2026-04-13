@@ -2101,7 +2101,10 @@ export const getRandomUniqueByUniverse = (usedIds, universeId) => {
 export const api = {
   fight: async (payload) => {
     // Ab hum pura payload (jisme teams array aur mode dono hain) directly bhej rahe hain
-    const res = await axios.post("http://localhost:5000/api/battle", payload);
+    const res = await axios.post(
+      "https://anime-draft-game-1.onrender.com/api/battle",
+      payload,
+    );
     return res.data;
   },
 };
