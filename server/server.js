@@ -2,21 +2,35 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs"; // Naya Security Package
 
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Tera local frontend
+      "https://tera-vercel-link.vercel.app", // NAYA: Jab Vercel par live karega toh apna link yahan dalna
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
+// 1. UPDATED SCHEMA (Password aur Total Games add kiya)
 const userSchema = new mongoose.Schema({
-  username: { type: String, default: "Player1" },
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
   wins: { type: Number, default: 0 },
+  totalGames: { type: Number, default: 0 },
   history: [
     { score: Number, won: Boolean, date: { type: Date, default: Date.now } },
   ],
 });
 const User = mongoose.model("User", userSchema);
 
+// Power Calculator (Same as before)
 const calculatePower = (squad) => {
   if (!squad || Object.keys(squad).length === 0) return 0;
   let score = 0;
@@ -30,9 +44,80 @@ const calculatePower = (squad) => {
   return Math.floor(score);
 };
 
+// --- NAYI APIs SHURU ---
+
+// 2. REGISTER API
+app.post("/api/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser)
+      return res.status(400).json({ message: "Username already taken!" });
+
+    // Hash Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Save New User
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+
+    res.status(201).json({
+      message: "Account created successfully!",
+      username: newUser.username,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3. LOGIN API
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await User.findOne({ username });
+    if (!user) return res.status(400).json({ message: "User not found!" });
+
+    // Check Password match
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials!" });
+
+    res.status(200).json({
+      message: "Login successful!",
+      username: user.username,
+      wins: user.wins,
+      totalGames: user.totalGames,
+      fullHistory: user.history,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 4. LEADERBOARD API
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    // Top 10 players jinki wins sabse zyada hain
+    const topPlayers = await User.find()
+      .sort({ wins: -1 })
+      .limit(10)
+      .select("-password");
+    res.status(200).json(topPlayers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- PURANI APIs (Updated) ---
+
+// 5. BATTLE API (Ab yahan 'username' frontend se aayega)
 app.post("/api/battle", async (req, res) => {
   try {
-    const { teams, mode } = req.body;
+    const { teams, mode, username } = req.body; // username add kiya
     const scores = teams.map(calculatePower);
     let resultData = {};
 
@@ -71,21 +156,28 @@ app.post("/api/battle", async (req, res) => {
       };
     }
 
-    // NEW: Returning updated document to reflect real-time wins
-    const updatedUser = await User.findOneAndUpdate(
-      { username: "Player1" },
-      {
-        $inc: { wins: resultData.won ? 1 : 0 },
-        $push: { history: { score: scores[0], won: resultData.won } },
-      },
-      { upsert: true, new: true },
-    );
+    // REAL TIME STATS UPDATE (Using actual username)
+    const activeUser = username || "Guest";
 
-    res.status(200).json({
-      ...resultData,
-      wins: updatedUser.wins,
-      fullHistory: updatedUser.history,
-    });
+    if (activeUser !== "Guest") {
+      const updatedUser = await User.findOneAndUpdate(
+        { username: activeUser },
+        {
+          $inc: { wins: resultData.won ? 1 : 0, totalGames: 1 },
+          $push: { history: { score: scores[0], won: resultData.won } },
+        },
+        { new: true },
+      );
+
+      return res.status(200).json({
+        ...resultData,
+        wins: updatedUser.wins,
+        fullHistory: updatedUser.history,
+      });
+    } else {
+      // Agar banda bina login khele toh DB update nahi hoga
+      return res.status(200).json({ ...resultData, wins: 0, fullHistory: [] });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -94,6 +186,8 @@ app.post("/api/battle", async (req, res) => {
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() =>
-    app.listen(5000, () => console.log("🚀 Server Live | Stats Sync Active")),
+    app.listen(5000, () =>
+      console.log("🚀 Server Live | Auth & Leaderboard Active"),
+    ),
   )
   .catch((err) => console.log("❌ DB Error:", err));

@@ -82,14 +82,17 @@ export default function BattleDraft({
       setCurrent(null);
       return;
     }
-
     setLoading(true);
     try {
-      const payload = { mode: gameMode, teams: newCompletedTeams };
+      // payload mein username bhej do
+      const payload = {
+        mode: gameMode,
+        teams: newCompletedTeams,
+        username: username,
+      };
       const data = await api.fight(payload);
       setResult(data);
 
-      // NEW UPGRADE: Pushing stats to App.jsx for the Dashboard
       if (onBattleEnd && data.wins !== undefined) {
         onBattleEnd(data.wins, data.fullHistory);
       }
