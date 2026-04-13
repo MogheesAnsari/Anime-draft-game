@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import Auth from "./components/Auth";
 import ModeSelection from "./components/ModeSelection";
 import BattleDraft from "./components/BattleDraft";
+import BattleResult from "./components/BattleResult";
 import Dashboard from "./components/Dashboard";
-import Leaderboard from "./components/Leaderboard"; // NAYA IMPORT
+import Leaderboard from "./components/Leaderboard";
 import { ANIME_OPTIONS } from "./engine";
 
 export default function App() {
@@ -11,6 +12,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedUniverse, setSelectedUniverse] = useState(null);
+
+  // NEW: State for Battle Results & Team Rosters
+  const [battleResult, setBattleResult] = useState(null);
+  const [draftedTeams, setDraftedTeams] = useState(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("anime_user");
@@ -29,13 +34,12 @@ export default function App() {
     localStorage.setItem("anime_user", JSON.stringify(userData));
   };
 
-  // DASHBOARD UPDATE FIX: totalGames aur wins dono ab live update honge
   const handleBattleEnd = (newWins, newHistory, newTotalGames) => {
     const updatedUser = {
       ...user,
       wins: newWins,
       fullHistory: newHistory,
-      totalGames: newTotalGames || newHistory.length,
+      totalGames: newTotalGames || (newHistory ? newHistory.length : 0),
     };
     setUser(updatedUser);
     localStorage.setItem("anime_user", JSON.stringify(updatedUser));
@@ -45,20 +49,37 @@ export default function App() {
     setUser(null);
     setSelectedMode(null);
     setSelectedUniverse(null);
+    setBattleResult(null);
+    setDraftedTeams(null);
     localStorage.removeItem("anime_user");
+  };
+
+  const resetToLobby = () => {
+    setBattleResult(null);
+    setDraftedTeams(null);
+    setSelectedMode(null);
+    setSelectedUniverse(null);
   };
 
   if (loading)
     return (
-      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center text-[#ff8c32] font-black italic uppercase text-xs">
-        LOADING SYSTEM...
+      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center text-[#ff8c32] font-black italic uppercase text-xs tracking-widest animate-pulse">
+        SYSTEM INITIALIZING...
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white">
+    <div className="min-h-screen bg-[#0a0a0b] text-white selection:bg-[#ff8c32] selection:text-black">
       {!user ? (
         <Auth onLogin={handleLogin} />
+      ) : battleResult && draftedTeams ? (
+        // NEW: Passing both Result and Teams to the Result Component
+        <BattleResult
+          result={battleResult}
+          teams={draftedTeams}
+          mode={selectedMode}
+          onExit={resetToLobby}
+        />
       ) : !selectedMode ? (
         <ModeSelection
           user={user}
@@ -68,30 +89,29 @@ export default function App() {
       ) : selectedMode === "DASHBOARD" ? (
         <Dashboard user={user} onBack={() => setSelectedMode(null)} />
       ) : selectedMode === "LEADERBOARD" ? (
-        /* NAYA LEADERBOARD ROUTE */
         <Leaderboard onBack={() => setSelectedMode(null)} />
       ) : !selectedUniverse ? (
-        <div className="p-6 max-w-6xl mx-auto flex flex-col items-center justify-center min-h-screen">
-          <h2 className="text-4xl font-black italic text-[#ff8c32] mb-2">
-            PICK YOUR UNIVERSE
+        <div className="p-6 max-w-6xl mx-auto flex flex-col items-center justify-center min-h-screen uppercase">
+          <h2 className="text-5xl font-black italic text-[#ff8c32] mb-2 tracking-tighter">
+            SELECT UNIVERSE
           </h2>
-          <p className="text-gray-600 font-bold text-[10px] tracking-[0.3em] mb-12 uppercase text-center">
-            Filter the draft pool for strategic advantage
+          <p className="text-gray-600 font-bold text-[10px] tracking-[0.3em] mb-12 text-center">
+            FILTER THE DRAFT POOL
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
             {ANIME_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedUniverse(opt.id)}
-                className="bg-[#111113] border border-white/5 p-6 rounded-2xl hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all text-xs font-black tracking-widest italic"
+                className="bg-[#111113] border border-white/5 p-8 rounded-3xl hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all text-xs font-black tracking-widest italic uppercase"
               >
-                {opt.name.toUpperCase()}
+                {opt.name}
               </button>
             ))}
           </div>
           <button
             onClick={() => setSelectedMode(null)}
-            className="mt-10 text-gray-500 font-black text-[10px] hover:text-white transition-all uppercase tracking-widest"
+            className="mt-12 text-gray-500 font-black text-[10px] hover:text-white transition-all tracking-[0.3em]"
           >
             ← BACK TO MODES
           </button>
@@ -106,6 +126,10 @@ export default function App() {
             setSelectedUniverse(null);
           }}
           onBattleEnd={handleBattleEnd}
+          onShowResult={(data, teams) => {
+            setBattleResult(data);
+            setDraftedTeams(teams);
+          }} // UPDATE
         />
       )}
     </div>
