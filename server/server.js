@@ -266,14 +266,16 @@ app.post("/api/battle", async (req, res) => {
 // 6. SERVER CONNECTION
 // ==========================================
 const PORT = process.env.PORT || 5000;
-
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000, // Sirf 5 second wait karega, fir error dega
+  })
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server Live on Port ${PORT} | CORS Bypass Active!`);
-    });
+    console.log("✅ DATABASE CONNECTED SUCCESSFULLY!");
+    app.listen(PORT, () => console.log(`🚀 SERVER RUNNING ON PORT ${PORT}`));
   })
   .catch((err) => {
-    console.log("❌ DB Error:", err);
+    console.log("❌ MONGODB CONNECTION ERROR:", err.message);
+    // Ye line sabse important hai, agar DB connect nahi hua toh server restart hota rahega
+    process.exit(1);
   });
