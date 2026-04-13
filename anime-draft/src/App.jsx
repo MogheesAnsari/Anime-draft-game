@@ -5,12 +5,11 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Persist Login (Check if user is already logged in)
   useEffect(() => {
-    const savedUser = localStorage.getItem("anime_user");
-    if (savedUser) {
+    const saved = localStorage.getItem("anime_user");
+    if (saved) {
       try {
-        setUser(JSON.parse(savedUser));
+        setUser(JSON.parse(saved));
       } catch (e) {
         localStorage.removeItem("anime_user");
       }
@@ -19,7 +18,6 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
-    console.log("Login Success! Switching to Game...");
     setUser(userData);
     localStorage.setItem("anime_user", JSON.stringify(userData));
   };
@@ -31,80 +29,84 @@ function App() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-green-500 font-black animate-pulse">
-          LOADING ARENA...
-        </div>
+      <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center text-[#ff8c32] font-black">
+        LOADING...
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans uppercase">
+    <div className="min-h-screen bg-[#0a0a0b] text-white">
       {!user ? (
         <Auth onLogin={handleLogin} />
       ) : (
-        /* ==========================================
-           YAHAN TERA GAME START HOTA HAI
-           ========================================== */
-        <div className="p-6 max-w-6xl mx-auto">
-          {/* Header Section */}
-          <div className="flex justify-between items-center mb-10 border-b border-green-900/30 pb-6">
+        /* YAHAN TERA ORIGINAL STYLE DASHBOARD */
+        <div className="p-6 max-w-7xl mx-auto">
+          <header className="flex justify-between items-center py-6 border-b border-white/10">
             <div>
-              <h1 className="text-4xl font-black italic text-green-500 italic">
-                ANIME DRAFT
+              <h1 className="text-4xl font-black italic tracking-tighter text-[#ff8c32]">
+                ANIME DRAFT.
               </h1>
-              <p className="text-[10px] text-green-800 font-black tracking-widest">
-                LOGGED IN AS: {user.username}
+              <p className="text-[10px] text-gray-500 font-bold tracking-[0.2em]">
+                WELCOME BACK, {user.username}
               </p>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-6">
               <div className="text-right">
-                <p className="text-[10px] text-green-700 font-black">
-                  TOTAL WINS
-                </p>
-                <p className="text-2xl font-black text-green-400">
+                <p className="text-[10px] text-gray-500 font-bold">WINS</p>
+                <p className="text-2xl font-black text-white">
                   {user.wins || 0}
                 </p>
               </div>
               <button
                 onClick={handleLogout}
-                className="bg-red-500/10 border border-red-500/50 text-red-500 text-[10px] font-black px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                className="bg-white/5 border border-white/10 px-4 py-2 rounded-lg text-[10px] font-black hover:bg-red-500/20 hover:text-red-500 transition-all"
               >
                 LOGOUT
               </button>
             </div>
-          </div>
+          </header>
 
-          {/* Game Body */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
-            {/* Player Section */}
-            <div className="bg-[#05120a] border-2 border-green-900/50 rounded-[32px] p-8 min-h-[400px]">
-              <h2 className="text-xl font-black text-green-500 mb-6 italic">
+          <main className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Player Side */}
+            <div className="bg-[#111113] border border-white/5 rounded-3xl p-8 shadow-2xl">
+              <h2 className="text-xl font-black italic text-[#ff8c32] mb-6">
                 YOUR SQUAD
               </h2>
-              <div className="text-green-900 text-sm font-bold text-center mt-20 italic">
-                Draft system placeholder... <br />
-                (Yahan apna drafting logic daal de bhai)
+              <div className="aspect-video bg-black/40 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-gray-600 font-bold italic">
+                SQUAD SELECTION PENDING...
               </div>
             </div>
 
-            {/* Enemy Section */}
-            <div className="bg-[#120505] border-2 border-red-900/50 rounded-[32px] p-8 min-h-[400px]">
-              <h2 className="text-xl font-black text-red-500 mb-6 italic">
-                ENEMY SQUAD
+            {/* Battle Log Side */}
+            <div className="bg-[#111113] border border-white/5 rounded-3xl p-8 shadow-2xl">
+              <h2 className="text-xl font-black italic text-gray-400 mb-6">
+                BATTLE HISTORY
               </h2>
-              <div className="text-red-900 text-sm font-bold text-center mt-20 italic">
-                CPU is waiting for you...
+              <div className="space-y-3">
+                {user.history && user.history.length > 0 ? (
+                  user.history.map((game, i) => (
+                    <div
+                      key={i}
+                      className="flex justify-between p-4 bg-black/20 rounded-xl border border-white/5"
+                    >
+                      <span
+                        className={`font-black ${game.won ? "text-green-500" : "text-red-500"}`}
+                      >
+                        {game.won ? "VICTORY" : "DEFEAT"}
+                      </span>
+                      <span className="text-gray-500 font-bold">
+                        SCORE: {game.score}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-700 font-bold italic text-center mt-10 text-sm">
+                    NO BATTLES FOUGHT YET
+                  </p>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Battle Button */}
-          <div className="mt-10 flex justify-center">
-            <button className="bg-green-500 text-black font-black px-12 py-5 rounded-2xl text-xl hover:bg-green-400 shadow-[0_0_30px_rgba(34,197,94,0.3)] transition-all transform hover:scale-105">
-              START BATTLE
-            </button>
-          </div>
+          </main>
         </div>
       )}
     </div>
