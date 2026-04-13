@@ -1,6 +1,5 @@
 import express from "express";
 import mongoose from "mongoose";
-import cors from "cors";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 
@@ -8,16 +7,23 @@ dotenv.config();
 const app = express();
 
 // ==========================================
-// 1. FINAL & CLEAN CORS FIX
+// 1. THE ULTIMATE CORS BYPASS
 // ==========================================
-// origin: "*" sabko allow karega aur humne credentials hata diya hai
-// taaki preflight (OPTIONS) request fail na ho.
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  }),
-);
+// Yeh code Vercel, localhost sabko allow kar dega bina kisi error ke
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  // Preflight request ko direct pass karna
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // JSON Parser
 app.use(express.json());
@@ -26,7 +32,7 @@ app.use(express.json());
 // 2. ROOT ROUTE (Health Check)
 // ==========================================
 app.get("/", (req, res) => {
-  res.status(200).send("Anime Draft API is Live! 🚀");
+  res.status(200).send("Anime Draft API is Live! 🚀 (CORS Bypassed)");
 });
 
 // ==========================================
@@ -43,7 +49,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
-// Helper function to calculate team power
+// Power Calculator Logic
 const calculatePower = (squad) => {
   if (!squad || Object.keys(squad).length === 0) return 0;
   let score = 0;
@@ -186,7 +192,7 @@ app.post("/api/battle", async (req, res) => {
 });
 
 // ==========================================
-// 6. SERVER & DB CONNECTION
+// 6. SERVER CONNECTION
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
@@ -194,7 +200,7 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 Server Live on Port ${PORT} | No CORS Issues!`);
+      console.log(`🚀 Server Live on Port ${PORT} | CORS Bypass Active!`);
     });
   })
   .catch((err) => {
