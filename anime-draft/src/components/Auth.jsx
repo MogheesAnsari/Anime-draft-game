@@ -5,75 +5,87 @@ export default function Auth({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // NAYA: Password dikhane ke liye
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Tera Live Render URL (Agar test kar raha hai toh 'http://localhost:5000/api' kar lena temporary)
+  // EKDUM CORRECT URL (Jo tere Render logs mein dikha raha hai)
   const API_URL = "https://anime-draft-game-1.onrender.com/api";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // --- FRONTEND VALIDATION LIMITS ---
-    if (username.length < 3 || username.length > 12) {
-      return setError("Username must be between 3 to 12 characters.");
-    }
-    // Ye check karta hai ki username mein space ya special character na ho
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      return setError(
-        "Username can only contain letters, numbers, and underscores.",
-      );
-    }
-    if (password.length < 6) {
-      return setError("Password must be at least 6 characters long.");
-    }
-
     setLoading(true);
     setError("");
 
+    // Input Validation
+    if (username.length < 3) {
+      setLoading(false);
+      return setError("USERNAME TOO SHORT!");
+    }
+    if (password.length < 6) {
+      setLoading(false);
+      return setError("PASSWORD MIN 6 CHARS!");
+    }
+
     try {
       const endpoint = isLogin ? "/login" : "/register";
+      console.log(`Sending request to: ${API_URL}${endpoint}`);
+
       const res = await axios.post(`${API_URL}${endpoint}`, {
-        username,
+        username: username.toUpperCase(), // Backend uppercase handle kar raha hai
         password,
       });
 
+      console.log("Server Response:", res.data);
+
       if (isLogin) {
+        // Login success: Data ko parent state mein bhejo
         onLogin({
           username: res.data.username,
-          wins: res.data.wins,
-          totalGames: res.data.totalGames,
-          history: res.data.fullHistory,
+          wins: res.data.wins || 0,
+          totalGames: res.data.totalGames || 0,
+          history: res.data.fullHistory || [],
         });
       } else {
-        alert("Account created successfully! You can now log in.");
+        // Register success: Login par bhej do
+        alert("ACCOUNT CREATED! NOW LOGIN.");
         setIsLogin(true);
         setPassword("");
       }
     } catch (err) {
-      // SMART ERROR: Agar server offline hai ya network issue hai
-      if (!err.response) {
-        setError(
-          "Server is waking up or offline! Please wait 30 seconds and try again.",
-        );
+      console.error("Auth Error Object:", err);
+
+      // Agar backend success bhej raha hai par yahan error aa raha hai
+      // toh hum check karenge ki kya server ne response diya bhi hai ya nahi
+      if (err.response) {
+        setError(err.response.data.message || "SERVER REJECTED REQUEST");
+      } else if (err.request) {
+        setError("NETWORK ERROR: SERVER NOT RESPONDING");
       } else {
-        setError(err.response?.data?.message || "Something went wrong!");
+        setError("ERROR: " + err.message);
       }
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#050810] flex items-center justify-center p-6 text-white font-sans uppercase">
-      <div className="w-full max-w-md bg-slate-900 border-2 border-slate-800 rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-orange-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+    <div className="min-h-screen bg-[#020a04] flex items-center justify-center p-6 text-white font-sans uppercase">
+      <div className="w-full max-w-md bg-[#05120a] border-2 border-green-900/50 rounded-[32px] p-8 shadow-[0_0_50px_rgba(34,197,94,0.05)] relative overflow-hidden">
+        {/* Glow Effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-green-500/20 blur-[60px] rounded-full pointer-events-none"></div>
 
-        <h1 className="text-4xl font-black italic text-center mb-2 tracking-tighter text-orange-500">
-          ANIME DRAFT.
+        {/* U Logo */}
+        <div className="flex justify-center mb-6 relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-green-500/10 border-2 border-green-500/50 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.2)] backdrop-blur-sm">
+            <span className="text-4xl font-black text-green-400 italic">U</span>
+          </div>
+        </div>
+
+        <h1 className="text-4xl font-black italic text-center mb-2 tracking-tighter text-green-500">
+          ANIME DRAFT
         </h1>
-        <p className="text-center text-slate-500 text-xs font-black tracking-widest mb-8">
-          {isLogin ? "ENTER THE ARENA" : "CREATE YOUR LEGACY"}
+        <p className="text-center text-green-800/80 text-[10px] font-black tracking-widest mb-8">
+          {isLogin ? "AUTHENTICATING PLAYER" : "ENLISTING NEW LEGEND"}
         </p>
 
         {error && (
@@ -82,40 +94,40 @@ export default function Auth({ onLogin }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4 relative z-10"
+        >
           <div>
-            <label className="text-[10px] text-slate-400 font-black tracking-widest ml-2 flex justify-between">
-              <span>USERNAME</span>
-              <span className="text-slate-600">3-12 CHARS</span>
+            <label className="text-[10px] text-green-700 font-black tracking-widest ml-2">
+              USERNAME
             </label>
             <input
               type="text"
               required
               value={username}
-              onChange={(e) => setUsername(e.target.value.toUpperCase())} // Auto capital
-              className="w-full bg-black/50 border border-slate-700 rounded-xl p-4 text-sm font-bold focus:border-orange-500 focus:outline-none transition-colors"
-              placeholder="CODENAME (NO SPACES)"
+              onChange={(e) => setUsername(e.target.value.toUpperCase())}
+              className="w-full bg-black/50 border border-green-900/50 rounded-xl p-4 text-sm font-bold text-green-100 focus:border-green-500 focus:outline-none transition-all"
+              placeholder="ENTER NAME"
             />
           </div>
 
           <div className="relative">
-            <label className="text-[10px] text-slate-400 font-black tracking-widest ml-2 flex justify-between">
-              <span>PASSWORD</span>
-              <span className="text-slate-600">MIN 6 CHARS</span>
+            <label className="text-[10px] text-green-700 font-black tracking-widest ml-2">
+              PASSWORD
             </label>
             <input
-              type={showPassword ? "text" : "password"} // NAYA: Toggle type
+              type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/50 border border-slate-700 rounded-xl p-4 pr-16 text-sm font-bold focus:border-orange-500 focus:outline-none transition-colors"
+              className="w-full bg-black/50 border border-green-900/50 rounded-xl p-4 pr-16 text-sm font-bold text-green-100 focus:border-green-500 focus:outline-none transition-all"
               placeholder="••••••••"
             />
-            {/* SHOW/HIDE BUTTON */}
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-[38px] text-[10px] font-black text-orange-500 hover:text-orange-400 tracking-widest"
+              className="absolute right-4 top-[34px] text-[10px] font-black text-green-500 hover:text-green-300"
             >
               {showPassword ? "HIDE" : "SHOW"}
             </button>
@@ -124,24 +136,30 @@ export default function Auth({ onLogin }) {
           <button
             type="submit"
             disabled={loading}
-            className={`mt-4 w-full font-black text-sm py-4 rounded-xl transition-all ${loading ? "bg-slate-700 text-slate-400" : "bg-orange-500 hover:bg-orange-600 text-black shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]"}`}
+            className={`mt-4 w-full font-black text-sm py-4 rounded-xl transition-all shadow-lg ${
+              loading
+                ? "bg-green-900/50 text-green-700 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-400 text-black shadow-green-500/20"
+            }`}
           >
-            {loading ? "CONNECTING..." : isLogin ? "LOGIN" : "REGISTER"}
+            {loading
+              ? "CONNECTING TO SERVER..."
+              : isLogin
+                ? "LOGIN"
+                : "REGISTER"}
           </button>
         </form>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center relative z-10">
           <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError("");
               setPassword("");
             }}
-            className="text-[10px] text-slate-500 hover:text-white font-black tracking-widest transition-colors"
+            className="text-[10px] text-green-700 hover:text-green-400 font-black tracking-widest transition-colors"
           >
-            {isLogin
-              ? "NO ACCOUNT? REGISTER HERE"
-              : "ALREADY HAVE AN ACCOUNT? LOGIN"}
+            {isLogin ? "NEW PLAYER? REGISTER" : "EXISTING PLAYER? LOGIN"}
           </button>
         </div>
       </div>
