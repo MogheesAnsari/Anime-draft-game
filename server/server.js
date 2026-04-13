@@ -2,23 +2,36 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import bcrypt from "bcryptjs"; // Naya Security Package
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 const app = express();
+
+// ==========================================
+// 1. FINAL & CLEAN CORS FIX
+// ==========================================
+// origin: "*" sabko allow karega aur humne credentials hata diya hai
+// taaki preflight (OPTIONS) request fail na ho.
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // Tera local frontend
-      "https://tera-vercel-link.vercel.app", // NAYA: Jab Vercel par live karega toh apna link yahan dalna
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   }),
 );
+
+// JSON Parser
 app.use(express.json());
 
-// 1. UPDATED SCHEMA (Password aur Total Games add kiya)
+// ==========================================
+// 2. ROOT ROUTE (Health Check)
+// ==========================================
+app.get("/", (req, res) => {
+  res.status(200).send("Anime Draft API is Live! 🚀");
+});
+
+// ==========================================
+// 3. DATABASE SCHEMA & MODELS
+// ==========================================
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -30,7 +43,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
-// Power Calculator (Same as before)
+// Helper function to calculate team power
 const calculatePower = (squad) => {
   if (!squad || Object.keys(squad).length === 0) return 0;
   let score = 0;
@@ -44,23 +57,20 @@ const calculatePower = (squad) => {
   return Math.floor(score);
 };
 
-// --- NAYI APIs SHURU ---
-
-// 2. REGISTER API
+// ==========================================
+// 4. AUTH ROUTES (Login / Register)
+// ==========================================
 app.post("/api/register", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ username });
     if (existingUser)
       return res.status(400).json({ message: "Username already taken!" });
 
-    // Hash Password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Save New User
     const newUser = new User({ username, password: hashedPassword });
     await newUser.save();
 
@@ -73,7 +83,6 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// 3. LOGIN API
 app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -81,7 +90,6 @@ app.post("/api/login", async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ message: "User not found!" });
 
-    // Check Password match
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials!" });
@@ -98,10 +106,8 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// 4. LEADERBOARD API
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    // Top 10 players jinki wins sabse zyada hain
     const topPlayers = await User.find()
       .sort({ wins: -1 })
       .limit(10)
@@ -112,12 +118,12 @@ app.get("/api/leaderboard", async (req, res) => {
   }
 });
 
-// --- PURANI APIs (Updated) ---
-
-// 5. BATTLE API (Ab yahan 'username' frontend se aayega)
+// ==========================================
+// 5. GAME LOGIC (Battle API)
+// ==========================================
 app.post("/api/battle", async (req, res) => {
   try {
-    const { teams, mode, username } = req.body; // username add kiya
+    const { teams, mode, username } = req.body;
     const scores = teams.map(calculatePower);
     let resultData = {};
 
@@ -156,9 +162,7 @@ app.post("/api/battle", async (req, res) => {
       };
     }
 
-    // REAL TIME STATS UPDATE (Using actual username)
     const activeUser = username || "Guest";
-
     if (activeUser !== "Guest") {
       const updatedUser = await User.findOneAndUpdate(
         { username: activeUser },
@@ -168,14 +172,12 @@ app.post("/api/battle", async (req, res) => {
         },
         { new: true },
       );
-
       return res.status(200).json({
         ...resultData,
         wins: updatedUser.wins,
         fullHistory: updatedUser.history,
       });
     } else {
-      // Agar banda bina login khele toh DB update nahi hoga
       return res.status(200).json({ ...resultData, wins: 0, fullHistory: [] });
     }
   } catch (error) {
@@ -183,11 +185,18 @@ app.post("/api/battle", async (req, res) => {
   }
 });
 
+// ==========================================
+// 6. SERVER & DB CONNECTION
+// ==========================================
+const PORT = process.env.PORT || 5000;
+
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() =>
-    app.listen(5000, () =>
-      console.log("🚀 Server Live | Auth & Leaderboard Active"),
-    ),
-  )
-  .catch((err) => console.log("❌ DB Error:", err));
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server Live on Port ${PORT} | No CORS Issues!`);
+    });
+  })
+  .catch((err) => {
+    console.log("❌ DB Error:", err);
+  });
