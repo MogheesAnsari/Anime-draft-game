@@ -10,7 +10,7 @@ export default function Auth({ onLogin }) {
   const [error, setError] = useState("");
 
   // Tera Live Render URL (Agar test kar raha hai toh 'http://localhost:5000/api' kar lena temporary)
-  const API_URL = "https://anime-draft-api.onrender.com/api";
+  const API_URL = "https://anime-draft-game-1.onrender.com/api";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
