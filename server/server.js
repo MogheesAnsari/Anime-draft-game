@@ -67,40 +67,105 @@ const calculatePower = (squad) => {
 // 4. AUTH ROUTES (Login / Register)
 // ==========================================
 app.post("/api/register", async (req, res) => {
+  console.log(
+    `[🔍 REGISTER INITIATED] Request received for username: ${req.body?.username}`,
+  );
+
   try {
     const { username, password } = req.body;
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser)
-      return res.status(400).json({ message: "Username already taken!" });
+    // Safety Check 1: Empty Fields
+    if (!username || !password) {
+      console.log("[❌ REGISTER FAILED] Missing username or password.");
+      return res
+        .status(400)
+        .json({ message: "Username and password are required!" });
+    }
 
+    // Safety Check 2: Database Connection Status
+    if (mongoose.connection.readyState !== 1) {
+      console.log(
+        "[❌ REGISTER FAILED] MongoDB is NOT connected! Status:",
+        mongoose.connection.readyState,
+      );
+      return res
+        .status(500)
+        .json({ message: "Database connection error. Try again in a minute." });
+    }
+
+    console.log("[⏳ REGISTER] Checking if user exists in DB...");
+    const existingUser = await User.findOne({ username });
+
+    if (existingUser) {
+      console.log("[❌ REGISTER FAILED] Username already taken.");
+      return res.status(400).json({ message: "Username already taken!" });
+    }
+
+    console.log("[⏳ REGISTER] Hashing password...");
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    console.log("[⏳ REGISTER] Saving new user to database...");
     const newUser = new User({ username, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({
+    console.log(
+      `[✅ REGISTER SUCCESS] Account created for: ${newUser.username}`,
+    );
+    return res.status(201).json({
       message: "Account created successfully!",
       username: newUser.username,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.log(
+      "[🚨 CRITICAL REGISTER ERROR] Server crashed during register:",
+      error.message,
+    );
+    return res.status(500).json({
+      message: "Internal server error during registration.",
+      error: error.message,
+    });
   }
 });
 
 app.post("/api/login", async (req, res) => {
+  console.log(
+    `[🔍 LOGIN INITIATED] Request received for username: ${req.body?.username}`,
+  );
+
   try {
     const { username, password } = req.body;
 
+    if (!username || !password) {
+      console.log("[❌ LOGIN FAILED] Missing credentials.");
+      return res
+        .status(400)
+        .json({ message: "Username and password required!" });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      console.log("[❌ LOGIN FAILED] MongoDB is NOT connected!");
+      return res.status(500).json({ message: "Database connection error." });
+    }
+
+    console.log("[⏳ LOGIN] Searching for user...");
     const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: "User not found!" });
 
+    if (!user) {
+      console.log("[❌ LOGIN FAILED] User not found in DB.");
+      return res.status(400).json({ message: "User not found!" });
+    }
+
+    console.log("[⏳ LOGIN] Verifying password...");
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials!" });
 
-    res.status(200).json({
+    if (!isMatch) {
+      console.log("[❌ LOGIN FAILED] Incorrect password.");
+      return res.status(400).json({ message: "Invalid credentials!" });
+    }
+
+    console.log(`[✅ LOGIN SUCCESS] User authenticated: ${user.username}`);
+    return res.status(200).json({
       message: "Login successful!",
       username: user.username,
       wins: user.wins,
@@ -108,10 +173,16 @@ app.post("/api/login", async (req, res) => {
       fullHistory: user.history,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.log(
+      "[🚨 CRITICAL LOGIN ERROR] Server crashed during login:",
+      error.message,
+    );
+    return res.status(500).json({
+      message: "Internal server error during login.",
+      error: error.message,
+    });
   }
 });
-
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const topPlayers = await User.find()
