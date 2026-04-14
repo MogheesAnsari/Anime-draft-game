@@ -1,14 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SLOTS, getRandomUniqueByUniverse, api } from "../engine";
-import {
-  ShieldAlert,
-  Zap,
-  Shield,
-  Wind,
-  Sparkles,
-  Info,
-  X,
-} from "lucide-react";
+import { Sparkles, Info, X } from "lucide-react";
 
 export default function BattleDraft({
   user,
@@ -27,9 +19,36 @@ export default function BattleDraft({
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(true);
 
-  const normalizedMode = mode.toLowerCase();
-  const maxTurns =
-    normalizedMode === "pve" ? 1 : normalizedMode === "pvp" ? 2 : 4;
+  // 🧠 THE MODE FIX: Team Mode gets 4 turns!
+  const rawString = String(mode || "pve")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  let maxTurns = 1;
+  let isPvE = true;
+  let isTeamMode = false;
+
+  if (rawString.includes("team") || rawString.includes("2v2")) {
+    maxTurns = 4; // 4 Players total for a 2v2 match
+    isPvE = false;
+    isTeamMode = true;
+  } else if (
+    rawString.includes("royal") ||
+    rawString.includes("1v1v1v1") ||
+    rawString.includes("4p")
+  ) {
+    maxTurns = 4;
+    isPvE = false;
+  } else if (rawString.includes("pvp") || rawString.includes("1v1")) {
+    maxTurns = 2;
+    isPvE = false;
+  }
+
+  useEffect(() => {
+    console.log(
+      `[SYSTEM DIAGNOSTIC] Mode: "${mode}" | Turns: ${maxTurns} | isTeamMode: ${isTeamMode}`,
+    );
+  }, [mode, maxTurns, isTeamMode]);
 
   const themeColors = {
     1: {
@@ -61,13 +80,14 @@ export default function BattleDraft({
 
   const pull = () => {
     const card = getRandomUniqueByUniverse(used, universe);
-    if (!card) return alert("Draft pool empty!");
+    if (!card) return alert("Draft pool empty! No more characters available.");
     setCurrent(card);
   };
 
   const handleSkip = () => {
     if (skips > 0) {
       setSkips(0);
+      setUsed([...used, current.id]);
       pull();
     }
   };
@@ -79,9 +99,18 @@ export default function BattleDraft({
     setCurrent(null);
   };
 
+  const handleNextPlayer = () => {
+    setCompletedTeams([...completedTeams, team]);
+    setTeam({});
+    setCurrent(null);
+    setSkips(1);
+    setPlayerTurn(playerTurn + 1);
+  };
+
   const fight = async () => {
     let finalTeams = [...completedTeams, team];
-    if (normalizedMode === "pve") {
+
+    if (isPvE) {
       let cpuTeam = {};
       let tempUsed = [...used];
       SLOTS.forEach((slot) => {
@@ -96,14 +125,12 @@ export default function BattleDraft({
 
     setLoading(true);
     try {
-      // API call to save history
       const data = await api.fight({
         username: user?.username || "Guest",
-        mode: normalizedMode,
+        mode: mode || "pve",
         teams: finalTeams,
       });
 
-      // Intelligent Frontend Math (To bypass any server lag/cache)
       const calculatedScores = finalTeams.map((t) => {
         let total = 0;
         const cap = t.captain || { atk: 0, def: 0, spd: 0 };
@@ -115,6 +142,7 @@ export default function BattleDraft({
 
         Object.keys(t).forEach((slotId) => {
           const char = t[slotId];
+          if (!char) return;
           let base =
             (Number(char.atk) || 0) +
             (Number(char.def) || 0) +
@@ -133,19 +161,37 @@ export default function BattleDraft({
       data.scores = calculatedScores;
       if (onBattleEnd)
         onBattleEnd(data.wins, data.fullHistory, data.totalGames);
-      onShowResult(data, finalTeams);
+      if (onShowResult) onShowResult(data, finalTeams);
     } catch (e) {
-      alert("System Error!");
+      console.error(e);
+      alert("System Error: Backend API Call Failed.");
     }
     setLoading(false);
   };
 
   const isFull = Object.keys(team).length === SLOTS.length;
 
+  const formatUniverse = (u) => {
+    if (!u) return "UNKNOWN";
+    return u
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // UI helper for the Header to show which team is drafting
+  const getHeaderText = () => {
+    if (isPvE) return "PVE DRAFT";
+    if (isTeamMode) {
+      return playerTurn <= 2
+        ? `TEAM 1 (PLAYER ${playerTurn})`
+        : `TEAM 2 (PLAYER ${playerTurn})`;
+    }
+    return `PLAYER ${playerTurn} DRAFT`;
+  };
+
   return (
-    // 🧠 100dvh ensures PERFECT fit on mobile browsers (ignores dynamic address bars)
     <div className="h-[100dvh] w-full flex flex-col items-center bg-[#050505] text-white overflow-hidden p-2 md:p-4 uppercase font-sans">
-      {/* 🚀 FAADU POPUP (Intelligent Clamp Sizing) */}
       {showRules && (
         <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 md:p-6">
           <div className="w-full max-w-5xl max-h-[90dvh] bg-[#0c0c0e] border border-orange-500/30 rounded-[32px] md:rounded-[48px] p-5 md:p-10 flex flex-col shadow-[0_0_80px_rgba(255,140,50,0.15)] relative">
@@ -165,7 +211,6 @@ export default function BattleDraft({
               </p>
             </div>
 
-            {/* Scrollable only if screen is absurdly small, otherwise fits perfectly */}
             <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 min-h-0 mb-6">
               {[
                 {
@@ -244,7 +289,7 @@ export default function BattleDraft({
         </div>
       )}
 
-      {/* 🔝 ULTRA COMPACT HUD (Locked Height) */}
+      {/* DYNAMIC HEADER */}
       <header className="w-full max-w-6xl flex justify-between items-center h-10 md:h-14 shrink-0 border-b border-white/5 px-2">
         <button
           onClick={onExit}
@@ -256,7 +301,7 @@ export default function BattleDraft({
           <div
             className={`px-5 py-1 md:py-1.5 rounded-full text-[9px] md:text-[11px] font-black tracking-widest bg-gradient-to-r ${theme.from} ${theme.to} shadow-lg text-white`}
           >
-            {normalizedMode === "pve" ? "PVE DRAFT" : `P${playerTurn} DRAFT`}
+            {getHeaderText()}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -272,18 +317,22 @@ export default function BattleDraft({
         </div>
       </header>
 
-      {/* 🎴 INTELLIGENT MAIN STAGE (Fluid scaling with min-h-0) */}
+      {/* DRAFTING STAGE */}
       <div className="flex-1 w-full flex flex-col items-center justify-center min-h-0 overflow-hidden py-3 md:py-4">
         {current ? (
           <div
-            className={`relative h-full aspect-[3/4] max-h-[45vh] md:max-h-[55vh] rounded-[24px] md:rounded-[36px] overflow-hidden border-[3px] md:border-4 shadow-2xl transition-all animate-in zoom-in duration-300 ${current.tier === "S+" ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.2)]" : "border-white/10"}`}
+            className={`relative w-full max-w-[280px] md:max-w-[340px] aspect-[3/4] max-h-[50vh] md:max-h-[55vh] rounded-[24px] md:rounded-[36px] overflow-hidden border-[3px] md:border-4 shadow-2xl transition-all animate-in zoom-in duration-300 ${current.tier === "S+" ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.2)]" : "border-white/10"}`}
           >
             <img
               src={current.img}
               className="absolute inset-0 w-full h-full object-cover"
               alt=""
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/95"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10"></div>
+
+            <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1 rounded-md font-black uppercase tracking-widest text-[8px] md:text-[10px] bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-lg">
+              {formatUniverse(current.universe)}
+            </div>
 
             <div
               className={`absolute top-3 right-3 md:top-4 md:right-4 px-3 md:px-4 py-1 rounded-full font-black italic text-[10px] md:text-xs shadow-lg backdrop-blur-md border ${current.tier === "S+" ? "bg-yellow-400/90 text-black border-yellow-300" : "bg-black/50 text-white border-white/30"}`}
@@ -291,36 +340,36 @@ export default function BattleDraft({
               {current.tier}
             </div>
 
-            <div className="absolute bottom-0 w-full p-3 md:p-5 flex flex-col justify-end">
-              <h3 className="text-xl md:text-3xl font-black italic text-white truncate tracking-tighter drop-shadow-lg leading-none">
+            <div className="absolute bottom-0 w-full p-4 md:p-6 flex flex-col justify-end">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-black italic text-white drop-shadow-lg leading-tight mb-1">
                 {current.name}
               </h3>
-              <p className="text-[8px] md:text-[10px] text-gray-400 italic line-clamp-1 mt-1 mb-2 md:mb-3">
+              <p className="text-[10px] md:text-[11px] text-gray-300 normal-case mb-3 leading-snug">
                 "{current.bio}"
               </p>
 
-              <div className="grid grid-cols-3 gap-1 md:gap-2 mb-2 md:mb-3">
-                <div className="flex flex-col items-center bg-white/10 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[6px] md:text-[8px] text-gray-400 font-bold mb-0.5">
+              <div className="grid grid-cols-3 gap-2 md:gap-3 mb-3">
+                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
+                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
                     ATK
                   </span>
-                  <span className="text-orange-400 font-black text-xs md:text-base leading-none">
+                  <span className="text-orange-400 font-black text-sm md:text-lg leading-none">
                     {current.atk}
                   </span>
                 </div>
-                <div className="flex flex-col items-center bg-white/10 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[6px] md:text-[8px] text-gray-400 font-bold mb-0.5">
+                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
+                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
                     DEF
                   </span>
-                  <span className="text-blue-400 font-black text-xs md:text-base leading-none">
+                  <span className="text-blue-400 font-black text-sm md:text-lg leading-none">
                     {current.def}
                   </span>
                 </div>
-                <div className="flex flex-col items-center bg-white/10 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[6px] md:text-[8px] text-gray-400 font-bold mb-0.5">
+                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
+                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
                     SPD
                   </span>
-                  <span className="text-green-400 font-black text-xs md:text-base leading-none">
+                  <span className="text-green-400 font-black text-sm md:text-lg leading-none">
                     {current.spd}
                   </span>
                 </div>
@@ -329,9 +378,9 @@ export default function BattleDraft({
               {skips > 0 && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-2.5 md:py-3 bg-orange-500/80 hover:bg-orange-500 text-black font-black text-[9px] md:text-[11px] tracking-widest rounded-xl transition-all backdrop-blur-md"
+                  className="w-full py-2.5 md:py-3 bg-orange-500/90 hover:bg-orange-500 text-black font-black text-[10px] md:text-[12px] tracking-widest rounded-xl transition-all backdrop-blur-md"
                 >
-                  SKIP ({skips})
+                  SKIP CARD ({skips})
                 </button>
               )}
             </div>
@@ -351,15 +400,12 @@ export default function BattleDraft({
         )}
       </div>
 
-      {/* 🧩 SLOTS GRID (Locked dimensions to prevent overflow) */}
-      {/* 🧩 AAA-TIER SLOTS GRID (BIGGER & BOLDER EDITION) */}
       <div className="w-full max-w-7xl grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 shrink-0 mb-4 md:mb-6 px-2 md:px-4">
         {SLOTS.map((s) => {
           const isFilled = !!team[s.id];
           const char = team[s.id];
           const shortLabel = s.label.split(" ")[1] || s.label;
 
-          // Intelligent Theme Mapping
           const slotTheme = {
             captain: {
               color: "text-orange-500",
@@ -392,7 +438,7 @@ export default function BattleDraft({
               border: "border-red-500/50",
             },
           };
-          const theme = slotTheme[s.id] || {
+          const slotColors = slotTheme[s.id] || {
             color: "text-gray-400",
             bg: "bg-gray-400",
             border: "border-white/10",
@@ -404,11 +450,10 @@ export default function BattleDraft({
               onClick={() => assign(s.id)}
               className={`relative h-[76px] md:h-[90px] lg:h-[100px] rounded-[16px] md:rounded-[20px] flex items-center cursor-pointer transition-all duration-300 overflow-hidden group ${
                 isFilled
-                  ? `bg-[#08080a] border-2 ${theme.border} hover:scale-[1.03] shadow-xl`
+                  ? `bg-[#08080a] border-2 ${slotColors.border} hover:scale-[1.03] shadow-xl`
                   : "bg-white/5 border-2 border-white/10 border-dashed hover:bg-white/10 hover:border-white/30"
               }`}
             >
-              {/* Dynamic Background Image - Wider coverage for bigger cards */}
               {isFilled && char?.img && (
                 <div className="absolute right-0 top-0 bottom-0 w-3/4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
                   <img
@@ -416,41 +461,34 @@ export default function BattleDraft({
                     className="w-full h-full object-cover object-top"
                     alt=""
                   />
-                  {/* Black Magic Gradient */}
                   <div className="absolute inset-0 bg-gradient-to-r from-[#08080a] via-[#08080a]/80 to-transparent"></div>
                 </div>
               )}
 
-              {/* Glowing Left Edge Accent (Thicker) */}
               <div
-                className={`absolute left-0 top-0 bottom-0 w-1.5 md:w-2 transition-all duration-500 ${isFilled ? `${theme.bg} shadow-[0_0_15px_${theme.bg.split("-")[1]}-500]` : "bg-transparent"}`}
+                className={`absolute left-0 top-0 bottom-0 w-1.5 md:w-2 transition-all duration-500 ${isFilled ? `${slotColors.bg} shadow-[0_0_15px_${slotColors.bg.split("-")[1]}-500]` : "bg-transparent"}`}
               ></div>
 
-              {/* Text & Content Wrapper (More padding, much bigger text) */}
               <div className="relative z-10 flex flex-col justify-center pl-4 md:pl-6 flex-1 min-w-0 py-2">
-                {/* Role Title */}
                 <div className="flex items-center gap-2 mb-1">
                   {!isFilled && (
                     <div
-                      className={`w-2 h-2 rounded-full ${theme.bg} animate-pulse`}
+                      className={`w-2 h-2 rounded-full ${slotColors.bg} animate-pulse`}
                     ></div>
                   )}
                   <span
-                    className={`text-[9px] md:text-[11px] lg:text-[12px] font-black tracking-widest uppercase ${isFilled ? theme.color : "text-gray-500"}`}
+                    className={`text-[9px] md:text-[11px] lg:text-[12px] font-black tracking-widest uppercase ${isFilled ? slotColors.color : "text-gray-500"}`}
                   >
                     {shortLabel}
                   </span>
                 </div>
 
-                {/* Character Name & Tier Badge */}
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[14px] md:text-[16px] lg:text-[18px] font-black italic truncate uppercase leading-tight ${isFilled ? "text-white drop-shadow-lg" : "text-gray-600"}`}
+                    className={`text-[13px] md:text-[15px] lg:text-[16px] font-black italic uppercase leading-tight ${isFilled ? "text-white drop-shadow-lg" : "text-gray-600"}`}
                   >
                     {char?.name || "SELECT HERO"}
                   </span>
-
-                  {/* Bigger Tier Badge */}
                   {isFilled && char?.tier && (
                     <span
                       className={`shrink-0 px-2 py-0.5 rounded-md text-[8px] md:text-[10px] font-black italic ${char.tier === "S+" ? "bg-yellow-400 text-black shadow-[0_0_8px_rgba(250,204,21,0.6)]" : "bg-white/20 text-white"}`}
@@ -460,26 +498,36 @@ export default function BattleDraft({
                   )}
                 </div>
               </div>
-
-              {/* Empty State Interactive Glow */}
-              {!isFilled && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-all"></div>
-              )}
             </div>
           );
         })}
       </div>
 
-      {/* ⚔️ EXECUTE WAR BUTTON (Locked at bottom) */}
       <div className="w-full max-w-sm h-12 md:h-16 shrink-0 flex items-center justify-center pb-2 md:pb-0">
         {isFull ? (
-          <button
-            onClick={fight}
-            disabled={loading}
-            className={`w-full h-full rounded-2xl md:rounded-[24px] font-black text-sm md:text-xl text-white bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] active:scale-95 transition-all tracking-widest italic`}
-          >
-            {loading ? "CALCULATING..." : "EXECUTE WAR!"}
-          </button>
+          playerTurn < maxTurns ? (
+            <button
+              onClick={handleNextPlayer}
+              className={`w-full h-full rounded-2xl md:rounded-[24px] font-black text-sm md:text-xl text-white bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] active:scale-95 transition-all tracking-widest italic`}
+            >
+              NEXT:{" "}
+              {isTeamMode
+                ? playerTurn < 2
+                  ? "PLAYER 2 DRAFT"
+                  : playerTurn === 2
+                    ? "TEAM 2 (P3) DRAFT"
+                    : "PLAYER 4 DRAFT"
+                : `PLAYER ${playerTurn + 1} DRAFT`}
+            </button>
+          ) : (
+            <button
+              onClick={fight}
+              disabled={loading}
+              className={`w-full h-full rounded-2xl md:rounded-[24px] font-black text-sm md:text-xl text-white bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] active:scale-95 transition-all tracking-widest italic`}
+            >
+              {loading ? "CALCULATING..." : "EXECUTE WAR!"}
+            </button>
+          )
         ) : (
           <div className="w-full h-full"></div>
         )}

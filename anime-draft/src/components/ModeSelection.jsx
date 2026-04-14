@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { User, Monitor, Users, Swords, Trophy } from "lucide-react";
 
 export default function ModeSelection({ onSelectMode, user, onLogout }) {
-  // Grid mein sirf actual fighting modes hain
+  // 🧠 LOGIC FIX: Changed IDs so BattleDraft.jsx actually recognizes them
   const modes = [
     {
       id: "PVE",
@@ -19,13 +19,13 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
       icon: <User size={32} />,
     },
     {
-      id: "MULTI",
+      id: "BATTLE ROYALE", // Changed from "MULTI" to trigger 4-player turns
       name: "BATTLE ROYALE",
       desc: "1v1v1v1 Free-for-all chaos.",
       icon: <Swords size={32} />,
     },
     {
-      id: "2V2",
+      id: "TEAM BATTLE", // Changed from "2V2" to cleanly match backend expectations
       name: "TEAM BATTLE",
       desc: "2v2 Cooperative draft.",
       icon: <Users size={32} />,

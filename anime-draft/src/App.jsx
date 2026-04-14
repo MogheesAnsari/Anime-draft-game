@@ -13,7 +13,7 @@ export default function App() {
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedUniverse, setSelectedUniverse] = useState(null);
 
-  // NEW: State for Battle Results & Team Rosters
+  // State for Battle Results & Team Rosters
   const [battleResult, setBattleResult] = useState(null);
   const [draftedTeams, setDraftedTeams] = useState(null);
 
@@ -73,7 +73,6 @@ export default function App() {
       {!user ? (
         <Auth onLogin={handleLogin} />
       ) : battleResult && draftedTeams ? (
-        // NEW: Passing both Result and Teams to the Result Component
         <BattleResult
           result={battleResult}
           teams={draftedTeams}
@@ -129,7 +128,7 @@ export default function App() {
           onShowResult={(data, teams) => {
             setBattleResult(data);
             setDraftedTeams(teams);
-          }} // UPDATE
+          }}
         />
       )}
     </div>
