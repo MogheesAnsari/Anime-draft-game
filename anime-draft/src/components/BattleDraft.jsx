@@ -317,70 +317,91 @@ export default function BattleDraft({
         </div>
       </header>
 
-      {/* DRAFTING STAGE */}
+      {/* 🃏 DRAFTING STAGE: ULTRA-PRO DESIGN */}
       <div className="flex-1 w-full flex flex-col items-center justify-center min-h-0 overflow-hidden py-3 md:py-4">
         {current ? (
           <div
-            className={`relative w-full max-w-[280px] md:max-w-[340px] aspect-[3/4] max-h-[50vh] md:max-h-[55vh] rounded-[24px] md:rounded-[36px] overflow-hidden border-[3px] md:border-4 shadow-2xl transition-all animate-in zoom-in duration-300 ${current.tier === "S+" ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.2)]" : "border-white/10"}`}
+            className={`relative w-full max-w-[300px] md:max-w-[340px] aspect-[3/4] max-h-[60vh] md:max-h-[65vh] rounded-[24px] md:rounded-[32px] overflow-hidden transition-all animate-in zoom-in duration-300 group border-[2px] md:border-[3px] ${
+              current.tier === "S+"
+                ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.4)]"
+                : "border-white/20 shadow-[0_15px_40px_rgba(0,0,0,0.8)]"
+            }`}
           >
+            {/* FULL ART IMAGE */}
             <img
               src={current.img}
-              className="absolute inset-0 w-full h-full object-cover"
-              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+              alt={current.name}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10"></div>
 
-            <div className="absolute top-3 left-3 md:top-4 md:left-4 px-2.5 py-1 rounded-md font-black uppercase tracking-widest text-[8px] md:text-[10px] bg-black/60 backdrop-blur-md border border-white/20 text-white shadow-lg">
-              {formatUniverse(current.universe)}
+            {/* SMOOTH BOTTOM GRADIENT - Only covers the bottom half, leaving the face completely clear */}
+            <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#050507] via-[#050507]/90 to-transparent"></div>
+
+            {/* TOP BADGES */}
+            <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
+              <div className="bg-black/50 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-md shadow-sm">
+                <span className="text-[7px] md:text-[8px] font-black tracking-widest text-white/90">
+                  {formatUniverse(current.universe)}
+                </span>
+              </div>
+              <div
+                className={`w-9 h-9 md:w-11 md:h-11 flex items-center justify-center rounded-lg font-black italic text-lg md:text-xl shadow-md backdrop-blur-md border-[1px] ${
+                  current.tier === "S+"
+                    ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-black border-yellow-200"
+                    : "bg-black/70 text-white border-white/20"
+                }`}
+              >
+                {current.tier}
+              </div>
             </div>
 
-            <div
-              className={`absolute top-3 right-3 md:top-4 md:right-4 px-3 md:px-4 py-1 rounded-full font-black italic text-[10px] md:text-xs shadow-lg backdrop-blur-md border ${current.tier === "S+" ? "bg-yellow-400/90 text-black border-yellow-300" : "bg-black/50 text-white border-white/30"}`}
-            >
-              {current.tier}
-            </div>
-
-            <div className="absolute bottom-0 w-full p-4 md:p-6 flex flex-col justify-end">
-              <h3 className="text-xl md:text-2xl lg:text-3xl font-black italic text-white drop-shadow-lg leading-tight mb-1">
+            {/* BOTTOM INFO PANEL */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 flex flex-col z-20">
+              {/* Name (Reduced size, premium tracking) */}
+              <h3 className="text-xl md:text-2xl font-black italic text-white uppercase tracking-wider leading-tight drop-shadow-md mb-0.5">
                 {current.name}
               </h3>
-              <p className="text-[10px] md:text-[11px] text-gray-300 normal-case mb-3 leading-snug">
-                "{current.bio}"
+
+              {/* Bio (Crisp and subtle) */}
+              <p className="text-[9px] md:text-[10px] text-gray-400 normal-case font-medium leading-snug line-clamp-2 drop-shadow-md mb-3">
+                {current.bio}
               </p>
 
-              <div className="grid grid-cols-3 gap-2 md:gap-3 mb-3">
-                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
+              {/* Minimalist Stats Dashboard */}
+              <div className="flex gap-2 mb-3">
+                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
+                  <span className="text-[6px] md:text-[7px] text-orange-400 font-black tracking-widest uppercase mb-0.5">
                     ATK
                   </span>
-                  <span className="text-orange-400 font-black text-sm md:text-lg leading-none">
+                  <span className="text-sm md:text-base font-black text-white leading-none">
                     {current.atk}
                   </span>
                 </div>
-                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
+                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
+                  <span className="text-[6px] md:text-[7px] text-blue-400 font-black tracking-widest uppercase mb-0.5">
                     DEF
                   </span>
-                  <span className="text-blue-400 font-black text-sm md:text-lg leading-none">
+                  <span className="text-sm md:text-base font-black text-white leading-none">
                     {current.def}
                   </span>
                 </div>
-                <div className="flex flex-col items-center bg-black/40 backdrop-blur-md p-1.5 md:p-2 rounded-xl border border-white/10">
-                  <span className="text-[7px] md:text-[9px] text-gray-400 font-bold mb-0.5">
+                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
+                  <span className="text-[6px] md:text-[7px] text-green-400 font-black tracking-widest uppercase mb-0.5">
                     SPD
                   </span>
-                  <span className="text-green-400 font-black text-sm md:text-lg leading-none">
+                  <span className="text-sm md:text-base font-black text-white leading-none">
                     {current.spd}
                   </span>
                 </div>
               </div>
 
+              {/* Resummon Button */}
               {skips > 0 && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-2.5 md:py-3 bg-orange-500/90 hover:bg-orange-500 text-black font-black text-[10px] md:text-[12px] tracking-widest rounded-xl transition-all backdrop-blur-md"
+                  className="w-full py-2 bg-black/40 hover:bg-orange-500 text-gray-300 hover:text-black font-black text-[8px] md:text-[9px] tracking-widest rounded-lg transition-all border border-white/10 hover:border-orange-500 backdrop-blur-sm active:scale-95"
                 >
-                  SKIP CARD ({skips})
+                  DISCARD & RESUMMON
                 </button>
               )}
             </div>
@@ -389,11 +410,11 @@ export default function BattleDraft({
           !isFull && (
             <button
               onClick={pull}
-              className="h-[40vh] aspect-square max-h-[220px] md:max-h-[280px] rounded-full border-2 border-dashed border-white/10 hover:border-orange-500 bg-white/5 flex flex-col items-center justify-center group transition-all duration-500"
+              className="h-[40vh] aspect-square max-h-[220px] md:max-h-[280px] rounded-full border-2 border-dashed border-white/10 hover:border-orange-500 bg-white/5 flex flex-col items-center justify-center group transition-all duration-500 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             >
               <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-gray-600 group-hover:text-orange-500 mb-2 md:mb-3 group-hover:scale-125 transition-transform" />
               <span className="text-[8px] md:text-[10px] text-gray-500 group-hover:text-white tracking-[0.3em] font-black">
-                SUMMON
+                SUMMON HERO
               </span>
             </button>
           )
