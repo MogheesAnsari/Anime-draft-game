@@ -8,6 +8,7 @@ export const narutoChars = [
     def: 95,
     spd: 100,
     tier: "S+",
+    img: "/images/naruto/naruto.jpg",
     bio: "The ultimate life-draining fusion of chakra and power.",
   },
   {
@@ -18,6 +19,7 @@ export const narutoChars = [
     def: 90,
     spd: 99,
     tier: "S+",
+    img: "/images/naruto/isshiki.webp",
     bio: "An alien god capable of shrinking matter instantly.",
   },
   {
@@ -28,6 +30,7 @@ export const narutoChars = [
     def: 98,
     spd: 90,
     tier: "S",
+    img: "/images/naruto/madara.webp",
     bio: "The Ten-Tails Jinchuriki wielding infinite Tsukuyomi.",
   },
   {
@@ -38,6 +41,7 @@ export const narutoChars = [
     def: 95,
     spd: 95,
     tier: "S",
+    img: "/images/naruto/sasuke.jpg",
     bio: "Wielding the Rinnegan and the chakra of all tailed beasts.",
   },
   {
@@ -48,6 +52,7 @@ export const narutoChars = [
     def: 99,
     spd: 85,
     tier: "S",
+    img: "/images/naruto/kaguya.png",
     bio: "The progenitor of chakra who can shift dimensions.",
   },
   {
@@ -58,6 +63,7 @@ export const narutoChars = [
     def: 95,
     spd: 88,
     tier: "S",
+    img: "/images/naruto/hashirama.webp",
     bio: "The God of Shinobi and master of Wood Release.",
   },
   {
@@ -68,6 +74,7 @@ export const narutoChars = [
     def: 80,
     spd: 100,
     tier: "A",
+    img: "/images/naruto/minato.jpg",
     bio: "The Yellow Flash of the Leaf.",
   },
   {
@@ -78,6 +85,7 @@ export const narutoChars = [
     def: 96,
     spd: 90,
     tier: "S",
+    img: "/images/naruto/obito.webp",
     bio: "Wielder of Kamui and the Truth-Seeking Orbs.",
   },
   {
@@ -88,6 +96,7 @@ export const narutoChars = [
     def: 85,
     spd: 88,
     tier: "A",
+    img: "/images/naruto/itachi.webp",
     bio: "Genjutsu master wielding the Totsuka Blade and Yata Mirror.",
   },
   {
@@ -98,6 +107,7 @@ export const narutoChars = [
     def: 88,
     spd: 85,
     tier: "A",
+    img: "/images/naruto/pain.webp",
     bio: "Leader of Akatsuki with the power of the Six Paths.",
   },
   {
@@ -108,6 +118,7 @@ export const narutoChars = [
     def: 70,
     spd: 98,
     tier: "S",
+    img: "/images/naruto/guy.jpg",
     bio: "Taijutsu master capable of bending space with pure speed.",
   },
   {
@@ -118,6 +129,7 @@ export const narutoChars = [
     def: 90,
     spd: 92,
     tier: "A",
+    img: "/images/naruto/kakashi.webp",
     bio: "The Copy Ninja possessing dual Kamui and perfect Susanoo.",
   },
   {
@@ -128,6 +140,7 @@ export const narutoChars = [
     def: 85,
     spd: 82,
     tier: "B",
+    img: "/images/naruto/jiraiya.webp",
     bio: "The Toad Sage and legendary Sannin.",
   },
   {
@@ -138,6 +151,7 @@ export const narutoChars = [
     def: 95,
     spd: 75,
     tier: "B",
+    img: "/images/naruto/tsunade.webp",
     bio: "Legendary Sannin with unmatched physical strength and healing.",
   },
   {
@@ -148,6 +162,7 @@ export const narutoChars = [
     def: 92,
     spd: 85,
     tier: "A",
+    img: "/images/naruto/orochimaru.webp",
     bio: "Immortal Sannin possessing vast knowledge of forbidden support jutsu.",
   },
   {
@@ -158,6 +173,7 @@ export const narutoChars = [
     def: 96,
     spd: 70,
     tier: "B",
+    img: "/images/naruto/gaara.webp",
     bio: "The Kazekage with the ultimate absolute defense of sand.",
   },
   {
@@ -168,6 +184,7 @@ export const narutoChars = [
     def: 75,
     spd: 75,
     tier: "B",
+    img: "/images/naruto/shikamaru.webp",
     bio: "A tactical genius who wins battles with his immense IQ.",
   },
   {
@@ -178,6 +195,7 @@ export const narutoChars = [
     def: 85,
     spd: 96,
     tier: "A",
+    img: "/images/naruto/tobirama.webp",
     bio: "The Second Hokage and creator of countless forbidden jutsu.",
   },
   {
@@ -188,6 +206,7 @@ export const narutoChars = [
     def: 88,
     spd: 85,
     tier: "B",
+    img: "/images/naruto/sarutobi.webp",
     bio: "The Professor who mastered all nature transformations.",
   },
   {
@@ -198,6 +217,7 @@ export const narutoChars = [
     def: 90,
     spd: 95,
     tier: "S",
+    img: "/images/naruto/momoshiki.webp",
     bio: "A celestial being capable of absorbing and reflecting any jutsu.",
   },
 
@@ -210,6 +230,7 @@ export const narutoChars = [
     def: 84,
     spd: 98,
     tier: "A",
+    img: "/images/naruto/shisui.jpg",
     bio: "Master of Body Flicker and the strongest Genjutsu, Kotoamatsukami.",
   },
   {
@@ -220,6 +241,7 @@ export const narutoChars = [
     def: 90,
     spd: 88,
     tier: "A",
+    img: "/images/naruto/killer.jpg",
     bio: "Perfect Jinchuriki of the Eight-Tails and master of Seven Swords style.",
   },
   {
@@ -230,6 +252,7 @@ export const narutoChars = [
     def: 92,
     spd: 90,
     tier: "S",
+    img: "/images/naruto/kabuto.jpg",
     bio: "The perfect snake sage controlling the battlefield with Edo Tensei.",
   },
   {
@@ -240,6 +263,7 @@ export const narutoChars = [
     def: 92,
     spd: 95,
     tier: "S",
+    img: "/images/naruto/indra.webp",
     bio: "The genius creator of ninjutsu and ancestor of the Uchiha.",
   },
   {
@@ -250,6 +274,7 @@ export const narutoChars = [
     def: 98,
     spd: 90,
     tier: "S",
+    img: "/images/naruto/asura.webp",
     bio: "The ancestor of the Senju, wielding the power of Six Paths Senjutsu.",
   },
   {
@@ -260,6 +285,7 @@ export const narutoChars = [
     def: 94,
     spd: 82,
     tier: "A",
+    img: "/images/naruto/kisame.webp",
     bio: "The Tailless Tailed Beast with immense chakra and Samehada.",
   },
   {
@@ -270,6 +296,7 @@ export const narutoChars = [
     def: 100,
     spd: 94,
     tier: "S",
+    img: "/images/naruto/A.webp",
     bio: "The Raikage with the strongest spear and strongest shield.",
   },
   {
@@ -280,6 +307,7 @@ export const narutoChars = [
     def: 75,
     spd: 80,
     tier: "A",
+    img: "/images/naruto/onoki.webp",
     bio: "Master of Particle Style, capable of disintegrating anything to dust.",
   },
   {
@@ -290,6 +318,7 @@ export const narutoChars = [
     def: 96,
     spd: 85,
     tier: "A",
+    img: "/images/naruto/sakura.webp",
     bio: "A master medic with monstrous strength and immortality in battle.",
   },
   {
@@ -300,6 +329,7 @@ export const narutoChars = [
     def: 95,
     spd: 94,
     tier: "S+",
+    img: "/images/naruto/hamura.webp",
     bio: "Hagoromo's brother and ancestor of the Hyuga, wielding Tenseigan.",
   },
 ];

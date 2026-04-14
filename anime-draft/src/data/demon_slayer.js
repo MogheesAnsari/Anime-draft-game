@@ -8,6 +8,7 @@ export const demon_slayerChars = [
     def: 95,
     spd: 100,
     tier: "S+",
+    img: "/images/demon_slayer/yoriichi.jpg",
     bio: "The original Sun Breather, unmatched in human history.",
   },
   {
@@ -18,6 +19,7 @@ export const demon_slayerChars = [
     def: 99,
     spd: 95,
     tier: "S+",
+    img: "/images/demon_slayer/muzan.jpg",
     bio: "The Demon King with near-instant regeneration and lethal whips.",
   },
   {
@@ -28,6 +30,7 @@ export const demon_slayerChars = [
     def: 98,
     spd: 88,
     tier: "S",
+    img: "/images/demon_slayer/tanjiro.webp",
     bio: "The ultimate being conquering the sun itself.",
   },
   {
@@ -38,6 +41,7 @@ export const demon_slayerChars = [
     def: 92,
     spd: 96,
     tier: "S",
+    img: "/images/demon_slayer/kokushibo.png",
     bio: "Upper Rank 1, wielding Moon Breathing and a flesh sword.",
   },
   {
@@ -48,6 +52,7 @@ export const demon_slayerChars = [
     def: 90,
     spd: 92,
     tier: "A",
+    img: "/images/demon_slayer/doma.webp",
     bio: "Upper Rank 2, a psychopathic demon manipulating deadly freezing ice.",
   },
   {
@@ -58,6 +63,7 @@ export const demon_slayerChars = [
     def: 88,
     spd: 94,
     tier: "A",
+    img: "/images/demon_slayer/akaza.jpg",
     bio: "Upper Rank 3, a martial arts master who adapts to battle spirit.",
   },
   {
@@ -68,6 +74,7 @@ export const demon_slayerChars = [
     def: 95,
     spd: 85,
     tier: "B",
+    img: "/images/demon_slayer/hantengu.jpg",
     bio: "Upper Rank 4, splitting into terrifying emotional manifestations.",
   },
   {
@@ -78,6 +85,7 @@ export const demon_slayerChars = [
     def: 88,
     spd: 82,
     tier: "B",
+    img: "/images/demon_slayer/gyokko.jpg",
     bio: "Upper Rank 5, an artist of death reshaping flesh and water.",
   },
   {
@@ -88,6 +96,7 @@ export const demon_slayerChars = [
     def: 80,
     spd: 90,
     tier: "B",
+    img: "/images/demon_slayer/gyutaro.jpg",
     bio: "Upper Rank 6, utilizing lethal blood sickles and extreme poison.",
   },
   {
@@ -98,6 +107,7 @@ export const demon_slayerChars = [
     def: 75,
     spd: 80,
     tier: "C",
+    img: "/images/demon_slayer/daki.png",
     bio: "Upper Rank 6, controlling sharp, sentient Obi belts.",
   },
   {
@@ -108,6 +118,7 @@ export const demon_slayerChars = [
     def: 94,
     spd: 85,
     tier: "A",
+    img: "/images/demon_slayer/gyomei.jpg",
     bio: "The strongest Hashira wielding a devastating spiked flail.",
   },
   {
@@ -118,6 +129,7 @@ export const demon_slayerChars = [
     def: 85,
     spd: 92,
     tier: "A",
+    img: "/images/demon_slayer/sanemi.jpg",
     bio: "The Wind Hashira with intoxicating rare blood and fierce attacks.",
   },
   {
@@ -128,6 +140,7 @@ export const demon_slayerChars = [
     def: 92,
     spd: 90,
     tier: "A",
+    img: "/images/demon_slayer/giyu.jpg",
     bio: "The Water Hashira with the impenetrable 'Dead Calm' defense.",
   },
   {
@@ -138,6 +151,7 @@ export const demon_slayerChars = [
     def: 82,
     spd: 93,
     tier: "A",
+    img: "/images/demon_slayer/obanai.jpg",
     bio: "The Serpent Hashira possessing wildly unpredictable swordplay.",
   },
   {
@@ -148,6 +162,7 @@ export const demon_slayerChars = [
     def: 80,
     spd: 95,
     tier: "A",
+    img: "/images/demon_slayer/muichiro.jpg",
     bio: "The Mist Hashira and child prodigy of obscure movement.",
   },
   {
@@ -158,6 +173,7 @@ export const demon_slayerChars = [
     def: 80,
     spd: 88,
     tier: "B",
+    img: "/images/demon_slayer/mitsuri.jpg",
     bio: "The Love Hashira boasting massive muscular density and flexibility.",
   },
   {
@@ -168,16 +184,18 @@ export const demon_slayerChars = [
     def: 85,
     spd: 94,
     tier: "B",
+    img: "/images/demon_slayer/tengen.jpg",
     bio: "The Sound Hashira calculating battle via a 'Musical Score'.",
   },
   {
-    id: 98,
+    id: 108,
     universe: "demon_slayer",
     name: "Kyojuro Rengoku",
     atk: 90,
     def: 85,
     spd: 89,
     tier: "A",
+    img: "/images/demon_slayer/rengoku.jpg",
     bio: "The Flame Hashira with an unyielding spirit and blazing strikes.",
   },
   {
@@ -188,6 +206,7 @@ export const demon_slayerChars = [
     def: 70,
     spd: 96,
     tier: "B",
+    img: "/images/demon_slayer/shinobu.jpg",
     bio: "The Insect Hashira acting as a master poisoner and combat medic.",
   },
   {
@@ -198,6 +217,7 @@ export const demon_slayerChars = [
     def: 75,
     spd: 99,
     tier: "A",
+    img: "/images/demon_slayer/zenitsu.jpg",
     bio: "A cowardly boy who becomes a lightning-fast demon slayer while asleep.",
   },
 
@@ -210,6 +230,7 @@ export const demon_slayerChars = [
     def: 85,
     spd: 88,
     tier: "B",
+    img: "/images/demon_slayer/inosuke.jpg",
     bio: "A wild warrior with Beast Breathing and acute spatial awareness.",
   },
   {
@@ -220,6 +241,7 @@ export const demon_slayerChars = [
     def: 82,
     spd: 94,
     tier: "A",
+    img: "/images/demon_slayer/kanao.jpg",
     bio: "User of Flower Breathing with extraordinary visual prowess.",
   },
   {
@@ -230,6 +252,7 @@ export const demon_slayerChars = [
     def: 92,
     spd: 88,
     tier: "A",
+    img: "/images/demon_slayer/nezuko.jpg",
     bio: "A unique demon who fights with Blood Demon Art: Exploding Blood.",
   },
   {
@@ -240,6 +263,7 @@ export const demon_slayerChars = [
     def: 80,
     spd: 93,
     tier: "B",
+    img: "/images/demon_slayer/kaigaku.webp",
     bio: "Upper Rank 6 wielding dark lightning and Breath of Thunder.",
   },
   {
@@ -250,6 +274,7 @@ export const demon_slayerChars = [
     def: 82,
     spd: 80,
     tier: "C",
+    img: "/images/demon_slayer/enmu.jpg",
     bio: "Lower Rank 1 who traps enemies in inescapable nightmare dreams.",
   },
   {
@@ -260,6 +285,7 @@ export const demon_slayerChars = [
     def: 88,
     spd: 84,
     tier: "C",
+    img: "/images/demon_slayer/rui.jpg",
     bio: "Lower Rank 5 using sharp steel threads to trap and slice prey.",
   },
   {
@@ -270,6 +296,7 @@ export const demon_slayerChars = [
     def: 90,
     spd: 78,
     tier: "B",
+    img: "/images/demon_slayer/genya.jpg",
     bio: "Fights with a shotgun and temporary demon transformation.",
   },
   {
@@ -280,6 +307,7 @@ export const demon_slayerChars = [
     def: 85,
     spd: 80,
     tier: "B",
+    img: "/images/demon_slayer/tamayo.jpg",
     bio: "A doctor demon using Blood Bewitchment for lethal tactical support.",
   },
   {
@@ -290,6 +318,7 @@ export const demon_slayerChars = [
     def: 80,
     spd: 85,
     tier: "C",
+    img: "/images/demon_slayer/yushiro.png",
     bio: "Provides invisibility and shared vision via paper talismans.",
   },
   {
@@ -300,6 +329,7 @@ export const demon_slayerChars = [
     def: 85,
     spd: 82,
     tier: "B",
+    img: "/images/demon_slayer/sakonji.jpg",
     bio: "The former Water Hashira and legendary mentor to Tanjiro.",
   },
 ];

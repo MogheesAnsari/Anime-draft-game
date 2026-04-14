@@ -8,6 +8,7 @@ export const solo_levelingChars = [
     def: 99,
     spd: 100,
     tier: "S+",
+    img: "/images/solo_leveling/sung.jpg",
     bio: "The absolute ruler of the dead.",
   },
   {
@@ -18,6 +19,7 @@ export const solo_levelingChars = [
     def: 98,
     spd: 95,
     tier: "S+",
+    img: "/images/solo_leveling/antares.jpg",
     bio: "The Monarch of Destruction and the strongest dragon.",
   },
   {
@@ -28,6 +30,7 @@ export const solo_levelingChars = [
     def: 95,
     spd: 90,
     tier: "S",
+    img: "/images/solo_leveling/bellion.jpg",
     bio: "The Grand Marshal of the Shadow Army.",
   },
   {
@@ -38,6 +41,7 @@ export const solo_levelingChars = [
     def: 88,
     spd: 94,
     tier: "A",
+    img: "/images/solo_leveling/igris.jpg",
     bio: "The Blood-Red Commander and loyal swordsman.",
   },
   {
@@ -48,6 +52,7 @@ export const solo_levelingChars = [
     def: 85,
     spd: 98,
     tier: "A",
+    img: "/images/solo_leveling/beru.jpg",
     bio: "The Shadow Ant King, a ruthless and rapid assassin.",
   },
   {
@@ -58,6 +63,7 @@ export const solo_levelingChars = [
     def: 98,
     spd: 80,
     tier: "S",
+    img: "/images/solo_leveling/thomas.jpg",
     bio: "The Goliath, a National Level Hunter with impenetrable defense.",
   },
   {
@@ -68,6 +74,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 92,
     tier: "A",
+    img: "/images/solo_leveling/liu.jpg",
     bio: "China's strongest National Level Hunter and dual-wielder.",
   },
   {
@@ -78,6 +85,7 @@ export const solo_levelingChars = [
     def: 88,
     spd: 88,
     tier: "A",
+    img: "/images/solo_leveling/reed.jpg",
     bio: "A National Level Hunter embodying the spiritual body of a dragon.",
   },
   {
@@ -88,6 +96,7 @@ export const solo_levelingChars = [
     def: 88,
     spd: 82,
     tier: "B",
+    img: "/images/solo_leveling/hwang.jpg",
     bio: "A brutal S-Rank hunter and physical powerhouse.",
   },
   {
@@ -98,6 +107,7 @@ export const solo_levelingChars = [
     def: 80,
     spd: 95,
     tier: "A",
+    img: "/images/solo_leveling/cha.jpg",
     bio: "Korea's fastest S-Rank swordswoman.",
   },
   {
@@ -108,6 +118,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 85,
     tier: "A",
+    img: "/images/solo_leveling/go.jpg",
     bio: "The Chairman and secret vessel of the Rulers.",
   },
   {
@@ -118,6 +129,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 82,
     tier: "B",
+    img: "/images/solo_leveling/baek.jpg",
     bio: "Guild Master possessing incredible Beast Transformation.",
   },
   {
@@ -128,6 +140,7 @@ export const solo_levelingChars = [
     def: 75,
     spd: 80,
     tier: "B",
+    img: "/images/solo_leveling/choi.jpg",
     bio: "The Ultimate Hunter specializing in massive fire magic.",
   },
   {
@@ -138,6 +151,7 @@ export const solo_levelingChars = [
     def: 95,
     spd: 70,
     tier: "B",
+    img: "/images/solo_leveling/iron.jpg",
     bio: "A massive Shadow Knight specializing in heavy aggro defense.",
   },
   {
@@ -148,6 +162,7 @@ export const solo_levelingChars = [
     def: 80,
     spd: 75,
     tier: "B",
+    img: "/images/solo_leveling/tusk.jpg",
     bio: "A Shadow High Orc firing devastating magical bombardments.",
   },
   {
@@ -158,6 +173,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 80,
     tier: "B",
+    img: "/images/solo_leveling/greed.jpg",
     bio: "A shadow consumed by avarice and raw power.",
   },
   {
@@ -168,6 +184,7 @@ export const solo_levelingChars = [
     def: 94,
     spd: 90,
     tier: "S",
+    img: "/images/solo_leveling/kamish.jpg",
     bio: "Humanity's greatest disaster, a dragon of pure ruin.",
   },
   {
@@ -178,6 +195,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 88,
     tier: "S",
+    img: "/images/solo_leveling/the_architect.jpg",
     bio: "Creator of the System, a multi-armed mastermind.",
   },
   {
@@ -188,6 +206,7 @@ export const solo_levelingChars = [
     def: 85,
     spd: 90,
     tier: "A",
+    img: "/images/solo_leveling/querehsha.webp",
     bio: "The Monarch of Plagues utilizing deadly venom.",
   },
   {
@@ -198,6 +217,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 88,
     tier: "S",
+    img: "/images/solo_leveling/baran.jpg",
     bio: "The Monarch of White Flames and lord of demons.",
   },
 
@@ -210,6 +230,7 @@ export const solo_levelingChars = [
     def: 92,
     spd: 90,
     tier: "S",
+    img: "/images/solo_leveling/yogumunt.jpg",
     bio: "The Monarch of Transfiguration and a master of spatial traps.",
   },
   {
@@ -220,6 +241,7 @@ export const solo_levelingChars = [
     def: 88,
     spd: 97,
     tier: "S",
+    img: "/images/solo_leveling/sillad.jpg",
     bio: "The Monarch of Frost who can freeze an entire army in seconds.",
   },
   {
@@ -230,6 +252,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 94,
     tier: "S",
+    img: "/images/solo_leveling/rakan.webp",
     bio: "The Monarch of Fangs with animalistic speed and raw brutality.",
   },
   {
@@ -240,6 +263,7 @@ export const solo_levelingChars = [
     def: 85,
     spd: 98,
     tier: "B",
+    img: "/images/solo_leveling/kaisel.jpg",
     bio: "Sung Jin-Woo's loyal wyvern providing aerial dominance.",
   },
   {
@@ -250,6 +274,7 @@ export const solo_levelingChars = [
     def: 94,
     spd: 82,
     tier: "B",
+    img: "/images/solo_leveling/jima.png",
     bio: "A Shadow Naga with immense physical strength and water-based defense.",
   },
   {
@@ -260,6 +285,7 @@ export const solo_levelingChars = [
     def: 96,
     spd: 65,
     tier: "B",
+    img: "/images/solo_leveling/tank.jpg",
     bio: "A Shadow Ice Bear acting as the ultimate heavy-duty frontliner.",
   },
   {
@@ -270,6 +296,7 @@ export const solo_levelingChars = [
     def: 86,
     spd: 88,
     tier: "A",
+    img: "/images/solo_leveling/lennart.jpg",
     bio: "Germany's strongest hunter and a vessel for the Rulers' power.",
   },
   {
@@ -280,6 +307,7 @@ export const solo_levelingChars = [
     def: 98,
     spd: 70,
     tier: "B",
+    img: "/images/solo_leveling/yuri.jpg",
     bio: "A master of barriers capable of trapping S-Rank magical beasts.",
   },
   {
@@ -290,6 +318,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 90,
     tier: "A",
+    img: "/images/solo_leveling/siddharth.jpg",
     bio: "India's National Level Hunter and a powerhouse of spiritual energy.",
   },
   {
@@ -300,6 +329,7 @@ export const solo_levelingChars = [
     def: 93,
     spd: 95,
     tier: "S",
+    img: "/images/solo_leveling/the_beast.jpg",
     bio: "The king of beasts who hunts monarchs with primal instincts.",
   },
 ];

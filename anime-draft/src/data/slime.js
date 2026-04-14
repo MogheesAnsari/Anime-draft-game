@@ -1,5 +1,4 @@
 export const slimeChars = [
-  // --- EXISTING 20 CHARACTERS ---
   {
     id: 181,
     universe: "slime",
@@ -220,8 +219,7 @@ export const slimeChars = [
     img: "/images/slime/ramiris.jpg",
     bio: "Fairy Queen utilizing absolute labyrinth creation for support.",
   },
-
-  // --- 10 NEW CHARACTERS (TOTAL 30) ---
+  // --- 10 NEW CHARACTERS ADDED & UPDATED ---
   {
     id: 1801,
     universe: "slime",
@@ -274,6 +272,7 @@ export const slimeChars = [
     def: 88,
     spd: 95,
     tier: "A",
+    img: "/images/slime/hinata.jpg",
     bio: "A master swordswoman with the lethal 7-strike 'Dead End Rainbow'.",
   },
   {
@@ -284,6 +283,7 @@ export const slimeChars = [
     def: 100,
     spd: 82,
     tier: "S",
+    img: "/images/slime/dagruel.webp",
     bio: "An ancient giant with absolute magic immunity and earth-shattering power.",
   },
   {
@@ -294,6 +294,7 @@ export const slimeChars = [
     def: 82,
     spd: 80,
     tier: "B",
+    img: "/images/slime/adalman.jpg",
     bio: "The Wight King of the Labyrinth providing massive undead support.",
   },
   {
@@ -304,6 +305,7 @@ export const slimeChars = [
     def: 84,
     spd: 94,
     tier: "A",
+    img: "/images/slime/kumara.jpg",
     bio: "The Nine-Tailed Beast commanding various mythic animal spirits.",
   },
   {
@@ -314,16 +316,18 @@ export const slimeChars = [
     def: 95,
     spd: 85,
     tier: "B",
+    img: "/images/slime/beretta.jpg",
     bio: "An Arch-Golem spirit combining mechanical defense and holy magic.",
   },
   {
     id: 1810,
     universe: "slime",
-    name: "Geld II",
-    atk: 90,
-    def: 99,
-    spd: 75,
+    name: "Apito",
+    atk: 92,
+    def: 82,
+    spd: 97,
     tier: "A",
-    bio: "The current Orc King and the ultimate vanguard of Tempest.",
+    img: "/images/slime/apito.jpg",
+    bio: "The Insect Queen and Zegion's counterpart, specializing in lethal needle strikes.",
   },
 ];

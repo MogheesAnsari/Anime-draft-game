@@ -8,6 +8,7 @@ export const jjkChars = [
     def: 95,
     spd: 92,
     tier: "S+",
+    img: "/images/jjk/sukuna.jpg",
     bio: "The absolute pinnacle of Jujutsu sorcery.",
   },
   {
@@ -18,6 +19,7 @@ export const jjkChars = [
     def: 100,
     spd: 95,
     tier: "S+",
+    img: "/images/jjk/gojo.jpg",
     bio: "Wielder of the Limitless and the Six Eyes.",
   },
   {
@@ -28,6 +30,7 @@ export const jjkChars = [
     def: 88,
     spd: 88,
     tier: "S",
+    img: "/images/jjk/yuta.jpg",
     bio: "Prodigy capable of infinite cursed energy and copy.",
   },
   {
@@ -38,6 +41,7 @@ export const jjkChars = [
     def: 92,
     spd: 85,
     tier: "S",
+    img: "/images/jjk/kenjaku.jpg",
     bio: "An ancient mastermind wielding Curse Manipulation.",
   },
   {
@@ -48,6 +52,7 @@ export const jjkChars = [
     def: 99,
     spd: 90,
     tier: "S",
+    img: "/images/jjk/mahoraga.jpg",
     bio: "The divine general capable of adapting to any phenomenon.",
   },
   {
@@ -58,6 +63,7 @@ export const jjkChars = [
     def: 90,
     spd: 98,
     tier: "S",
+    img: "/images/jjk/toji.jpg",
     bio: "The Sorcerer Killer with physical perfection.",
   },
   {
@@ -68,6 +74,7 @@ export const jjkChars = [
     def: 90,
     spd: 97,
     tier: "A",
+    img: "/images/jjk/maki.jpg",
     bio: "A heavenly restricted warrior matching Toji's prowess.",
   },
   {
@@ -78,6 +85,7 @@ export const jjkChars = [
     def: 100,
     spd: 85,
     tier: "A",
+    img: "/images/jjk/hakari.jpg",
     bio: "An immortal gambler riding an endless jackpot.",
   },
   {
@@ -88,6 +96,7 @@ export const jjkChars = [
     def: 80,
     spd: 96,
     tier: "A",
+    img: "/images/jjk/kashimo_base.jpg",
     bio: "God of Lightning who unleashes a mythic beast form.",
   },
   {
@@ -98,6 +107,7 @@ export const jjkChars = [
     def: 85,
     spd: 88,
     tier: "A",
+    img: "/images/jjk/yuki.jpg",
     bio: "A Special Grade adding immense virtual mass to her strikes.",
   },
   {
@@ -108,6 +118,7 @@ export const jjkChars = [
     def: 88,
     spd: 85,
     tier: "A",
+    img: "/images/jjk/geto.jpg",
     bio: "A Special Grade commanding thousands of cursed spirits.",
   },
   {
@@ -118,6 +129,7 @@ export const jjkChars = [
     def: 95,
     spd: 88,
     tier: "A",
+    img: "/images/jjk/mahito.jpg",
     bio: "A disaster curse rewriting the shape of human souls.",
   },
   {
@@ -128,6 +140,7 @@ export const jjkChars = [
     def: 75,
     spd: 94,
     tier: "A",
+    img: "/images/jjk/jogo.jpg",
     bio: "A highly destructive volcano curse with massive firepower.",
   },
   {
@@ -138,6 +151,7 @@ export const jjkChars = [
     def: 94,
     spd: 80,
     tier: "B",
+    img: "/images/jjk/hanami.jpg",
     bio: "A durable nature curse with immense regenerative plants.",
   },
   {
@@ -148,6 +162,7 @@ export const jjkChars = [
     def: 90,
     spd: 75,
     tier: "B",
+    img: "/images/jjk/dagon.jpg",
     bio: "An ocean curse whose Domain unleashes an endless swarm.",
   },
   {
@@ -158,6 +173,7 @@ export const jjkChars = [
     def: 85,
     spd: 85,
     tier: "B",
+    img: "/images/jjk/choso.jpg",
     bio: "A Death Painting Womb mastering Piercing Blood.",
   },
   {
@@ -168,6 +184,7 @@ export const jjkChars = [
     def: 90,
     spd: 90,
     tier: "B",
+    img: "/images/jjk/yuji.jpg",
     bio: "A martial arts powerhouse landing continuous Black Flashes.",
   },
   {
@@ -178,6 +195,7 @@ export const jjkChars = [
     def: 82,
     spd: 85,
     tier: "B",
+    img: "/images/jjk/megumi.jpg",
     bio: "Genius shadow user commanding the Ten Shadows Technique.",
   },
   {
@@ -188,6 +206,7 @@ export const jjkChars = [
     def: 75,
     spd: 80,
     tier: "C",
+    img: "/images/jjk/nobara.jpg",
     bio: "A fierce sorcerer utilizing lethal Resonance.",
   },
   {
@@ -198,6 +217,7 @@ export const jjkChars = [
     def: 85,
     spd: 82,
     tier: "B",
+    img: "/images/jjk/nanami.jpg",
     bio: "A disciplined combatant forcing critical hits at a 7:3 ratio.",
   },
 
@@ -210,6 +230,7 @@ export const jjkChars = [
     def: 75,
     spd: 100,
     tier: "S",
+    img: "/images/jjk/kashimo.webp",
     bio: "A one-time transformation that turns the body into electrical phenomena.",
   },
   {
@@ -220,6 +241,7 @@ export const jjkChars = [
     def: 88,
     spd: 100,
     tier: "A",
+    img: "/images/jjk/naoya.webp",
     bio: "Master of Projection Sorcery capable of reaching subsonic speeds.",
   },
   {
@@ -230,6 +252,7 @@ export const jjkChars = [
     def: 85,
     spd: 82,
     tier: "A",
+    img: "/images/jjk/ryu.webp",
     bio: "The man with the highest cursed energy discharge in history.",
   },
   {
@@ -240,6 +263,7 @@ export const jjkChars = [
     def: 94,
     spd: 88,
     tier: "A",
+    img: "/images/jjk/takako.jpg",
     bio: "A sky-manipulator capable of turning space into a surface like cloth.",
   },
   {
@@ -250,6 +274,7 @@ export const jjkChars = [
     def: 92,
     spd: 85,
     tier: "A",
+    img: "/images/jjk/hiromi.jpg",
     bio: "A legal genius whose Domain can confiscate an opponent's techniques.",
   },
   {
@@ -260,6 +285,7 @@ export const jjkChars = [
     def: 88,
     spd: 86,
     tier: "A",
+    img: "/images/jjk/uraume.jpg",
     bio: "Sukuna's loyal attendant wielding devastating Frost Calm ice magic.",
   },
   {
@@ -270,6 +296,7 @@ export const jjkChars = [
     def: 82,
     spd: 84,
     tier: "B",
+    img: "/images/jjk/kurourushi.jpg",
     bio: "A terrifying cockroach curse wielding the Fester Life Blade.",
   },
   {
@@ -280,6 +307,7 @@ export const jjkChars = [
     def: 80,
     spd: 78,
     tier: "C",
+    img: "/images/jjk/takuma.jpg",
     bio: "Uses the Auspicious Beast Summon to channel ancient powers.",
   },
   {
@@ -290,6 +318,7 @@ export const jjkChars = [
     def: 95,
     spd: 82,
     tier: "B",
+    img: "/images/jjk/atsuya.webp",
     bio: "The strongest Grade 1 sorcerer who wins via pure swordsmanship and New Shadow Style.",
   },
   {
@@ -300,6 +329,7 @@ export const jjkChars = [
     def: 82,
     spd: 85,
     tier: "B",
+    img: "/images/jjk/mei.jpg",
     bio: "A mercenary sorcerer wielding a massive axe and lethal Bird Strike.",
   },
 ];
