@@ -318,7 +318,7 @@ export const solo_levelingChars = [
     def: 90,
     spd: 90,
     tier: "A",
-    img: "/images/solo_leveling/siddharth.jpg",
+    img: "/images/solo_leveling/siddharth.jpeg",
     bio: "India's National Level Hunter and a powerhouse of spiritual energy.",
   },
   {

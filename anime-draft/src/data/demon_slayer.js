@@ -74,7 +74,7 @@ export const demon_slayerChars = [
     def: 95,
     spd: 85,
     tier: "B",
-    img: "/images/demon_slayer/hantengu.jpg",
+    img: "/images/demon_slayer/hantengu.jpeg",
     bio: "Upper Rank 4, splitting into terrifying emotional manifestations.",
   },
   {
