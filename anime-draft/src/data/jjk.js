@@ -19,7 +19,7 @@ export const jjkChars = [
     def: 100,
     spd: 95,
     tier: "S+",
-    img: "/images/jjk/gojo.jpg",
+    img: "/images/jjk/gojo.webp",
     bio: "Wielder of the Limitless and the Six Eyes.",
   },
   {
@@ -41,7 +41,7 @@ export const jjkChars = [
     def: 92,
     spd: 85,
     tier: "S",
-    img: "/images/jjk/kenjaku.jpg",
+    img: "/images/jjk/kenjaku.webp",
     bio: "An ancient mastermind wielding Curse Manipulation.",
   },
   {
@@ -74,7 +74,7 @@ export const jjkChars = [
     def: 90,
     spd: 97,
     tier: "A",
-    img: "/images/jjk/maki.jpg",
+    img: "/images/jjk/maki.webp",
     bio: "A heavenly restricted warrior matching Toji's prowess.",
   },
   {
@@ -85,7 +85,7 @@ export const jjkChars = [
     def: 100,
     spd: 85,
     tier: "A",
-    img: "/images/jjk/hakari.jpg",
+    img: "/images/jjk/kinji.jpg",
     bio: "An immortal gambler riding an endless jackpot.",
   },
   {
@@ -96,7 +96,7 @@ export const jjkChars = [
     def: 80,
     spd: 96,
     tier: "A",
-    img: "/images/jjk/kashimo_base.jpg",
+    img: "/images/jjk/kashimo.webp",
     bio: "God of Lightning who unleashes a mythic beast form.",
   },
   {
@@ -107,7 +107,7 @@ export const jjkChars = [
     def: 85,
     spd: 88,
     tier: "A",
-    img: "/images/jjk/yuki.jpg",
+    img: "/images/jjk/yuki.png",
     bio: "A Special Grade adding immense virtual mass to her strikes.",
   },
   {
@@ -118,7 +118,7 @@ export const jjkChars = [
     def: 88,
     spd: 85,
     tier: "A",
-    img: "/images/jjk/geto.jpg",
+    img: "/images/jjk/suguru.png",
     bio: "A Special Grade commanding thousands of cursed spirits.",
   },
   {
@@ -151,7 +151,7 @@ export const jjkChars = [
     def: 94,
     spd: 80,
     tier: "B",
-    img: "/images/jjk/hanami.jpg",
+    img: "/images/jjk/hanami.webp",
     bio: "A durable nature curse with immense regenerative plants.",
   },
   {
@@ -217,7 +217,7 @@ export const jjkChars = [
     def: 85,
     spd: 82,
     tier: "B",
-    img: "/images/jjk/nanami.jpg",
+    img: "/images/jjk/kento.jpg",
     bio: "A disciplined combatant forcing critical hits at a 7:3 ratio.",
   },
 
@@ -329,7 +329,7 @@ export const jjkChars = [
     def: 82,
     spd: 85,
     tier: "B",
-    img: "/images/jjk/mei.jpg",
+    img: "/images/jjk/mei.jpeg",
     bio: "A mercenary sorcerer wielding a massive axe and lethal Bird Strike.",
   },
 ];
