@@ -1,66 +1,81 @@
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+// .env file load karo
+dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// 1. HEALTH CHECK
-app.get("/", (req, res) => {
-  res.send("Anime Draft API is running!");
-});
+const MONGO_URI = process.env.MONGO_URI;
+const PORT = process.env.PORT || 5000;
 
-// 2. AUTH ROUTES
-app.post("/api/login", (req, res) => {
-  res.json({ success: true, message: "Logged in", user: req.body });
-});
+let isDbConnected = false;
 
-app.post("/api/register", (req, res) => {
-  res.json({ success: true, message: "Registered", user: req.body });
-});
+// 🔗 Database Connection Logic
+if (!MONGO_URI) {
+  console.error("❌ ERROR: MONGO_URI is missing in your .env file!");
+} else {
+  mongoose
+    .connect(MONGO_URI)
+    .then(() => {
+      console.log("✅ SUCCESS: MongoDB Connected Perfectly.");
+      isDbConnected = true;
+    })
+    .catch((err) => {
+      console.error("❌ ERROR: MongoDB Connection Failed!");
+      console.error("Reason:", err.message);
+      isDbConnected = false;
+    });
+}
 
-// 3. LEADERBOARD API (Fixes 404)
+// 📂 DATABASE SCHEMA
+const UserStatsSchema = new mongoose.Schema({
+  username: { type: String, unique: true, required: true },
+  wins: { type: Number, default: 0 },
+  totalGames: { type: Number, default: 0 },
+});
+const UserStats = mongoose.model("UserStats", UserStatsSchema);
+
+// 🎭 DUMMY DATA (Fallback)
+const dummyRankings = [
+  { username: "SoloLevelingFan", wins: 15, totalGames: 20 },
+  { username: "NarutoUzuma", wins: 12, totalGames: 25 },
+  { username: "LuffyD", wins: 10, totalGames: 18 },
+];
+
+// 🏆 LEADERBOARD API
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    const rankings = [
-      { username: "SoloLevelingFan", wins: 15, totalGames: 20 },
-      { username: "NarutoUzuma", wins: 12, totalGames: 25 },
-      { username: "LuffyD", wins: 10, totalGames: 18 },
-      { username: "Zoro_Lost", wins: 8, totalGames: 15 },
-    ];
-    res.status(200).json(rankings);
+    if (isDbConnected) {
+      const actualRankings = await UserStats.find()
+        .sort({ wins: -1 })
+        .limit(10);
+      if (actualRankings.length > 0)
+        return res.status(200).json(actualRankings);
+    }
+    res.status(200).json(dummyRankings);
   } catch (error) {
-    res.status(500).json({ error: "Leaderboard fetch error" });
+    res.status(200).json(dummyRankings);
   }
 });
 
-// 4. DASHBOARD API (Fixes 404)
-app.get("/api/dashboard/:username", async (req, res) => {
-  try {
-    const { username } = req.params;
-    res.status(200).json({
-      username: username,
-      wins: 0,
-      totalGames: 0,
-      history: [],
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Dashboard fetch error" });
-  }
-});
-
-// 5. BATTLE API
+// ⚔️ BATTLE API (Actual Calculation + DB Update)
 app.post("/api/battle", async (req, res) => {
   try {
     const { username, mode, teams } = req.body;
-    if (!teams || teams.length === 0)
-      return res.status(400).json({ error: "No teams" });
-
+    const player = username || "Guest";
     const rawMode = String(mode)
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
 
+    if (!teams || teams.length === 0)
+      return res.status(400).json({ error: "No teams provided" });
+
+    // Individual Scores Calculate karo
     const individualScores = teams.map((team) => {
       let total = 0;
       const captain = team.captain || { atk: 0, def: 0, spd: 0 };
@@ -88,30 +103,35 @@ app.post("/api/battle", async (req, res) => {
       return Math.round(total);
     });
 
-    let finalScores = individualScores;
     let winnerIndex = 0;
-
+    // 🧠 TEAM MODE LOGIC: Player 1+2 vs Player 3+4
     if (rawMode.includes("team") || rawMode.includes("2v2")) {
       const team1Total = individualScores[0] + (individualScores[1] || 0);
       const team2Total =
         (individualScores[2] || 0) + (individualScores[3] || 0);
-      finalScores = [team1Total, team2Total];
       winnerIndex = team1Total >= team2Total ? 0 : 1;
     } else {
       winnerIndex = individualScores.indexOf(Math.max(...individualScores));
     }
 
+    // 🏆 Update Actual DB Ranking
+    if (isDbConnected && player !== "Guest") {
+      await UserStats.findOneAndUpdate(
+        { username: player },
+        { $inc: { totalGames: 1, wins: winnerIndex === 0 ? 1 : 0 } },
+        { upsert: true },
+      );
+    }
+
     res.status(200).json({
       success: true,
-      scores: finalScores,
+      scores: individualScores,
       wins: winnerIndex === 0 ? 1 : 0,
-      fullHistory: [],
-      totalGames: 1,
     });
   } catch (error) {
+    console.error("Battle Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
