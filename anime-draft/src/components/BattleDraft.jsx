@@ -61,7 +61,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
       setDbLoading(true);
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/characters?universe=${universe}`,
+          `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
         );
         if (res.data && res.data.length > 0) {
           setCharacterPool(res.data);

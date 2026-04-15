@@ -5,7 +5,14 @@ import axios from "axios";
 import "dotenv/config";
 
 const app = express();
-app.use(cors());
+// server.js update
+app.use(
+  cors({
+    origin: "*", // Ya phir apni frontend URL daal dein
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // 🔌 MONGODB CONNECTION

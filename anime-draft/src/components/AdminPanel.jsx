@@ -22,7 +22,7 @@ const AdminPanel = () => {
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/characters?universe=${universe}`,
+        `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
       );
       setCharacters(res.data);
     } catch (err) {
