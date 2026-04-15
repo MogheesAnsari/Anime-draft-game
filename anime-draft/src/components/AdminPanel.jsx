@@ -42,7 +42,7 @@ const AdminPanel = () => {
         let finalVal = value;
         // Limiters
         if (field === "iq")
-          finalVal = Math.max(0, Math.min(200, Number(value)));
+          finalVal = Math.max(0, Math.min(250, Number(value)));
         else if (["atk", "def", "spd"].includes(field))
           finalVal = Math.max(0, Math.min(100, Number(value)));
 
