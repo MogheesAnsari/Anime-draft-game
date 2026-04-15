@@ -2,11 +2,12 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import axios from "axios";
+import bcrypt from "bcryptjs"; // package.json ke mutabiq
 import "dotenv/config";
 
 const app = express();
 
-// ✅ CORS: Fixed for deployment
+// ✅ CORS: Open for deployment
 app.use(
   cors({
     origin: "*",
@@ -18,7 +19,7 @@ app.use(express.json());
 
 // 🔌 MONGODB CONNECTION
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/anime_draft")
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("🔥 DB CONNECTED: ANIME DRAFT ENGINE ONLINE"))
   .catch((err) => console.error("❌ DB ERROR:", err));
 
@@ -46,21 +47,25 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // -----------------------------------------
-// 🔐 AUTH ROUTES (Fixed 401 & 404 Issues)
+// 🔐 AUTH ROUTES (With Bcrypt Security)
 // -----------------------------------------
+
+// REGISTER
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const cleanUsername = username.trim().toUpperCase(); // Format sync
+    const cleanUsername = username.trim().toUpperCase();
 
     const existing = await User.findOne({ username: cleanUsername });
-    if (existing)
-      return res.status(400).json({ error: "USERNAME ALREADY EXISTS" });
+    if (existing) return res.status(400).json({ error: "USERNAME TAKEN" });
 
+    // Password Hashing
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
     const newUser = new User({
       username: cleanUsername,
-      password: password.trim(),
+      password: hashedPassword,
     });
+
     await newUser.save();
     res.status(201).json({ message: "COMMANDER REGISTERED" });
   } catch (err) {
@@ -68,23 +73,21 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+// LOGIN
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const cleanUsername = username.trim().toUpperCase(); // Matches register format
+    const cleanUsername = username.trim().toUpperCase();
 
-    // Find user with matching credentials
-    const user = await User.findOne({
-      username: cleanUsername,
-      password: password.trim(),
-    });
+    const user = await User.findOne({ username: cleanUsername });
+    if (!user) return res.status(401).json({ error: "COMMANDER NOT FOUND" });
 
-    if (user) {
-      res.json(user);
-    } else {
-      // Send 401 if not found
-      res.status(401).json({ error: "INVALID USERNAME OR PASSWORD" });
-    }
+    // Bcrypt Match Check
+    const isMatch = await bcrypt.compare(password.trim(), user.password);
+    if (!isMatch)
+      return res.status(401).json({ error: "INVALID CLEARANCE CODE" });
+
+    res.json(user);
   } catch (err) {
     res.status(500).json({ error: "SYSTEM ERROR" });
   }

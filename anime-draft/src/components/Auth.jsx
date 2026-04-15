@@ -11,30 +11,26 @@ export default function Auth() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const endpoint = isLogin ? "login" : "register";
-    const API_URL = "https://anime-draft-game-1.onrender.com/api/auth";
+    const API_BASE = "https://anime-draft-game-1.onrender.com/api/auth";
 
     try {
-      const res = await axios.post(`${API_URL}/${endpoint}`, {
+      const res = await axios.post(`${API_BASE}/${endpoint}`, {
         username: username.trim(),
         password: password.trim(),
       });
 
       if (isLogin) {
-        // Stats save karein aur lobby par jayein
         localStorage.setItem("commander", res.data.username);
         localStorage.setItem("userStats", JSON.stringify(res.data));
 
-        // Use window.location for a clean state refresh
-        window.location.href = "/modes";
+        // Navigation without refresh to avoid Vercel 404
+        navigate("/modes");
       } else {
-        alert("✅ REGISTRATION SUCCESSFUL! COMMANDER, NOW LOG IN.");
+        alert("✅ REGISTERED! AB LOGIN KAREIN.");
         setIsLogin(true);
-        setPassword(""); // Clear password for login
       }
     } catch (err) {
-      const errorMsg =
-        err.response?.data?.error || "❌ SERVER ERROR! TRY AGAIN.";
-      alert(errorMsg);
+      alert(err.response?.data?.error || "❌ ERROR: DB CHECK KAREIN");
     }
   };
 
@@ -51,7 +47,7 @@ export default function Auth() {
             placeholder="USERNAME"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white focus:border-[#ff8c32] outline-none"
+            className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white outline-none"
             required
           />
           <input
@@ -59,7 +55,7 @@ export default function Auth() {
             placeholder="PASSWORD"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white focus:border-[#ff8c32] outline-none"
+            className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white outline-none"
             required
           />
           <button
