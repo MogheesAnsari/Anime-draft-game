@@ -15,15 +15,14 @@ export default function Auth() {
 
     try {
       const res = await axios.post(`${API_BASE}/${endpoint}`, {
-        username: username.trim(),
+        // Trim() zaroori hai extra space hatane ke liye
+        username: username.trim().toUpperCase(),
         password: password.trim(),
       });
 
       if (isLogin) {
         localStorage.setItem("commander", res.data.username);
         localStorage.setItem("userStats", JSON.stringify(res.data));
-
-        // Navigation without refresh to avoid Vercel 404
         navigate("/modes");
       } else {
         alert("✅ REGISTERED! AB LOGIN KAREIN.");
@@ -46,7 +45,8 @@ export default function Auth() {
             type="text"
             placeholder="USERNAME"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            // 👇 Is logic se type karte waqt hi UPPERCASE ho jayega
+            onChange={(e) => setUsername(e.target.value.toUpperCase())}
             className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white outline-none"
             required
           />

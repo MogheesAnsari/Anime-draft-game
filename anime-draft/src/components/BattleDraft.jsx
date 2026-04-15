@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { SLOTS, api } from "../engine"; // 👈 getRandomUniqueByUniverse HATA DIYA
-import axios from "axios"; // 👈 AXIOS IMPORT KIYA DB KE LIYE
+import { SLOTS, api } from "../engine";
+import axios from "axios";
 import { Sparkles, Info, X } from "lucide-react";
 
 export default function BattleDraft({ user, onBattleEnd }) {
@@ -20,11 +20,9 @@ export default function BattleDraft({ user, onBattleEnd }) {
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(true);
 
-  // 📡 MONGODB STATES
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
 
-  // 🧠 THE MODE FIX: Team Mode gets 4 turns!
   const rawString = String(mode || "pve")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
@@ -50,13 +48,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
   }
 
   useEffect(() => {
-    console.log(
-      `[SYSTEM DIAGNOSTIC] Mode: "${mode}" | Turns: ${maxTurns} | isTeamMode: ${isTeamMode}`,
-    );
-  }, [mode, maxTurns, isTeamMode]);
-
-  // 🚀 FETCH DATA FROM MONGODB
-  useEffect(() => {
     const fetchFromDB = async () => {
       setDbLoading(true);
       try {
@@ -66,60 +57,34 @@ export default function BattleDraft({ user, onBattleEnd }) {
         if (res.data && res.data.length > 0) {
           setCharacterPool(res.data);
         } else {
-          alert(
-            `NO DATA FOUND FOR ${universe.toUpperCase()}! ADMIN PANEL MEIN SYNC KAREIN.`,
-          );
+          alert(`NO DATA FOUND FOR ${universe.toUpperCase()}!`);
           navigate("/universe");
         }
       } catch (err) {
-        console.error("DB Fetch Error:", err);
-        alert("DATABASE CONNECTION ERROR!");
+        console.error("DB Error:", err);
       }
       setDbLoading(false);
     };
-
     fetchFromDB();
   }, [universe, navigate]);
 
-  // 🧠 CUSTOM RANDOM FUNCTION (REPLACES ENGINE LOGIC)
   const getLocalRandomUnique = (usedIds, pool) => {
     const available = pool.filter((c) => !usedIds.includes(c.id));
     if (available.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * available.length);
-    return available[randomIndex];
+    return available[Math.floor(Math.random() * available.length)];
   };
 
   const themeColors = {
-    1: {
-      from: "from-orange-500",
-      to: "to-red-600",
-      border: "border-orange-500",
-      text: "text-orange-500",
-    },
-    2: {
-      from: "from-blue-500",
-      to: "to-cyan-600",
-      border: "border-blue-500",
-      text: "text-blue-500",
-    },
-    3: {
-      from: "from-green-500",
-      to: "to-emerald-600",
-      border: "border-green-500",
-      text: "text-green-500",
-    },
-    4: {
-      from: "from-purple-500",
-      to: "to-pink-600",
-      border: "border-purple-500",
-      text: "text-purple-500",
-    },
+    1: { from: "from-orange-500", to: "to-red-600", bg: "bg-orange-500" },
+    2: { from: "from-blue-500", to: "to-cyan-600", bg: "bg-blue-500" },
+    3: { from: "from-green-500", to: "to-emerald-600", bg: "bg-green-500" },
+    4: { from: "from-purple-500", to: "to-pink-600", bg: "bg-purple-500" },
   };
   const theme = themeColors[playerTurn] || themeColors[1];
 
   const pull = () => {
-    const card = getLocalRandomUnique(used, characterPool); // 👈 DB POOL SE PULL
-    if (!card) return alert("Draft pool empty! No more characters available.");
+    const card = getLocalRandomUnique(used, characterPool);
+    if (!card) return alert("Draft pool empty!");
     setCurrent(card);
   };
 
@@ -138,12 +103,13 @@ export default function BattleDraft({ user, onBattleEnd }) {
     setCurrent(null);
   };
 
-  const handleNextPlayer = () => {
-    setCompletedTeams([...completedTeams, team]);
-    setTeam({});
-    setCurrent(null);
-    setSkips(1);
-    setPlayerTurn(playerTurn + 1);
+  const getHeaderText = () => {
+    if (isPvE) return "PVE DRAFT";
+    if (isTeamMode)
+      return playerTurn <= 2
+        ? `TEAM 1 (P${playerTurn})`
+        : `TEAM 2 (P${playerTurn})`;
+    return `PLAYER ${playerTurn} DRAFT`;
   };
 
   const fight = async () => {
@@ -153,7 +119,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
       let cpuTeam = {};
       let tempUsed = [...used];
       SLOTS.forEach((slot) => {
-        const cpuCard = getLocalRandomUnique(tempUsed, characterPool); // 👈 CPU BHI DB POOL SE LEGA
+        const cpuCard = getLocalRandomUnique(tempUsed, characterPool);
         if (cpuCard) {
           cpuTeam[slot.id] = cpuCard;
           tempUsed.push(cpuCard.id);
@@ -163,88 +129,96 @@ export default function BattleDraft({ user, onBattleEnd }) {
     }
 
     setLoading(true);
+
+    // 🧠 LOCAL CALCULATION FIRST
+    const calculatedScores = finalTeams.map((t) => {
+      let total = 0;
+      const strategist = t["support"];
+      const flatBoost = strategist
+        ? Math.round((Number(strategist.iq) || 100) * 0.05)
+        : 0;
+
+      const cap = t.captain || { atk: 0, def: 0, spd: 0 };
+      const capTotal =
+        (Number(cap.atk) || 0) +
+        flatBoost +
+        ((Number(cap.def) || 0) + flatBoost) +
+        ((Number(cap.spd) || 0) + flatBoost);
+      const aura = capTotal * 0.1;
+
+      Object.keys(t).forEach((slotId) => {
+        const char = t[slotId];
+        if (!char) return;
+
+        let atk = Number(char.atk) || 0;
+        let def = Number(char.def) || 0;
+        let spd = Number(char.spd) || 0;
+
+        if (slotId === "captain" || slotId === "vice_cap") {
+          atk += flatBoost;
+          def += flatBoost;
+          spd += flatBoost;
+        }
+
+        let base = atk + def + spd;
+        let bonus = 0;
+
+        if (slotId === "vice_cap") bonus = aura * 2;
+        if (slotId === "speedster") bonus = spd * 0.2;
+        if (slotId === "tank") bonus = def * 0.3;
+        if (slotId === "raw_power") bonus = atk * 0.4;
+        if (slotId === "support") bonus = 0;
+
+        total += slotId === "captain" ? base : base + bonus + aura;
+      });
+      return Math.round(total);
+    });
+
     try {
+      // 🚀 TRY BACKEND API
       const data = await api.fight({
-        username: user?.username || "Guest",
+        username:
+          localStorage.getItem("commander") || user?.username || "Guest",
         mode: mode || "pve",
         teams: finalTeams,
-      });
-
-      const calculatedScores = finalTeams.map((t) => {
-        let total = 0;
-        const cap = t.captain || { atk: 0, def: 0, spd: 0 };
-        const capTotal =
-          (Number(cap.atk) || 0) +
-          (Number(cap.def) || 0) +
-          (Number(cap.spd) || 0);
-        const aura = capTotal * 0.1;
-
-        Object.keys(t).forEach((slotId) => {
-          const char = t[slotId];
-          if (!char) return;
-          let base =
-            (Number(char.atk) || 0) +
-            (Number(char.def) || 0) +
-            (Number(char.spd) || 0);
-          let bonus = 0;
-          if (slotId === "vice_cap") bonus = aura * 2;
-          if (slotId === "speedster") bonus = (Number(char.spd) || 0) * 0.2;
-          if (slotId === "tank") bonus = (Number(char.def) || 0) * 0.3;
-          if (slotId === "raw_power") bonus = (Number(char.atk) || 0) * 0.4;
-          if (slotId === "support") bonus = 10;
-          total += slotId === "captain" ? base : base + bonus + aura;
-        });
-        return Math.round(total);
       });
 
       data.scores = calculatedScores;
       if (onBattleEnd)
         onBattleEnd(data.wins, data.fullHistory, data.totalGames);
-
       navigate("/result", {
-        state: {
-          result: data,
-          teams: finalTeams,
-          mode: mode,
-        },
+        state: { result: data, teams: finalTeams, mode: mode },
       });
     } catch (e) {
-      console.error(e);
-      alert("System Error: Backend API Call Failed.");
+      // 🛡️ FAIL-SAFE: Agar API fail hui toh local data pass kardo (NO MORE ERRORS)
+      console.warn("Backend Sync Failed. Continuing with Local Simulation.");
+      const fallbackData = {
+        scores: calculatedScores,
+        wins: 0,
+        fullHistory: [],
+        totalGames: 0,
+      };
+      navigate("/result", {
+        state: { result: fallbackData, teams: finalTeams, mode: mode },
+      });
     }
+
     setLoading(false);
   };
 
-  const isFull = Object.keys(team).length === SLOTS.length;
-
-  const formatUniverse = (u) => {
-    if (!u) return "UNKNOWN";
-    return u
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
-  const getHeaderText = () => {
-    if (isPvE) return "PVE DRAFT";
-    if (isTeamMode) {
-      return playerTurn <= 2
-        ? `TEAM 1 (PLAYER ${playerTurn})`
-        : `TEAM 2 (PLAYER ${playerTurn})`;
-    }
-    return `PLAYER ${playerTurn} DRAFT`;
-  };
-
-  // 🔄 DATABASE LOADING SCREEN (Matches your UI perfectly)
+  // 🌀 NEW PROFESSIONAL LOADING SCREEN
   if (dbLoading) {
     return (
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#050505] text-white uppercase font-sans">
-        <div className="text-3xl md:text-5xl font-black italic text-[#ff8c32] animate-pulse tracking-tighter">
-          FETCHING ASSETS...
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#050505] text-white">
+        <div className="relative flex flex-col items-center">
+          <div className="w-16 h-16 md:w-20 md:h-20 border-4 border-white/5 border-t-[#ff8c32] rounded-full animate-spin mb-6 md:mb-8 shadow-[0_0_30px_rgba(255,140,50,0.3)]"></div>
+          <div className="text-2xl md:text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-[#ff8c32] tracking-[0.2em] animate-pulse">
+            SYNCING ROSTER
+          </div>
+          <div className="text-[9px] md:text-[10px] text-gray-500 font-bold tracking-[0.5em] mt-3">
+            ESTABLISHING CONNECTION
+          </div>
         </div>
-        <p className="text-[10px] md:text-xs text-gray-500 font-bold tracking-[0.3em] mt-4">
-          CONNECTING TO MONGODB
-        </p>
       </div>
     );
   }
@@ -252,209 +226,167 @@ export default function BattleDraft({ user, onBattleEnd }) {
   return (
     <div className="h-[100dvh] w-full flex flex-col items-center bg-[#050505] text-white overflow-hidden p-2 md:p-4 uppercase font-sans">
       {showRules && (
-        <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 md:p-6">
-          <div className="w-full max-w-5xl max-h-[90dvh] bg-[#0c0c0e] border border-orange-500/30 rounded-[32px] md:rounded-[48px] p-5 md:p-10 flex flex-col shadow-[0_0_80px_rgba(255,140,50,0.15)] relative">
+        <div className="fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-3">
+          <div className="w-full max-w-5xl max-h-[95dvh] bg-[#0c0c0e] border border-orange-500/30 rounded-[32px] p-5 md:p-10 flex flex-col overflow-y-auto no-scrollbar relative">
             <button
               onClick={() => setShowRules(false)}
-              className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full"
+              className="absolute top-4 right-4 text-gray-500 hover:text-white bg-white/5 p-2 rounded-full"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
-
-            <div className="shrink-0 text-center mb-6 md:mb-8">
-              <h2 className="text-3xl md:text-6xl lg:text-7xl font-black italic tracking-tighter leading-none mb-2">
-                STRATEGY <span className="text-orange-500">OR DEATH!</span>
-              </h2>
-              <p className="text-[9px] md:text-xs text-gray-500 font-black tracking-[0.4em] md:tracking-[0.6em]">
-                DRAFT LIKE A GOD, WIN LIKE A KING
-              </p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 min-h-0 mb-6">
+            <h2 className="text-4xl md:text-7xl font-black italic text-center mb-6">
+              STRATEGY <span className="text-orange-500">OR DEATH!</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 mb-6">
               {[
                 {
                   s: "01",
-                  t: "CAPTAIN (SOURCE)",
+                  t: "CAPTAIN",
                   c: "text-orange-500",
-                  border: "hover:border-orange-500/50",
-                  d: "Team ka asli Baap! Iska 10% Power Aura poori team ko carry karega. Strongest card yahan chipkao.",
+                  d: "10% Aura poori team ko! Strategist se isse +5% IQ boost bhi milta hai.",
                 },
                 {
                   s: "02",
-                  t: "VICE CAP (WAZIR)",
+                  t: "VICE CAP",
                   c: "text-blue-400",
-                  border: "hover:border-blue-400/50",
-                  d: "Isko Captain ka 20% Double Bonus milta hai. Captain ke baad sabse bada monster yahi hona chahiye.",
+                  d: "Double Aura Bonus! Isse bhi Strategist ka +5% IQ boost milta hai.",
                 },
                 {
                   s: "03",
                   t: "SPEEDSTER",
                   c: "text-green-400",
-                  border: "hover:border-green-400/50",
-                  d: "Speed seedha 1.2x (20%) upar! First strike advantage ke liye best slot hai.",
+                  d: "Speed 1.2x boost! First strike advantage.",
                 },
                 {
                   s: "04",
-                  t: "TANK (IMMORTAL)",
+                  t: "TANK",
                   c: "text-stone-400",
-                  border: "hover:border-stone-400/50",
-                  d: "Tootega nahi! Defence seedha 1.3x (30%) boost hogi. Team ki deewar ban kar khada rahega.",
+                  d: "Defence 1.3x boost! Team ki deewar.",
                 },
                 {
                   s: "05",
-                  t: "SUPPORT (BRAIN)",
+                  t: "STRATEGIST",
                   c: "text-purple-400",
-                  border: "hover:border-purple-400/50",
-                  d: "Backup Plan! Ye final score mein +10 Points extra thonk dega. Critical matches ke liye mast.",
+                  d: "Elite Mind! Iska 5% IQ Captain aur Vice-Cap ke stats barha deta hai.",
                 },
                 {
                   s: "06",
                   t: "RAW POWER",
                   c: "text-red-500",
-                  border: "hover:border-red-500/50",
-                  d: "Sirf Tabahi! Attack seedha 1.4x (40%) upar! Enemy ki dhajjiya udane ke liye perfect.",
+                  d: "Attack 1.4x boost! Sirf Tabahi.",
                 },
               ].map((item, i) => (
                 <div
                   key={i}
-                  className={`bg-white/5 p-4 md:p-5 rounded-[24px] border border-white/5 transition-all duration-300 ${item.border} group flex flex-col justify-center`}
+                  className="bg-white/5 p-4 rounded-[20px] border border-white/5"
                 >
-                  <div className="flex items-center gap-3 mb-2 md:mb-3">
-                    <span
-                      className={`text-2xl md:text-3xl font-black italic opacity-30 group-hover:opacity-100 transition-opacity ${item.c}`}
-                    >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-2xl font-black italic ${item.c}`}>
                       {item.s}
                     </span>
                     <h3
-                      className={`${item.c} font-black text-sm md:text-lg italic tracking-tighter leading-tight`}
+                      className={`${item.c} font-black text-sm md:text-lg italic`}
                     >
                       {item.t}
                     </h3>
                   </div>
-                  <p className="text-[10px] md:text-[12px] text-gray-400 normal-case leading-relaxed font-medium">
+                  <p className="text-[10px] md:text-[12px] text-gray-400 normal-case">
                     {item.d}
                   </p>
                 </div>
               ))}
             </div>
-
             <button
               onClick={() => setShowRules(false)}
-              className="shrink-0 w-full bg-orange-500 py-4 md:py-6 rounded-[20px] md:rounded-[28px] font-black text-black hover:bg-white text-lg md:text-2xl transition-all tracking-tighter italic active:scale-95 shadow-[0_10px_30px_rgba(255,140,50,0.3)]"
+              className="w-full bg-orange-500 py-4 rounded-[20px] font-black text-black text-xl italic hover:bg-white transition-colors"
             >
-              I'M READY TO DOMINATE!
+              I'M READY!
             </button>
           </div>
         </div>
       )}
 
-      {/* DYNAMIC HEADER */}
-      <header className="w-full max-w-6xl flex justify-between items-center h-10 md:h-14 shrink-0 border-b border-white/5 px-2">
+      {/* HEADER */}
+      <header className="w-full max-w-6xl flex justify-between items-center h-12 shrink-0 px-2">
         <button
           onClick={() => navigate("/modes")}
-          className="text-[9px] md:text-[11px] font-black text-gray-500 hover:text-white tracking-[0.2em] transition-colors"
+          className="text-[10px] font-black text-gray-500 hover:text-white transition-colors"
         >
           ← ABORT
         </button>
-        <div className="flex flex-col items-center">
-          <div
-            className={`px-5 py-1 md:py-1.5 rounded-full text-[9px] md:text-[11px] font-black tracking-widest bg-gradient-to-r ${theme.from} ${theme.to} shadow-lg text-white`}
-          >
-            {getHeaderText()}
-          </div>
+        <div
+          className={`px-4 py-1 rounded-full text-[10px] font-black bg-gradient-to-r ${theme.from} ${theme.to}`}
+        >
+          {getHeaderText()}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setShowRules(true)}
-            className="p-1.5 md:p-2 bg-white/5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white border border-white/10"
+            className="p-1.5 bg-white/5 rounded-full"
           >
             <Info size={14} />
           </button>
-          <div className="px-3 py-1 md:py-1.5 rounded-full border border-white/10 bg-white/5 text-[9px] md:text-[11px] font-black text-gray-400">
+          <div className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-black text-gray-400">
             SKIPS: <span className="text-orange-500">{skips}</span>
           </div>
         </div>
       </header>
 
-      {/* 🃏 DRAFTING STAGE: ULTRA-PRO DESIGN */}
-      <div className="flex-1 w-full flex flex-col items-center justify-center min-h-0 overflow-hidden py-3 md:py-4">
+      {/* CARD AREA */}
+      <div className="flex-1 w-full flex items-center justify-center min-h-0 py-2">
         {current ? (
           <div
-            className={`relative w-full max-w-[300px] md:max-w-[340px] aspect-[3/4] max-h-[60vh] md:max-h-[65vh] rounded-[24px] md:rounded-[32px] overflow-hidden transition-all animate-in zoom-in duration-300 group border-[2px] md:border-[3px] ${
-              current.tier === "S+"
-                ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.4)]"
-                : "border-white/20 shadow-[0_15px_40px_rgba(0,0,0,0.8)]"
-            }`}
+            className={`relative w-full max-w-[280px] md:max-w-[340px] aspect-[3/4] rounded-[24px] overflow-hidden border-2 shadow-2xl ${current.tier === "S+" ? "border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.3)]" : "border-white/20"}`}
           >
-            {/* FULL ART IMAGE */}
             <img
               src={current.img}
-              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-              alt={current.name}
+              className="absolute inset-0 w-full h-full object-cover"
+              alt=""
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
 
-            {/* SMOOTH BOTTOM GRADIENT */}
-            <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#050507] via-[#050507]/90 to-transparent"></div>
-
-            {/* TOP BADGES */}
-            <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
-              <div className="bg-black/50 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-md shadow-sm">
-                <span className="text-[7px] md:text-[8px] font-black tracking-widest text-white/90">
-                  {formatUniverse(current.universe)}
-                </span>
-              </div>
-              <div
-                className={`w-9 h-9 md:w-11 md:h-11 flex items-center justify-center rounded-lg font-black italic text-lg md:text-xl shadow-md backdrop-blur-md border-[1px] ${
-                  current.tier === "S+"
-                    ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-black border-yellow-200"
-                    : "bg-black/70 text-white border-white/20"
-                }`}
-              >
-                {current.tier}
-              </div>
+            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur px-2 py-1 rounded text-[8px] font-black">
+              {universe.replace("_", " ")}
+            </div>
+            <div
+              className={`absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-lg font-black italic text-lg backdrop-blur border ${current.tier === "S+" ? "bg-yellow-400 text-black border-yellow-200" : "bg-black/60 text-white border-white/20"}`}
+            >
+              {current.tier}
             </div>
 
-            {/* BOTTOM INFO PANEL */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 flex flex-col z-20">
-              <h3 className="text-xl md:text-2xl font-black italic text-white uppercase tracking-wider leading-tight drop-shadow-md mb-0.5">
+            <div className="absolute bottom-0 p-4 w-full">
+              <h3 className="text-xl md:text-2xl font-black italic mb-2">
                 {current.name}
               </h3>
-
-              <p className="text-[9px] md:text-[10px] text-gray-400 normal-case font-medium leading-snug line-clamp-2 drop-shadow-md mb-3">
-                {current.bio}
-              </p>
-
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
-                  <span className="text-[6px] md:text-[7px] text-orange-400 font-black tracking-widest uppercase mb-0.5">
-                    ATK
-                  </span>
-                  <span className="text-sm md:text-base font-black text-white leading-none">
-                    {current.atk}
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
-                  <span className="text-[6px] md:text-[7px] text-blue-400 font-black tracking-widest uppercase mb-0.5">
-                    DEF
-                  </span>
-                  <span className="text-sm md:text-base font-black text-white leading-none">
-                    {current.def}
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
-                  <span className="text-[6px] md:text-[7px] text-green-400 font-black tracking-widest uppercase mb-0.5">
-                    SPD
-                  </span>
-                  <span className="text-sm md:text-base font-black text-white leading-none">
-                    {current.spd}
-                  </span>
+              <div className="flex gap-1 mb-3">
+                {["atk", "def", "spd"].map((s) => (
+                  <div
+                    key={s}
+                    className="flex-1 bg-white/10 backdrop-blur p-1 rounded-lg text-center border border-white/5"
+                  >
+                    <div
+                      className={`text-[7px] font-black ${s === "atk" ? "text-red-400" : s === "def" ? "text-blue-400" : "text-green-400"}`}
+                    >
+                      {s.toUpperCase()}
+                    </div>
+                    <div className="text-xs md:text-sm font-black">
+                      {current[s]}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex-1 bg-purple-500/20 backdrop-blur p-1 rounded-lg text-center border border-purple-500/30">
+                  <div className="text-[7px] font-black text-purple-400">
+                    IQ
+                  </div>
+                  <div className="text-xs md:text-sm font-black">
+                    {current.iq || 100}
+                  </div>
                 </div>
               </div>
-
               {skips > 0 && (
                 <button
                   onClick={handleSkip}
-                  className="w-full py-2 bg-black/40 hover:bg-orange-500 text-gray-300 hover:text-black font-black text-[8px] md:text-[9px] tracking-widest rounded-lg transition-all border border-white/10 hover:border-orange-500 backdrop-blur-sm active:scale-95"
+                  className="w-full py-2 bg-black/50 hover:bg-orange-500 text-gray-300 hover:text-black font-black text-[9px] rounded-lg border border-white/10 transition-colors"
                 >
                   DISCARD & RESUMMON
                 </button>
@@ -462,150 +394,82 @@ export default function BattleDraft({ user, onBattleEnd }) {
             </div>
           </div>
         ) : (
-          !isFull && (
+          Object.keys(team).length < SLOTS.length && (
             <button
               onClick={pull}
-              className="h-[40vh] aspect-square max-h-[220px] md:max-h-[280px] rounded-full border-2 border-dashed border-white/10 hover:border-orange-500 bg-white/5 flex flex-col items-center justify-center group transition-all duration-500 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+              className="w-40 h-40 rounded-full border-2 border-dashed border-white/20 hover:border-orange-500 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center transition-all group"
             >
-              <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-gray-600 group-hover:text-orange-500 mb-2 md:mb-3 group-hover:scale-125 transition-transform" />
-              <span className="text-[8px] md:text-[10px] text-gray-500 group-hover:text-white tracking-[0.3em] font-black">
-                SUMMON HERO
+              <Sparkles className="text-gray-500 group-hover:text-orange-500 mb-2 group-hover:scale-125 transition-transform" />
+              <span className="text-[10px] font-black tracking-widest text-gray-400 group-hover:text-white">
+                SUMMON
               </span>
             </button>
           )
         )}
       </div>
 
-      <div className="w-full max-w-7xl grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 shrink-0 mb-4 md:mb-6 px-2 md:px-4">
+      {/* SLOTS GRID */}
+      <div className="w-full max-w-7xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 px-2 mb-4 shrink-0">
         {SLOTS.map((s) => {
-          const isFilled = !!team[s.id];
           const char = team[s.id];
-          const shortLabel = s.label.split(" ")[1] || s.label;
-
-          const slotTheme = {
-            captain: {
-              color: "text-orange-500",
-              bg: "bg-orange-500",
-              border: "border-orange-500/50",
-            },
-            vice_cap: {
-              color: "text-blue-400",
-              bg: "bg-blue-500",
-              border: "border-blue-500/50",
-            },
-            speedster: {
-              color: "text-green-400",
-              bg: "bg-green-500",
-              border: "border-green-500/50",
-            },
-            tank: {
-              color: "text-stone-400",
-              bg: "bg-stone-400",
-              border: "border-stone-400/50",
-            },
-            support: {
-              color: "text-purple-400",
-              bg: "bg-purple-500",
-              border: "border-purple-500/50",
-            },
-            raw_power: {
-              color: "text-red-500",
-              bg: "bg-red-500",
-              border: "border-red-500/50",
-            },
-          };
-          const slotColors = slotTheme[s.id] || {
-            color: "text-gray-400",
-            bg: "bg-gray-400",
-            border: "border-white/10",
-          };
-
           return (
             <div
               key={s.id}
               onClick={() => assign(s.id)}
-              className={`relative h-[76px] md:h-[90px] lg:h-[100px] rounded-[16px] md:rounded-[20px] flex items-center cursor-pointer transition-all duration-300 overflow-hidden group ${
-                isFilled
-                  ? `bg-[#08080a] border-2 ${slotColors.border} hover:scale-[1.03] shadow-xl`
-                  : "bg-white/5 border-2 border-white/10 border-dashed hover:bg-white/10 hover:border-white/30"
-              }`}
+              className={`relative h-[70px] md:h-[90px] rounded-xl flex items-center border-2 transition-all cursor-pointer ${char ? "bg-[#08080a] border-white/20 hover:border-orange-500" : "bg-white/5 border-dashed border-white/10 hover:bg-white/10"}`}
             >
-              {isFilled && char?.img && (
-                <div className="absolute right-0 top-0 bottom-0 w-3/4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="pl-3 z-10">
+                <div className="text-[8px] md:text-[10px] font-black text-gray-500">
+                  {s.label.split(" ")[1] || s.label}
+                </div>
+                <div
+                  className={`text-[11px] md:text-[13px] font-black italic truncate max-w-[80px] md:max-w-[100px] ${char ? "text-white" : "text-gray-600"}`}
+                >
+                  {char?.name || "EMPTY"}
+                </div>
+              </div>
+              {char && (
+                <>
                   <img
                     src={char.img}
-                    className="w-full h-full object-cover object-top"
+                    className="absolute right-0 h-full w-1/2 object-cover opacity-50 rounded-r-xl"
                     alt=""
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#08080a] via-[#08080a]/80 to-transparent"></div>
-                </div>
+                </>
               )}
-
-              <div
-                className={`absolute left-0 top-0 bottom-0 w-1.5 md:w-2 transition-all duration-500 ${isFilled ? `${slotColors.bg} shadow-[0_0_15px_${slotColors.bg.split("-")[1]}-500]` : "bg-transparent"}`}
-              ></div>
-
-              <div className="relative z-10 flex flex-col justify-center pl-4 md:pl-6 flex-1 min-w-0 py-2">
-                <div className="flex items-center gap-2 mb-1">
-                  {!isFilled && (
-                    <div
-                      className={`w-2 h-2 rounded-full ${slotColors.bg} animate-pulse`}
-                    ></div>
-                  )}
-                  <span
-                    className={`text-[9px] md:text-[11px] lg:text-[12px] font-black tracking-widest uppercase ${isFilled ? slotColors.color : "text-gray-500"}`}
-                  >
-                    {shortLabel}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[13px] md:text-[15px] lg:text-[16px] font-black italic uppercase leading-tight ${isFilled ? "text-white drop-shadow-lg" : "text-gray-600"}`}
-                  >
-                    {char?.name || "SELECT HERO"}
-                  </span>
-                  {isFilled && char?.tier && (
-                    <span
-                      className={`shrink-0 px-2 py-0.5 rounded-md text-[8px] md:text-[10px] font-black italic ${char.tier === "S+" ? "bg-yellow-400 text-black shadow-[0_0_8px_rgba(250,204,21,0.6)]" : "bg-white/20 text-white"}`}
-                    >
-                      {char.tier}
-                    </span>
-                  )}
-                </div>
-              </div>
             </div>
           );
         })}
       </div>
 
-      <div className="w-full max-w-sm h-12 md:h-16 shrink-0 flex items-center justify-center pb-2 md:pb-0">
-        {isFull ? (
-          playerTurn < maxTurns ? (
-            <button
-              onClick={handleNextPlayer}
-              className={`w-full h-full rounded-2xl md:rounded-[24px] font-black text-sm md:text-xl text-white bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] active:scale-95 transition-all tracking-widest italic`}
-            >
-              NEXT:{" "}
-              {isTeamMode
-                ? playerTurn < 2
-                  ? "PLAYER 2 DRAFT"
-                  : playerTurn === 2
-                    ? "TEAM 2 (P3) DRAFT"
-                    : "PLAYER 4 DRAFT"
-                : `PLAYER ${playerTurn + 1} DRAFT`}
-            </button>
-          ) : (
-            <button
-              onClick={fight}
-              disabled={loading}
-              className={`w-full h-full rounded-2xl md:rounded-[24px] font-black text-sm md:text-xl text-white bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] active:scale-95 transition-all tracking-widest italic`}
-            >
-              {loading ? "CALCULATING..." : "EXECUTE WAR!"}
-            </button>
-          )
-        ) : (
-          <div className="w-full h-full"></div>
+      {/* NEXT / FIGHT BUTTON */}
+      <div className="w-full max-w-sm h-12 md:h-14 mb-4 px-2">
+        {Object.keys(team).length === SLOTS.length && (
+          <button
+            onClick={
+              playerTurn < maxTurns
+                ? () => {
+                    setCompletedTeams([...completedTeams, team]);
+                    setTeam({});
+                    setPlayerTurn(playerTurn + 1);
+                  }
+                : fight
+            }
+            disabled={loading}
+            className={`w-full h-full rounded-xl md:rounded-2xl font-black text-sm md:text-lg italic tracking-widest bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_20px_rgba(255,140,50,0.2)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center`}
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                SIMULATING BATTLE
+              </span>
+            ) : playerTurn < maxTurns ? (
+              "NEXT PLAYER DRAFT"
+            ) : (
+              "EXECUTE WAR!"
+            )}
+          </button>
         )}
       </div>
     </div>

@@ -35,7 +35,7 @@ const AdminPanel = () => {
     if (isLoggedIn) fetchChars();
   }, [universe, isLoggedIn]);
 
-  // Line 40 aur 53 ko update kiya gaya hai
+  // Updated to include IQ in the sync process
   const updateStats = async (id, stats) => {
     try {
       await axios.put(
@@ -106,7 +106,6 @@ const AdminPanel = () => {
           <option value="one_piece">ONE PIECE</option>
           <option value="dragon_ball">DRAGON BALL</option>
           <option value="solo_leveling">SOLO LEVELING</option>
-          {/* 🚀 NAYE ANIMES YAHAN ADD HUE HAIN (Including Chainsaw Man) */}
           <option value="bleach">BLEACH</option>
           <option value="black_clover">BLACK CLOVER</option>
           <option value="hxh">HUNTER X HUNTER</option>
@@ -126,7 +125,6 @@ const AdminPanel = () => {
               key={char.id}
               className="bg-[#111113] border border-white/5 p-6 rounded-2xl flex flex-col items-center relative overflow-hidden group"
             >
-              {/* 🗑️ DELETE BUTTON */}
               <button
                 onClick={() => deleteChar(char.id)}
                 className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white z-20"
@@ -146,7 +144,8 @@ const AdminPanel = () => {
                 {char.name}
               </h3>
 
-              <div className="grid grid-cols-3 gap-2 w-full mb-4">
+              {/* 🧠 GRID UPDATED WITH IQ FIELD */}
+              <div className="grid grid-cols-4 gap-2 w-full mb-4">
                 <div className="flex flex-col items-center">
                   <span className="text-[8px] text-gray-500 font-bold mb-1">
                     ATK
@@ -155,7 +154,7 @@ const AdminPanel = () => {
                     type="number"
                     defaultValue={char.atk}
                     onBlur={(e) => (char.atk = Number(e.target.value))}
-                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-xs font-bold text-white"
+                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-[10px] font-bold text-white"
                   />
                 </div>
                 <div className="flex flex-col items-center">
@@ -166,7 +165,7 @@ const AdminPanel = () => {
                     type="number"
                     defaultValue={char.def}
                     onBlur={(e) => (char.def = Number(e.target.value))}
-                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-xs font-bold text-white"
+                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-[10px] font-bold text-white"
                   />
                 </div>
                 <div className="flex flex-col items-center">
@@ -177,10 +176,23 @@ const AdminPanel = () => {
                     type="number"
                     defaultValue={char.spd}
                     onBlur={(e) => (char.spd = Number(e.target.value))}
-                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-xs font-bold text-white"
+                    className="w-full bg-black/50 border border-white/10 py-2 rounded-lg text-center text-[10px] font-bold text-white"
+                  />
+                </div>
+                {/* 🧠 IQ INPUT FOR STRATEGIST ROLE */}
+                <div className="flex flex-col items-center">
+                  <span className="text-[8px] text-purple-500 font-bold mb-1">
+                    IQ
+                  </span>
+                  <input
+                    type="number"
+                    defaultValue={char.iq || 100}
+                    onBlur={(e) => (char.iq = Number(e.target.value))}
+                    className="w-full bg-black/50 border border-purple-500/20 py-2 rounded-lg text-center text-[10px] font-bold text-white focus:border-purple-500"
                   />
                 </div>
               </div>
+
               <div className="flex flex-col items-center w-full mt-2">
                 <span className="text-[8px] text-gray-400 font-bold mb-1 tracking-widest">
                   RANKING SYSTEM
@@ -209,10 +221,11 @@ const AdminPanel = () => {
                     atk: char.atk,
                     def: char.def,
                     spd: char.spd,
+                    iq: char.iq || 100, // 🧠 Syncing IQ with Database
                     tier: char.tier,
                   })
                 }
-                className="w-full bg-[#111113] border border-white/10 py-4 rounded-xl active:bg-[#ff8c32]/20 transition-all text-xs font-black italic text-gray-400 hover:text-[#ff8c32] hover:border-[#ff8c32]/50"
+                className="w-full mt-4 bg-[#111113] border border-white/10 py-4 rounded-xl active:bg-[#ff8c32]/20 transition-all text-xs font-black italic text-gray-400 hover:text-[#ff8c32] hover:border-[#ff8c32]/50"
               >
                 SYNC OVERRIDE
               </button>

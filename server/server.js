@@ -32,6 +32,7 @@ const CharacterSchema = new mongoose.Schema({
   atk: { type: Number, default: 60 },
   def: { type: Number, default: 60 },
   spd: { type: Number, default: 60 },
+  iq: { type: Number, default: 100 },
   tier: { type: String, default: "B" },
   bio: String,
 });
