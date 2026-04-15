@@ -11,35 +11,36 @@ export default function Auth() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const endpoint = isLogin ? "login" : "register";
-
-    // Deployed Backend URL
     const API_URL = "https://anime-draft-game-1.onrender.com/api/auth";
 
     try {
       const res = await axios.post(`${API_URL}/${endpoint}`, {
-        username: username.toUpperCase(),
-        password,
+        username: username.trim(),
+        password: password.trim(),
       });
 
       if (isLogin) {
+        // Stats save karein aur lobby par jayein
         localStorage.setItem("commander", res.data.username);
         localStorage.setItem("userStats", JSON.stringify(res.data));
-        window.location.href = "/modes"; // Hard redirect for safety
+
+        // Use window.location for a clean state refresh
+        window.location.href = "/modes";
       } else {
-        alert("✅ REGISTRATION SUCCESSFUL! LOG IN NOW.");
+        alert("✅ REGISTRATION SUCCESSFUL! COMMANDER, NOW LOG IN.");
         setIsLogin(true);
+        setPassword(""); // Clear password for login
       }
     } catch (err) {
-      console.error("Auth Error:", err);
-      alert(
-        err.response?.data?.error || "❌ CONNECTION FAILED! CHECK BACKEND.",
-      );
+      const errorMsg =
+        err.response?.data?.error || "❌ SERVER ERROR! TRY AGAIN.";
+      alert(errorMsg);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#111113] p-10 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-[#ff8c32]/20 transition-all uppercase">
+    <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center p-4 uppercase font-sans">
+      <div className="w-full max-w-md bg-[#111113] p-10 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-[#ff8c32]/20 transition-all">
         <div className="absolute top-0 left-0 w-full h-1 bg-[#ff8c32] opacity-50"></div>
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter text-center mb-8">
           {isLogin ? "DRAFT WARS" : "NEW RECRUIT"}
@@ -49,7 +50,7 @@ export default function Auth() {
             type="text"
             placeholder="USERNAME"
             value={username}
-            onChange={(e) => setUsername(e.target.value.toUpperCase())}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full bg-black/50 border border-white/10 p-4 rounded-xl text-xs font-black tracking-widest text-white focus:border-[#ff8c32] outline-none"
             required
           />
@@ -70,7 +71,7 @@ export default function Auth() {
         </form>
         <p
           onClick={() => setIsLogin(!isLogin)}
-          className="text-center text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white tracking-widest"
+          className="text-center text-[10px] text-gray-500 mt-6 cursor-pointer hover:text-white tracking-widest transition-colors"
         >
           {isLogin
             ? "NEW COMMANDER? CREATE ACCOUNT"

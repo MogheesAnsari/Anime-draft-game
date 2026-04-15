@@ -6,7 +6,7 @@ import "dotenv/config";
 
 const app = express();
 
-// ✅ CORS: Open for deployment
+// ✅ CORS: Fixed for deployment
 app.use(
   cors({
     origin: "*",
@@ -46,25 +46,45 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // -----------------------------------------
-// 🔐 AUTH ROUTES (Fixes 404 in Auth.jsx)
+// 🔐 AUTH ROUTES (Fixed 401 & 404 Issues)
 // -----------------------------------------
 app.post("/api/auth/register", async (req, res) => {
-  const { username, password } = req.body;
   try {
-    const newUser = new User({ username, password });
+    const { username, password } = req.body;
+    const cleanUsername = username.trim().toUpperCase(); // Format sync
+
+    const existing = await User.findOne({ username: cleanUsername });
+    if (existing)
+      return res.status(400).json({ error: "USERNAME ALREADY EXISTS" });
+
+    const newUser = new User({
+      username: cleanUsername,
+      password: password.trim(),
+    });
     await newUser.save();
     res.status(201).json({ message: "COMMANDER REGISTERED" });
   } catch (err) {
-    res.status(400).json({ error: "USERNAME ALREADY EXISTS" });
+    res.status(500).json({ error: "REGISTRATION FAILED" });
   }
 });
 
 app.post("/api/auth/login", async (req, res) => {
-  const { username, password } = req.body;
   try {
-    const user = await User.findOne({ username, password });
-    if (user) res.json(user);
-    else res.status(401).json({ error: "INVALID CLEARANCE CODE" });
+    const { username, password } = req.body;
+    const cleanUsername = username.trim().toUpperCase(); // Matches register format
+
+    // Find user with matching credentials
+    const user = await User.findOne({
+      username: cleanUsername,
+      password: password.trim(),
+    });
+
+    if (user) {
+      res.json(user);
+    } else {
+      // Send 401 if not found
+      res.status(401).json({ error: "INVALID USERNAME OR PASSWORD" });
+    }
   } catch (err) {
     res.status(500).json({ error: "SYSTEM ERROR" });
   }
