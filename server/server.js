@@ -8,7 +8,7 @@ const app = express();
 // server.js update
 app.use(
   cors({
-    origin: "*", // Ya phir apni frontend URL daal dein
+    origin: ["https://your-frontend-link.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
@@ -134,11 +134,13 @@ app.delete("/api/admin/delete-character/:id", async (req, res) => {
 // -----------------------------------------
 app.get("/api/characters", async (req, res) => {
   const { universe } = req.query;
-  const filter = universe && universe !== "all" ? { universe } : {};
-  const chars = await Character.find(filter);
-  res.json(chars);
+  try {
+    const chars = await Character.find({ universe: universe });
+    res.json(chars);
+  } catch (err) {
+    res.status(500).json({ error: "DB Error" });
+  }
 });
-
 app.put("/api/admin/update-character/:id", async (req, res) => {
   const { id } = req.params;
   const updated = await Character.findOneAndUpdate(

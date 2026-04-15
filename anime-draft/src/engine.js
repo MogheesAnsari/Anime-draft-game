@@ -58,8 +58,7 @@ export const getRandomUniqueByUniverse = (usedIds, universeId) => {
   if (pool.length === 0) return null;
   return [...pool].sort(() => Math.random() - 0.5)[0];
 };
-
-const API_BASE = "https://anime-draft-game-1.onrender.com/api";
+const API_URL = "https://anime-draft-game-1.onrender.com";
 
 export const api = {
   login: (data) =>

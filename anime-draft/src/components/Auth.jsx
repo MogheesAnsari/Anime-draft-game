@@ -14,9 +14,9 @@ export default function Auth() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/auth/${endpoint}`,
+        `https://anime-draft-game-1.onrender.com/api/auth/${endpoint}`,
         {
-          username: username.toUpperCase(), // Username hamesha Capital rahega
+          username: username.toUpperCase(),
           password,
         },
       );

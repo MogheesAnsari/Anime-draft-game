@@ -35,10 +35,11 @@ const AdminPanel = () => {
     if (isLoggedIn) fetchChars();
   }, [universe, isLoggedIn]);
 
+  // Line 40 aur 53 ko update kiya gaya hai
   const updateStats = async (id, stats) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/admin/update-character/${id}`,
+        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${id}`,
         stats,
       );
       alert("✅ SYNCED TO MONGODB!");
@@ -47,21 +48,16 @@ const AdminPanel = () => {
     }
   };
 
-  // 🗑️ DELETE LOGIC
   const deleteChar = async (id) => {
     if (!window.confirm("ARE YOU SURE YOU WANT TO PURGE THIS CHARACTER?"))
       return;
-
     try {
       await axios.delete(
-        `http://localhost:5000/api/admin/delete-character/${id}`,
+        `https://anime-draft-game-1.onrender.com/api/admin/delete-character/${id}`,
       );
-
-      // UI se turant hatao
       setCharacters(characters.filter((c) => c.id !== id));
       alert("🔥 CHARACTER PURGED FROM DATABASE!");
     } catch (err) {
-      console.error("Delete Error:", err);
       alert("❌ FAILED TO DELETE!");
     }
   };
