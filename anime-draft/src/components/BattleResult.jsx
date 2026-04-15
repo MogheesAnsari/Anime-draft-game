@@ -1,5 +1,6 @@
 import React from "react";
 import { Crown } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom"; // 👈 ROUTER IMPORT
 
 const SLOT_UI = {
   captain: {
@@ -40,10 +41,33 @@ const SLOT_UI = {
   },
 };
 
-export default function BattleResult({ result, teams, mode, onExit }) {
-  if (!result || !teams) return null;
+export default function BattleResult() {
+  // 👈 Props hataye kyunki ab state use hogi
+  const { state } = useLocation(); // 👈 BATTLE DRAFT SE AAYA HUA DATA
+  const navigate = useNavigate(); // 👈 WAPAS JAANE KE LIYE
 
-  // Mode Detector
+  // 🛠️ DATA CHECK: Agar state nahi hai toh empty dikhao
+  const result = state?.result;
+  const teams = state?.teams;
+  const mode = state?.mode;
+
+  if (!result || !teams) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center text-white">
+        <p className="font-black italic text-gray-500 mb-4 tracking-widest">
+          NO BATTLE DATA DETECTED
+        </p>
+        <button
+          onClick={() => navigate("/modes")}
+          className="bg-white text-black px-6 py-2 rounded-xl font-black text-[10px]"
+        >
+          BACK TO MODES
+        </button>
+      </div>
+    );
+  }
+
+  // --- AAPKA ORIGINAL LOGIC (0% CHANGE) ---
   const safeMode = String(mode || "").toLowerCase();
   const isTeamMode = safeMode.includes("team") || safeMode.includes("2v2");
   const isRoyale =
@@ -51,8 +75,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
     safeMode.includes("1v1v1v1") ||
     safeMode.includes("4p");
 
-  // 🧠 SCORE CALCULATION FIX
-  // If it's Team mode, forcefully add P1+P2 and P3+P4 on the frontend to guarantee the correct sum
   let displayScores = result.scores;
   if (isTeamMode && result.scores.length >= 2) {
     const team1Total = (result.scores[0] || 0) + (result.scores[1] || 0);
@@ -60,7 +82,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
     displayScores = [team1Total, team2Total];
   }
 
-  // Determine Max Score & Winner
   const maxScore = Math.max(...displayScores);
   const winnerIndex = displayScores.indexOf(maxScore);
   const winnerTitle = isTeamMode
@@ -87,15 +108,10 @@ export default function BattleResult({ result, teams, mode, onExit }) {
           if (!char) return null;
           const isMVP = char.id === mvpId;
           const ui = SLOT_UI[slotKey];
-
           return (
             <div
               key={slotKey}
-              className={`relative flex items-center gap-2 p-1.5 rounded-xl border transition-all ${
-                isMVP
-                  ? "bg-orange-500/10 border-orange-500/50 shadow-sm"
-                  : "bg-white/5 border-white/5"
-              }`}
+              className={`relative flex items-center gap-2 p-1.5 rounded-xl border transition-all ${isMVP ? "bg-orange-500/10 border-orange-500/50" : "bg-white/5 border-white/5"}`}
             >
               <div
                 className={`flex items-center justify-center min-w-[24px] md:min-w-[32px] h-6 md:h-8 rounded-lg text-[8px] md:text-[10px] font-black ${ui.bg} ${ui.color}`}
@@ -128,8 +144,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
                   </p>
                 )}
               </div>
-
-              {/* Force values to always show, but smaller in compact mode */}
               <div className="flex gap-1.5 md:gap-2 text-[7px] md:text-[8px] font-black bg-black/40 px-1.5 md:px-2 py-1 rounded-md border border-white/5 shrink-0">
                 <span className="text-orange-400">{char.atk}</span>
                 <span className="text-blue-400">{char.def}</span>
@@ -144,7 +158,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
 
   return (
     <div className="fixed inset-0 bg-[#0a0a0b] z-[100] flex flex-col items-center p-2 md:p-6 overflow-hidden uppercase font-sans h-[100dvh]">
-      {/* Header */}
       <div className="text-center mb-4 md:mb-6 shrink-0 mt-2">
         <h2 className="text-3xl md:text-5xl lg:text-6xl font-black italic text-white tracking-tighter leading-none">
           {winnerTitle} <span className="text-orange-500">VICTORY!</span>
@@ -152,9 +165,7 @@ export default function BattleResult({ result, teams, mode, onExit }) {
       </div>
 
       <div className="flex-1 w-full max-w-7xl min-h-0 mb-2 md:mb-4 flex justify-center overflow-y-auto no-scrollbar pb-20 md:pb-0">
-        {/* 👑 TEAM MODE LAYOUT */}
         {isTeamMode ? (
-          // Mobile: flex-col (Cards stack up-down) | PC: flex-row (Cards side-by-side)
           <div className="flex flex-col md:flex-row w-full gap-4 h-full">
             {[0, 1].map((teamIndex) => {
               const teamScore = displayScores[teamIndex];
@@ -166,13 +177,11 @@ export default function BattleResult({ result, teams, mode, onExit }) {
                 ...Object.values(teams[p2Index] || {}),
               ];
               const mvp = getMVP(teamChars);
-
               return (
                 <div
                   key={teamIndex}
                   className={`flex-1 flex flex-col p-4 rounded-[32px] border-2 transition-all min-h-0 ${isWinner ? "bg-[#111113] border-orange-500 shadow-xl" : "bg-black/40 border-white/5 opacity-80"}`}
                 >
-                  {/* COMBINED TEAM SCORE */}
                   <div className="text-center mb-3 border-b border-white/5 pb-2 shrink-0">
                     <p
                       className={`text-[10px] md:text-xs font-black tracking-widest ${isWinner ? "text-orange-500" : "text-gray-500"}`}
@@ -185,9 +194,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
                       {teamScore}
                     </p>
                   </div>
-
-                  {/* INNER ROSTER LAYOUT: 
-                      Mobile: flex-col (P1 up, P2 down) | PC: flex-row (P1 left, P2 right) */}
                   <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col md:flex-row gap-4 md:gap-4">
                     <div className="flex-1">
                       <p className="text-[8px] md:text-[10px] text-gray-500 text-center mb-1.5 font-bold tracking-widest">
@@ -195,7 +201,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
                       </p>
                       {renderRoster(teams[p1Index], mvp?.id, true)}
                     </div>
-                    {/* Divider that adapts based on mobile vs PC */}
                     <div className="w-full md:w-[1px] h-[1px] md:h-full bg-white/5 shrink-0 my-1 md:my-0"></div>
                     <div className="flex-1">
                       <p className="text-[8px] md:text-[10px] text-gray-500 text-center mb-1.5 font-bold tracking-widest">
@@ -209,7 +214,6 @@ export default function BattleResult({ result, teams, mode, onExit }) {
             })}
           </div>
         ) : (
-          /* ⚔️ BATTLE ROYALE & PVP LAYOUT */
           <div
             className={`w-full h-fit md:h-full gap-3 md:gap-6 ${isRoyale ? "grid grid-cols-1 sm:grid-cols-2" : "flex flex-col md:flex-row"}`}
           >
@@ -217,11 +221,10 @@ export default function BattleResult({ result, teams, mode, onExit }) {
               const isWinner = score === maxScore;
               const teamChars = Object.values(teams[index] || {});
               const mvp = getMVP(teamChars);
-
               return (
                 <div
                   key={index}
-                  className={`flex flex-col p-4 rounded-[24px] md:rounded-[32px] border-2 transition-all min-h-0 ${isWinner ? "bg-[#111113] border-orange-500 shadow-xl" : "bg-black/40 border-white/5 opacity-80"} ${isRoyale ? "flex-1" : "flex-1"}`}
+                  className={`flex flex-col p-4 rounded-[24px] md:rounded-[32px] border-2 transition-all min-h-0 ${isWinner ? "bg-[#111113] border-orange-500 shadow-xl" : "bg-black/40 border-white/5 opacity-80"} flex-1`}
                 >
                   <div className="text-center mb-3 border-b border-white/5 pb-2 shrink-0">
                     <p
@@ -249,11 +252,10 @@ export default function BattleResult({ result, teams, mode, onExit }) {
         )}
       </div>
 
-      {/* FIXED BOTTOM BUTTON FOR MOBILE SAFARI/CHROME */}
       <div className="fixed md:relative bottom-4 md:bottom-0 left-0 w-full md:w-auto px-4 md:px-0 shrink-0">
         <button
-          onClick={onExit}
-          className="w-full md:w-auto bg-white text-black px-10 py-4 rounded-2xl font-black text-[12px] md:text-xs tracking-[0.2em] hover:bg-orange-500 hover:text-white transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+          onClick={() => navigate("/modes")} // 👈 NAVIGATE BACK TO MODES
+          className="w-full md:w-auto bg-white text-black px-10 py-4 rounded-2xl font-black text-[12px] md:text-xs tracking-[0.2em] hover:bg-orange-500 hover:text-white transition-all active:scale-95"
         >
           RETURN TO LOBBY
         </button>

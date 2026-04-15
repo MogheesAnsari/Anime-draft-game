@@ -1,128 +1,146 @@
 import express from "express";
-import cors from "cors";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-
-dotenv.config();
+import cors from "cors";
+import axios from "axios";
+import "dotenv/config";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI;
-const PORT = process.env.PORT || 5000;
-
-let isDbConnected = false;
-
-// 🔗 Database Connection
+// 🔌 MONGODB CONNECTION
 mongoose
-  .connect(MONGO_URI)
-  .then(() => {
-    console.log("✅ SUCCESS: Connected to MongoDB.");
-    isDbConnected = true;
-  })
-  .catch((err) => {
-    console.error("❌ ERROR: Connection Failed:", err.message);
-    isDbConnected = false;
-  });
+  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/anime_draft")
+  .then(() => console.log("🔥 DB CONNECTED: ANILIST MODE ENGAGED"))
+  .catch((err) => console.error("❌ DB ERROR:", err));
 
-// 📂 DATABASE SCHEMA (Flexible for existing data)
-const UserStatsSchema = new mongoose.Schema(
-  {
-    username: { type: String, unique: true, required: true },
-    password: { type: String },
-    wins: { type: Number, default: 0 },
-    totalGames: { type: Number, default: 0 },
-    lastPlayed: { type: Date, default: Date.now },
-  },
-  { strict: false },
-);
+// 📝 CHARACTER MODEL
+const CharacterSchema = new mongoose.Schema({
+  id: { type: Number, required: true, unique: true }, // AniList ID bhi Number hoti hai
+  name: String,
+  img: String,
+  universe: String,
+  atk: { type: Number, default: 50 },
+  def: { type: Number, default: 50 },
+  spd: { type: Number, default: 50 },
+  tier: { type: String, default: "A" },
+  bio: String,
+});
+const Character = mongoose.model("Character", CharacterSchema);
 
-// Yahan 'users' aapki existing collection ka naam hai
-const UserStats = mongoose.model("UserStats", UserStatsSchema, "users");
+// -----------------------------------------
+// ⚙️ ANILIST FETCH ROUTE (For Postman)
+// -----------------------------------------
+app.post("/api/admin/fetch-and-save", async (req, res) => {
+  const { searchName, type, universe, pageLimit = 1 } = req.body;
 
-// 🔑 AUTH ROUTES (Fixes 404 Error)
-app.post("/api/register", async (req, res) => {
+  const query = `
+    query ($search: String, $type: MediaType, $page: Int) {
+      Media(search: $search, type: $type) {
+        characters(perPage: 50, page: $page, sort: [RELEVANCE, FAVOURITES_DESC]) { 
+          edges {
+            role
+            node {
+              id
+              name { full }
+              image { large }
+            }
+          }
+        }
+      }
+    }
+  `;
+
   try {
-    const { username, password } = req.body;
-    const existing = await UserStats.findOne({ username });
-    if (existing)
-      return res.status(400).json({ error: "Username already exists" });
+    let allChars = [];
 
-    const newUser = new UserStats({
-      username,
-      password,
-      wins: 0,
-      totalGames: 0,
+    for (let p = 1; p <= pageLimit; p++) {
+      console.log(`📡 Fetching Page ${p} for ${searchName}...`);
+
+      const response = await axios.post("https://graphql.anilist.co", {
+        query: query,
+        variables: { search: searchName, type: type, page: p },
+      });
+
+      const edges = response.data.data.Media.characters.edges;
+      if (edges) {
+        // Manga ke liye hum Supporting aur Main dono le rahe hain
+        const filtered = edges
+          .filter((edge) => edge.role !== "BACKGROUND")
+          .map((edge) => edge.node);
+
+        allChars = [...allChars, ...filtered];
+      }
+
+      // ⏳ Rate Limit Se Bachne Ke Liye (Wait 2 seconds between pages)
+      if (pageLimit > 1)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    const savedChars = [];
+    for (let char of allChars) {
+      if (!char.image?.large) continue;
+
+      const newChar = {
+        id: Number(char.id),
+        name: char.name.full,
+        img: char.image.large,
+        universe: universe,
+        atk: 60,
+        def: 60,
+        spd: 60,
+        tier: "B",
+        bio: `Elite warrior from the ${universe} manga series.`,
+      };
+
+      await Character.findOneAndUpdate({ id: newChar.id }, newChar, {
+        upsert: true,
+      });
+      savedChars.push(newChar);
+    }
+
+    res.status(200).json({
+      message: `🔥 MANGA SYNC COMPLETE: ${savedChars.length} CHARACTERS`,
+      total: savedChars.length,
     });
-    await newUser.save();
-    res.status(201).json({ success: true, user: newUser });
-  } catch (error) {
-    res.status(500).json({ error: "Registration failed" });
+  } catch (err) {
+    console.error("❌ Error:", err.message);
+    res.status(500).json({ error: "Manga fetch failed. Try lower pageLimit." });
   }
 });
-
-app.post("/api/login", async (req, res) => {
+// -----------------------------------------
+// 🗑️ DELETE ROUTE (Wahi Solid Number Logic)
+// -----------------------------------------
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await UserStats.findOne({ username });
-
-    if (user) {
-      // Direct login check
-      return res.status(200).json({ success: true, user });
-    }
-    res.status(401).json({ error: "Invalid credentials" });
-  } catch (error) {
-    res.status(500).json({ error: "Login failed" });
+    const { id } = req.params;
+    const deleted = await Character.findOneAndDelete({ id: Number(id) });
+    if (deleted) res.status(200).json({ message: "CHARACTER PURGED" });
+    else res.status(404).json({ error: "NOT FOUND IN DB" });
+  } catch (err) {
+    res.status(500).json({ error: "SERVER ERROR" });
   }
 });
 
-// 🏆 LEADERBOARD API
-app.get("/api/leaderboard", async (req, res) => {
-  try {
-    if (isDbConnected) {
-      const rankings = await UserStats.find({}).sort({ wins: -1 }).limit(50);
-      if (rankings.length > 0) return res.status(200).json(rankings);
-    }
-    res.status(200).json([{ username: "No Data", wins: 0, totalGames: 0 }]);
-  } catch (error) {
-    res.status(500).json({ error: "Server error" });
-  }
+// -----------------------------------------
+// 🃏 GENERAL ROUTES
+// -----------------------------------------
+app.get("/api/characters", async (req, res) => {
+  const { universe } = req.query;
+  const filter = universe && universe !== "all" ? { universe } : {};
+  const chars = await Character.find(filter);
+  res.json(chars);
 });
 
-// 📊 DASHBOARD API
-app.get("/api/dashboard/:username", async (req, res) => {
-  try {
-    const { username } = req.params;
-    const stats = await UserStats.findOne({ username });
-    if (stats) return res.status(200).json(stats);
-    res.status(200).json({ username, wins: 0, totalGames: 0 });
-  } catch (error) {
-    res.status(500).json({ error: "Dashboard error" });
-  }
+app.put("/api/admin/update-character/:id", async (req, res) => {
+  const { id } = req.params;
+  const updated = await Character.findOneAndUpdate(
+    { id: Number(id) },
+    req.body,
+    { new: true },
+  );
+  res.json(updated);
 });
 
-// ⚔️ BATTLE API
-app.post("/api/battle", async (req, res) => {
-  try {
-    const { username, mode, teams } = req.body;
-    // ... Battle logic (Scores calculation) ...
-    let winnerIndex = 0;
-
-    if (isDbConnected && username !== "Guest") {
-      await UserStats.findOneAndUpdate(
-        { username: username },
-        {
-          $inc: { wins: winnerIndex === 0 ? 1 : 0, totalGames: 1 },
-          $set: { lastPlayed: new Date() },
-        },
-        { upsert: true },
-      );
-    }
-    res.status(200).json({ success: true, wins: winnerIndex === 0 ? 1 : 0 });
-  } catch (error) {
-    res.status(500).json({ error: "Battle failed" });
-  }
-});
-
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const PORT = 5000;
+app.listen(PORT, () => console.log(`🚀 ADMIN ENGINE RUNNING ON PORT ${PORT}`));

@@ -27,17 +27,18 @@ export const CHARACTERS = [
 }));
 
 export const ANIME_OPTIONS = [
-  { id: "fire_force", name: "Fire Force" },
-  { id: "one_piece", name: "One Piece" },
-  { id: "naruto", name: "Naruto" },
-  { id: "aot", name: "Attack on Titan" },
-  { id: "demon_slayer", name: "Demon Slayer" },
-  { id: "bleach", name: "Bleach" },
-  { id: "black_clover", name: "Black Clover" },
-  { id: "solo_leveling", name: "Solo Leveling" },
-  { id: "jjk", name: "Jujutsu Kaisen" },
-  { id: "slime", name: "TenSura (Slime)" },
-  { id: "all", name: "Anime Draft (All)" },
+  { id: "naruto", name: "NARUTO" },
+  { id: "demon_slayer", name: "DEMON SLAYER" },
+  { id: "jjk", name: "JUJUTSU KAISEN" },
+  { id: "one_piece", name: "ONE PIECE" },
+  { id: "dragon_ball", name: "DRAGON BALL" },
+  { id: "solo_leveling", name: "SOLO LEVELING" },
+  // NAYE ANIMES YAHAN HAIN
+  { id: "bleach", name: "BLEACH" },
+  { id: "black_clover", name: "BLACK CLOVER" },
+  { id: "hxh", name: "HUNTER X HUNTER" },
+  { id: "mha", name: "MY HERO ACADEMIA" },
+  { id: "chainsaw_man", name: "CHAINSAW MAN" },
 ];
 
 export const SLOTS = [

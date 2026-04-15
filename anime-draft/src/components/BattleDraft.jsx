@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { SLOTS, getRandomUniqueByUniverse, api } from "../engine";
+import { useLocation, useNavigate } from "react-router-dom";
+import { SLOTS, api } from "../engine"; // 👈 getRandomUniqueByUniverse HATA DIYA
+import axios from "axios"; // 👈 AXIOS IMPORT KIYA DB KE LIYE
 import { Sparkles, Info, X } from "lucide-react";
 
-export default function BattleDraft({
-  user,
-  mode,
-  universe,
-  onExit,
-  onBattleEnd,
-  onShowResult,
-}) {
+export default function BattleDraft({ user, onBattleEnd }) {
+  const { state } = useLocation();
+  const navigate = useNavigate();
+
+  const mode = state?.mode || "pve";
+  const universe = state?.universe || "all";
+
   const [playerTurn, setPlayerTurn] = useState(1);
   const [completedTeams, setCompletedTeams] = useState([]);
   const [team, setTeam] = useState({});
@@ -18,6 +19,10 @@ export default function BattleDraft({
   const [skips, setSkips] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(true);
+
+  // 📡 MONGODB STATES
+  const [characterPool, setCharacterPool] = useState([]);
+  const [dbLoading, setDbLoading] = useState(true);
 
   // 🧠 THE MODE FIX: Team Mode gets 4 turns!
   const rawString = String(mode || "pve")
@@ -29,7 +34,7 @@ export default function BattleDraft({
   let isTeamMode = false;
 
   if (rawString.includes("team") || rawString.includes("2v2")) {
-    maxTurns = 4; // 4 Players total for a 2v2 match
+    maxTurns = 4;
     isPvE = false;
     isTeamMode = true;
   } else if (
@@ -49,6 +54,40 @@ export default function BattleDraft({
       `[SYSTEM DIAGNOSTIC] Mode: "${mode}" | Turns: ${maxTurns} | isTeamMode: ${isTeamMode}`,
     );
   }, [mode, maxTurns, isTeamMode]);
+
+  // 🚀 FETCH DATA FROM MONGODB
+  useEffect(() => {
+    const fetchFromDB = async () => {
+      setDbLoading(true);
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/characters?universe=${universe}`,
+        );
+        if (res.data && res.data.length > 0) {
+          setCharacterPool(res.data);
+        } else {
+          alert(
+            `NO DATA FOUND FOR ${universe.toUpperCase()}! ADMIN PANEL MEIN SYNC KAREIN.`,
+          );
+          navigate("/universe");
+        }
+      } catch (err) {
+        console.error("DB Fetch Error:", err);
+        alert("DATABASE CONNECTION ERROR!");
+      }
+      setDbLoading(false);
+    };
+
+    fetchFromDB();
+  }, [universe, navigate]);
+
+  // 🧠 CUSTOM RANDOM FUNCTION (REPLACES ENGINE LOGIC)
+  const getLocalRandomUnique = (usedIds, pool) => {
+    const available = pool.filter((c) => !usedIds.includes(c.id));
+    if (available.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * available.length);
+    return available[randomIndex];
+  };
 
   const themeColors = {
     1: {
@@ -79,7 +118,7 @@ export default function BattleDraft({
   const theme = themeColors[playerTurn] || themeColors[1];
 
   const pull = () => {
-    const card = getRandomUniqueByUniverse(used, universe);
+    const card = getLocalRandomUnique(used, characterPool); // 👈 DB POOL SE PULL
     if (!card) return alert("Draft pool empty! No more characters available.");
     setCurrent(card);
   };
@@ -114,7 +153,7 @@ export default function BattleDraft({
       let cpuTeam = {};
       let tempUsed = [...used];
       SLOTS.forEach((slot) => {
-        const cpuCard = getRandomUniqueByUniverse(tempUsed, universe);
+        const cpuCard = getLocalRandomUnique(tempUsed, characterPool); // 👈 CPU BHI DB POOL SE LEGA
         if (cpuCard) {
           cpuTeam[slot.id] = cpuCard;
           tempUsed.push(cpuCard.id);
@@ -161,7 +200,14 @@ export default function BattleDraft({
       data.scores = calculatedScores;
       if (onBattleEnd)
         onBattleEnd(data.wins, data.fullHistory, data.totalGames);
-      if (onShowResult) onShowResult(data, finalTeams);
+
+      navigate("/result", {
+        state: {
+          result: data,
+          teams: finalTeams,
+          mode: mode,
+        },
+      });
     } catch (e) {
       console.error(e);
       alert("System Error: Backend API Call Failed.");
@@ -179,7 +225,6 @@ export default function BattleDraft({
       .join(" ");
   };
 
-  // UI helper for the Header to show which team is drafting
   const getHeaderText = () => {
     if (isPvE) return "PVE DRAFT";
     if (isTeamMode) {
@@ -189,6 +234,20 @@ export default function BattleDraft({
     }
     return `PLAYER ${playerTurn} DRAFT`;
   };
+
+  // 🔄 DATABASE LOADING SCREEN (Matches your UI perfectly)
+  if (dbLoading) {
+    return (
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#050505] text-white uppercase font-sans">
+        <div className="text-3xl md:text-5xl font-black italic text-[#ff8c32] animate-pulse tracking-tighter">
+          FETCHING ASSETS...
+        </div>
+        <p className="text-[10px] md:text-xs text-gray-500 font-bold tracking-[0.3em] mt-4">
+          CONNECTING TO MONGODB
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] w-full flex flex-col items-center bg-[#050505] text-white overflow-hidden p-2 md:p-4 uppercase font-sans">
@@ -292,7 +351,7 @@ export default function BattleDraft({
       {/* DYNAMIC HEADER */}
       <header className="w-full max-w-6xl flex justify-between items-center h-10 md:h-14 shrink-0 border-b border-white/5 px-2">
         <button
-          onClick={onExit}
+          onClick={() => navigate("/modes")}
           className="text-[9px] md:text-[11px] font-black text-gray-500 hover:text-white tracking-[0.2em] transition-colors"
         >
           ← ABORT
@@ -334,7 +393,7 @@ export default function BattleDraft({
               alt={current.name}
             />
 
-            {/* SMOOTH BOTTOM GRADIENT - Only covers the bottom half, leaving the face completely clear */}
+            {/* SMOOTH BOTTOM GRADIENT */}
             <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-[#050507] via-[#050507]/90 to-transparent"></div>
 
             {/* TOP BADGES */}
@@ -357,17 +416,14 @@ export default function BattleDraft({
 
             {/* BOTTOM INFO PANEL */}
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 flex flex-col z-20">
-              {/* Name (Reduced size, premium tracking) */}
               <h3 className="text-xl md:text-2xl font-black italic text-white uppercase tracking-wider leading-tight drop-shadow-md mb-0.5">
                 {current.name}
               </h3>
 
-              {/* Bio (Crisp and subtle) */}
               <p className="text-[9px] md:text-[10px] text-gray-400 normal-case font-medium leading-snug line-clamp-2 drop-shadow-md mb-3">
                 {current.bio}
               </p>
 
-              {/* Minimalist Stats Dashboard */}
               <div className="flex gap-2 mb-3">
                 <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-md border border-white/10 p-1.5 md:p-2 rounded-lg text-center shadow-inner">
                   <span className="text-[6px] md:text-[7px] text-orange-400 font-black tracking-widest uppercase mb-0.5">
@@ -395,7 +451,6 @@ export default function BattleDraft({
                 </div>
               </div>
 
-              {/* Resummon Button */}
               {skips > 0 && (
                 <button
                   onClick={handleSkip}

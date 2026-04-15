@@ -1,10 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
-// YAHAN FIX HAI: Trophy ko import kiya gaya hai
+import { useNavigate } from "react-router-dom";
 import { User, Monitor, Users, Swords, Trophy } from "lucide-react";
 
-export default function ModeSelection({ onSelectMode, user, onLogout }) {
-  // 🧠 LOGIC FIX: Changed IDs so BattleDraft.jsx actually recognizes them
+export default function ModeSelection() {
+  const navigate = useNavigate();
+  const commanderName = localStorage.getItem("commander") || "UNKNOWN";
+
   const modes = [
     {
       id: "PVE",
@@ -19,50 +21,56 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
       icon: <User size={32} />,
     },
     {
-      id: "BATTLE ROYALE", // Changed from "MULTI" to trigger 4-player turns
+      id: "BATTLE ROYALE",
       name: "BATTLE ROYALE",
       desc: "1v1v1v1 Free-for-all chaos.",
       icon: <Swords size={32} />,
     },
     {
-      id: "TEAM BATTLE", // Changed from "2V2" to cleanly match backend expectations
+      id: "TEAM BATTLE",
       name: "TEAM BATTLE",
       desc: "2v2 Cooperative draft.",
       icon: <Users size={32} />,
     },
   ];
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
+  const handleAction = (id) => {
+    if (id === "DASHBOARD") navigate("/dashboard");
+    else if (id === "LEADERBOARD") navigate("/leaderboard");
+    else navigate("/universe", { state: { mode: id } });
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto font-sans uppercase">
-      {/* Header - Leaderboard aur Dashboard ke sath */}
       <header className="flex flex-wrap justify-between items-center py-6 border-b border-white/5 mb-12 gap-4">
         <div>
           <h1 className="text-4xl font-black italic tracking-tighter text-[#ff8c32]">
             ANIME DRAFT.
           </h1>
           <p className="text-[10px] text-gray-500 font-bold tracking-[0.2em] mt-1">
-            COMMANDER: {user?.username}
+            COMMANDER: {commanderName}
           </p>
         </div>
-
         <div className="flex items-center gap-4 flex-wrap">
-          {/* LEADERBOARD BUTTON */}
           <button
-            onClick={() => onSelectMode("LEADERBOARD")}
+            onClick={() => handleAction("LEADERBOARD")}
             className="flex items-center gap-2 text-[10px] font-black text-yellow-400 tracking-widest border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 rounded-lg transition-all hover:bg-yellow-400 hover:text-black"
           >
             <Trophy size={14} /> RANKINGS
           </button>
-
           <button
-            onClick={() => onSelectMode("DASHBOARD")}
+            onClick={() => handleAction("DASHBOARD")}
             className="text-[10px] font-black text-gray-400 hover:text-[#ff8c32] tracking-widest transition-all"
           >
             VIEW DASHBOARD
           </button>
-
           <button
-            onClick={onLogout}
+            onClick={handleLogout}
             className="text-[10px] font-black text-gray-600 hover:text-red-500 tracking-widest border border-white/10 px-4 py-2 rounded-lg transition-all"
           >
             LOGOUT
@@ -70,7 +78,6 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
         </div>
       </header>
 
-      {/* Main Selection Body */}
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <motion.h2
           initial={{ y: -20, opacity: 0 }}
@@ -79,17 +86,13 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
         >
           SELECT GAME MODE
         </motion.h2>
-        <p className="text-gray-600 font-bold text-[10px] tracking-[0.3em] mb-12 uppercase">
-          CHOOSE YOUR COMBAT ARENA
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mt-12">
           {modes.map((mode) => (
             <motion.button
               key={mode.id}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onSelectMode(mode.id)}
+              onClick={() => handleAction(mode.id)}
               className="group relative bg-[#111113] border-2 border-white/5 p-8 rounded-[40px] text-left hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all duration-300 overflow-hidden"
             >
               <div className="flex items-center gap-6 relative z-10">
@@ -97,7 +100,7 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
                   {mode.icon}
                 </div>
                 <div>
-                  <h3 className="text-xl font-black italic uppercase text-gray-300 group-hover:text-white transition-colors">
+                  <h3 className="text-xl font-black italic uppercase text-gray-300 group-hover:text-white">
                     {mode.name}
                   </h3>
                   <p className="text-xs text-gray-600 normal-case font-bold">
@@ -105,7 +108,6 @@ export default function ModeSelection({ onSelectMode, user, onLogout }) {
                   </p>
                 </div>
               </div>
-
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-white pointer-events-none">
                 <Swords size={120} />
               </div>
