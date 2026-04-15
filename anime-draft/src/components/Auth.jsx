@@ -12,27 +12,27 @@ export default function Auth() {
     e.preventDefault();
     const endpoint = isLogin ? "login" : "register";
 
+    // Deployed Backend URL
+    const API_URL = "https://anime-draft-game-1.onrender.com/api/auth";
+
     try {
-      const res = await axios.post(
-        `https://anime-draft-game-1.onrender.com/api/auth/${endpoint}`,
-        {
-          username: username.toUpperCase(),
-          password,
-        },
-      );
+      const res = await axios.post(`${API_URL}/${endpoint}`, {
+        username: username.toUpperCase(),
+        password,
+      });
 
       if (isLogin) {
-        // Asli data save karo
         localStorage.setItem("commander", res.data.username);
         localStorage.setItem("userStats", JSON.stringify(res.data));
-        navigate("/modes"); // Redirect to Lobby
+        window.location.href = "/modes"; // Hard redirect for safety
       } else {
-        alert("✅ REGISTRATION SUCCESSFUL! COMMANDER, NOW LOG IN.");
+        alert("✅ REGISTRATION SUCCESSFUL! LOG IN NOW.");
         setIsLogin(true);
       }
     } catch (err) {
+      console.error("Auth Error:", err);
       alert(
-        err.response?.data?.error || "❌ SERVER DOWN! RESTART NODE SERVER.",
+        err.response?.data?.error || "❌ CONNECTION FAILED! CHECK BACKEND.",
       );
     }
   };

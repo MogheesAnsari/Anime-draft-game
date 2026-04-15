@@ -6,7 +6,7 @@ import "dotenv/config";
 
 const app = express();
 
-// ✅ FIX 1: Allow all origins during deployment testing
+// ✅ CORS: Open for deployment
 app.use(
   cors({
     origin: "*",
@@ -19,24 +19,60 @@ app.use(express.json());
 // 🔌 MONGODB CONNECTION
 mongoose
   .connect(process.env.MONGO_URI || "mongodb://localhost:27017/anime_draft")
-  .then(() => console.log("🔥 DB CONNECTED: ANILIST MODE ENGAGED"))
+  .then(() => console.log("🔥 DB CONNECTED: ANIME DRAFT ENGINE ONLINE"))
   .catch((err) => console.error("❌ DB ERROR:", err));
 
-// 📝 CHARACTER MODEL
+// 📝 SCHEMAS & MODELS
 const CharacterSchema = new mongoose.Schema({
   id: { type: Number, required: true, unique: true },
   name: String,
   img: String,
   universe: String,
-  atk: { type: Number, default: 50 },
-  def: { type: Number, default: 50 },
-  spd: { type: Number, default: 50 },
-  tier: { type: String, default: "A" },
+  atk: { type: Number, default: 60 },
+  def: { type: Number, default: 60 },
+  spd: { type: Number, default: 60 },
+  tier: { type: String, default: "B" },
   bio: String,
 });
 const Character = mongoose.model("Character", CharacterSchema);
 
-// ⚙️ ANILIST FETCH ROUTE (Postman)
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  totalGames: { type: Number, default: 0 },
+  wins: { type: Number, default: 0 },
+  fullHistory: { type: Array, default: [] },
+});
+const User = mongoose.model("User", UserSchema);
+
+// -----------------------------------------
+// 🔐 AUTH ROUTES (Fixes 404 in Auth.jsx)
+// -----------------------------------------
+app.post("/api/auth/register", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const newUser = new User({ username, password });
+    await newUser.save();
+    res.status(201).json({ message: "COMMANDER REGISTERED" });
+  } catch (err) {
+    res.status(400).json({ error: "USERNAME ALREADY EXISTS" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await User.findOne({ username, password });
+    if (user) res.json(user);
+    else res.status(401).json({ error: "INVALID CLEARANCE CODE" });
+  } catch (err) {
+    res.status(500).json({ error: "SYSTEM ERROR" });
+  }
+});
+
+// -----------------------------------------
+// ⚙️ ADMIN ROUTES (AniList & Management)
+// -----------------------------------------
 app.post("/api/admin/fetch-and-save", async (req, res) => {
   const { searchName, type, universe, pageLimit = 1 } = req.body;
   const query = `
@@ -58,7 +94,6 @@ app.post("/api/admin/fetch-and-save", async (req, res) => {
   try {
     let allChars = [];
     for (let p = 1; p <= pageLimit; p++) {
-      console.log(`📡 Fetching Page ${p} for ${searchName}...`);
       const response = await axios.post("https://graphql.anilist.co", {
         query: query,
         variables: { search: searchName, type: type, page: p },
@@ -66,74 +101,66 @@ app.post("/api/admin/fetch-and-save", async (req, res) => {
       const edges = response.data.data.Media.characters.edges;
       if (edges) {
         const filtered = edges
-          .filter((edge) => edge.role !== "BACKGROUND")
-          .map((edge) => edge.node);
+          .filter((e) => e.role !== "BACKGROUND")
+          .map((e) => e.node);
         allChars = [...allChars, ...filtered];
       }
-      if (pageLimit > 1)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (pageLimit > 1) await new Promise((r) => setTimeout(r, 2000));
     }
-    const savedChars = [];
     for (let char of allChars) {
       if (!char.image?.large) continue;
-      const newChar = {
-        id: Number(char.id),
-        name: char.name.full,
-        img: char.image.large,
-        universe: universe,
-        atk: 60,
-        def: 60,
-        spd: 60,
-        tier: "B",
-        bio: `Elite warrior from the ${universe} series.`,
-      };
-      await Character.findOneAndUpdate({ id: newChar.id }, newChar, {
-        upsert: true,
-      });
-      savedChars.push(newChar);
+      await Character.findOneAndUpdate(
+        { id: Number(char.id) },
+        {
+          id: Number(char.id),
+          name: char.name.full,
+          img: char.image.large,
+          universe: universe,
+          bio: `Elite warrior from the ${universe} series.`,
+        },
+        { upsert: true },
+      );
     }
-    res.status(200).json({
-      message: `🔥 SYNC COMPLETE: ${savedChars.length} CHARACTERS`,
-      total: savedChars.length,
-    });
+    res.status(200).json({ message: "SYNC COMPLETE", total: allChars.length });
   } catch (err) {
-    res.status(500).json({ error: "Manga fetch failed." });
-  }
-});
-
-// 🗑️ DELETE ROUTE
-app.delete("/api/admin/delete-character/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await Character.findOneAndDelete({ id: Number(id) });
-    if (deleted) res.status(200).json({ message: "CHARACTER PURGED" });
-    else res.status(404).json({ error: "NOT FOUND" });
-  } catch (err) {
-    res.status(500).json({ error: "SERVER ERROR" });
-  }
-});
-
-// 🃏 GENERAL ROUTES
-app.get("/api/characters", async (req, res) => {
-  const { universe } = req.query;
-  try {
-    const chars = await Character.find({ universe: universe });
-    res.json(chars);
-  } catch (err) {
-    res.status(500).json({ error: "DB Error" });
+    res.status(500).json({ error: "FETCH FAILED" });
   }
 });
 
 app.put("/api/admin/update-character/:id", async (req, res) => {
-  const { id } = req.params;
-  const updated = await Character.findOneAndUpdate(
-    { id: Number(id) },
-    req.body,
-    { new: true },
-  );
-  res.json(updated);
+  try {
+    const updated = await Character.findOneAndUpdate(
+      { id: Number(req.params.id) },
+      req.body,
+      { new: true },
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "UPDATE FAILED" });
+  }
 });
 
-// ✅ FIX 2: Use process.env.PORT for Deployment
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
+  try {
+    await Character.findOneAndDelete({ id: Number(req.params.id) });
+    res.json({ message: "PURGED" });
+  } catch (err) {
+    res.status(500).json({ error: "DELETE FAILED" });
+  }
+});
+
+// -----------------------------------------
+// 🃏 GAME ROUTES
+// -----------------------------------------
+app.get("/api/characters", async (req, res) => {
+  try {
+    const chars = await Character.find({ universe: req.query.universe });
+    res.json(chars);
+  } catch (err) {
+    res.status(500).json({ error: "DB ERROR" });
+  }
+});
+
+// ✅ DYNAMIC PORT FOR RENDER
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 ADMIN ENGINE RUNNING ON PORT ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));
