@@ -5,10 +5,11 @@ import axios from "axios";
 import "dotenv/config";
 
 const app = express();
-// server.js update
+
+// ✅ FIX 1: Allow all origins during deployment testing
 app.use(
   cors({
-    origin: ["https://your-frontend-link.vercel.app", "http://localhost:5173"],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
@@ -23,7 +24,7 @@ mongoose
 
 // 📝 CHARACTER MODEL
 const CharacterSchema = new mongoose.Schema({
-  id: { type: Number, required: true, unique: true }, // AniList ID bhi Number hoti hai
+  id: { type: Number, required: true, unique: true },
   name: String,
   img: String,
   universe: String,
@@ -35,12 +36,9 @@ const CharacterSchema = new mongoose.Schema({
 });
 const Character = mongoose.model("Character", CharacterSchema);
 
-// -----------------------------------------
-// ⚙️ ANILIST FETCH ROUTE (For Postman)
-// -----------------------------------------
+// ⚙️ ANILIST FETCH ROUTE (Postman)
 app.post("/api/admin/fetch-and-save", async (req, res) => {
   const { searchName, type, universe, pageLimit = 1 } = req.body;
-
   const query = `
     query ($search: String, $type: MediaType, $page: Int) {
       Media(search: $search, type: $type) {
@@ -57,37 +55,27 @@ app.post("/api/admin/fetch-and-save", async (req, res) => {
       }
     }
   `;
-
   try {
     let allChars = [];
-
     for (let p = 1; p <= pageLimit; p++) {
       console.log(`📡 Fetching Page ${p} for ${searchName}...`);
-
       const response = await axios.post("https://graphql.anilist.co", {
         query: query,
         variables: { search: searchName, type: type, page: p },
       });
-
       const edges = response.data.data.Media.characters.edges;
       if (edges) {
-        // Manga ke liye hum Supporting aur Main dono le rahe hain
         const filtered = edges
           .filter((edge) => edge.role !== "BACKGROUND")
           .map((edge) => edge.node);
-
         allChars = [...allChars, ...filtered];
       }
-
-      // ⏳ Rate Limit Se Bachne Ke Liye (Wait 2 seconds between pages)
       if (pageLimit > 1)
         await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-
     const savedChars = [];
     for (let char of allChars) {
       if (!char.image?.large) continue;
-
       const newChar = {
         id: Number(char.id),
         name: char.name.full,
@@ -97,41 +85,35 @@ app.post("/api/admin/fetch-and-save", async (req, res) => {
         def: 60,
         spd: 60,
         tier: "B",
-        bio: `Elite warrior from the ${universe} manga series.`,
+        bio: `Elite warrior from the ${universe} series.`,
       };
-
       await Character.findOneAndUpdate({ id: newChar.id }, newChar, {
         upsert: true,
       });
       savedChars.push(newChar);
     }
-
     res.status(200).json({
-      message: `🔥 MANGA SYNC COMPLETE: ${savedChars.length} CHARACTERS`,
+      message: `🔥 SYNC COMPLETE: ${savedChars.length} CHARACTERS`,
       total: savedChars.length,
     });
   } catch (err) {
-    console.error("❌ Error:", err.message);
-    res.status(500).json({ error: "Manga fetch failed. Try lower pageLimit." });
+    res.status(500).json({ error: "Manga fetch failed." });
   }
 });
-// -----------------------------------------
-// 🗑️ DELETE ROUTE (Wahi Solid Number Logic)
-// -----------------------------------------
+
+// 🗑️ DELETE ROUTE
 app.delete("/api/admin/delete-character/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await Character.findOneAndDelete({ id: Number(id) });
     if (deleted) res.status(200).json({ message: "CHARACTER PURGED" });
-    else res.status(404).json({ error: "NOT FOUND IN DB" });
+    else res.status(404).json({ error: "NOT FOUND" });
   } catch (err) {
     res.status(500).json({ error: "SERVER ERROR" });
   }
 });
 
-// -----------------------------------------
 // 🃏 GENERAL ROUTES
-// -----------------------------------------
 app.get("/api/characters", async (req, res) => {
   const { universe } = req.query;
   try {
@@ -141,6 +123,7 @@ app.get("/api/characters", async (req, res) => {
     res.status(500).json({ error: "DB Error" });
   }
 });
+
 app.put("/api/admin/update-character/:id", async (req, res) => {
   const { id } = req.params;
   const updated = await Character.findOneAndUpdate(
@@ -151,5 +134,6 @@ app.put("/api/admin/update-character/:id", async (req, res) => {
   res.json(updated);
 });
 
-const PORT = 5000;
+// ✅ FIX 2: Use process.env.PORT for Deployment
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 ADMIN ENGINE RUNNING ON PORT ${PORT}`));
