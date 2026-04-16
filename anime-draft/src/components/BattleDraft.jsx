@@ -357,11 +357,11 @@ export default function BattleDraft({ user, onBattleEnd }) {
           const shuffled = [...res.data].sort(() => 0.5 - Math.random());
 
           setCharacterPool(shuffled);
-          setDrafted([]);
           setSkips(1); // User rule: Exactly one skip
 
           // ✨ MAGIC STEP: Data set hone ke BAAD card open hoga
           setCurrent(shuffled[0]);
+          setUsed([shuffled[0].id]); // 📦 First card ko used mein daal do
           setDbLoading(false); // Ab card load mana jayega
         }
       } catch (err) {
@@ -371,7 +371,8 @@ export default function BattleDraft({ user, onBattleEnd }) {
     };
 
     if (universe) fetchFromDB();
-  }, [universe, location.state?.isRetry]);
+  }, [universe, isRetry]); // 🐛 FIX: Removed location.state?.isRetry which causes undefined errors
+
   const getLocalRandomUnique = (usedIds, pool) => {
     const available = pool.filter((c) => !usedIds.includes(c.id));
     if (available.length === 0) return null;
@@ -399,19 +400,19 @@ export default function BattleDraft({ user, onBattleEnd }) {
     const card = getLocalRandomUnique(used, characterPool);
     if (!card) return alert("Draft pool empty!");
     setCurrent(card);
+    setUsed((prev) => [...prev, card.id]); // 📦 Card draw hote hi used mein daal do
   };
 
   const handleSkip = () => {
     if (skips > 0) {
       setSkips(0);
-      setUsed([...used, current.id]);
+      // Card pehle se used mein hai, bas naya pull karo
       pull();
     }
   };
 
   const assign = (slotId) => {
     if (!current || team[slotId]) return;
-    setUsed([...used, current.id]);
     setTeam({ ...team, [slotId]: current });
     setCurrent(null);
   };
