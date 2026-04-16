@@ -192,7 +192,6 @@ const DraftCard = ({ current, universe, skips, onSkip }) => {
 
   return (
     <div className="relative h-full flex items-center justify-center w-full">
-      {/* 💥 S+ Impact Flash Layer (Appears briefly behind the card) */}
       {isSPlus && (
         <div className="absolute inset-0 w-full h-full animate-flash-impact pointer-events-none rounded-full blur-[100px] z-0"></div>
       )}
@@ -308,7 +307,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
   const [completedTeams, setCompletedTeams] = useState([]);
   const [team, setTeam] = useState({});
   const [current, setCurrent] = useState(null);
-  const [used, setUsed] = useState([]);
   const [skips, setSkips] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(!isRetry);
@@ -336,33 +334,32 @@ export default function BattleDraft({ user, onBattleEnd }) {
     maxTurns = 2;
     isPvE = false;
   }
+
+  // 🚀 FIXED FETCH LOGIC: Direct Array Slicing!
   useEffect(() => {
     const fetchFromDB = async () => {
-      setDbLoading(true); // 🛡️ Pehle loading true karo taaki card chhupa rahe
+      setDbLoading(true);
       try {
         const baseUrl =
           "https://anime-draft-game-1.onrender.com/api/characters";
-        // 📝 Saare anime ke names ki list (aapke DB ke names se match hona chahiye)
         const allUniverses =
           "naruto,one_piece,jujutsu_kaisen,dragon_ball,mha,hxh,chainsaw_man,solo_leveling,demon_slayer,bleach,black_clover";
-
-        // 🚀 Logic: Agar 'all' hai toh poori list bhej do, warna single name
         const universeQuery = universe === "all" ? allUniverses : universe;
-
         const finalUrl = `${baseUrl}?universe=${universeQuery}&t=${Date.now()}`;
 
         const res = await axios.get(finalUrl);
         if (res.data && res.data.length > 0) {
-          // 🎰 Random Shuffle
+          // Pool Shuffle
           const shuffled = [...res.data].sort(() => 0.5 - Math.random());
 
+          // ⚡ THE FIX: current card ko assign karo, aur pool mein se delete kar do!
           setCharacterPool(shuffled);
-          setSkips(1); // User rule: Exactly one skip
-
-          // ✨ MAGIC STEP: Data set hone ke BAAD card open hoga
-          setCurrent(shuffled[0]);
-          setUsed([shuffled[0].id]); // 📦 First card ko used mein daal do
-          setDbLoading(false); // Ab card load mana jayega
+          setCurrent(null);
+          setSkips(1);
+          setDbLoading(false);
+        } else {
+          console.warn("No characters returned from backend");
+          setDbLoading(false);
         }
       } catch (err) {
         console.error("Fetch Error:", err);
@@ -371,13 +368,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
     };
 
     if (universe) fetchFromDB();
-  }, [universe, isRetry]); // 🐛 FIX: Removed location.state?.isRetry which causes undefined errors
-
-  const getLocalRandomUnique = (usedIds, pool) => {
-    const available = pool.filter((c) => !usedIds.includes(c.id));
-    if (available.length === 0) return null;
-    return available[Math.floor(Math.random() * available.length)];
-  };
+  }, [universe, isRetry]);
 
   const themeColors = {
     1: { from: "from-orange-500", to: "to-red-600" },
@@ -396,41 +387,45 @@ export default function BattleDraft({ user, onBattleEnd }) {
     return `PLAYER ${playerTurn} DRAFT`;
   };
 
+  // 🚀 FIXED PULL LOGIC: Seedha array se uthao!
   const pull = () => {
-    const card = getLocalRandomUnique(used, characterPool);
-    if (!card) return alert("Draft pool empty!");
-    setCurrent(card);
-    setUsed((prev) => [...prev, card.id]); // 📦 Card draw hote hi used mein daal do
+    if (characterPool.length === 0) {
+      alert("DRAFT POOL EXHAUSTED! Not enough characters.");
+      return;
+    }
+    const nextCard = characterPool[0];
+    setCurrent(nextCard);
+    // Card screen pe aate hi pool se gayab
+    setCharacterPool((prev) => prev.slice(1));
   };
 
+  // 🚀 FIXED SKIP LOGIC
   const handleSkip = () => {
     if (skips > 0) {
       setSkips(0);
-      // Card pehle se used mein hai, bas naya pull karo
-      pull();
+      pull(); // Naya pull karo, current card replace ho jayega
     }
   };
 
+  // 🚀 FIXED ASSIGN LOGIC
   const assign = (slotId) => {
     if (!current || team[slotId]) return;
     setTeam({ ...team, [slotId]: current });
-    setCurrent(null);
+    setCurrent(null); // Card assign hote hi gayab, INITIATE button aayega
   };
 
+  // 🚀 FIXED PVE CPU LOGIC
   const fight = async () => {
     let finalTeams = [...completedTeams, team];
 
-    // 🎲 RANDOMIZE LOGIC: CPU ke liye unique characters pick karna
     if (isPvE) {
       let cpuTeam = {};
-      let tempUsed = [...used]; // Purane used characters ki list
+      let currentPool = [...characterPool]; // Baaki bache huye cards
 
       SLOTS.forEach((slot) => {
-        // Pool se ek random character uthana jo pehle use na hua ho
-        const cpuCard = getLocalRandomUnique(tempUsed, characterPool);
-        if (cpuCard) {
-          cpuTeam[slot.id] = cpuCard;
-          tempUsed.push(cpuCard.id); // CPU ka pick bhi 'used' mein add karein
+        if (currentPool.length > 0) {
+          cpuTeam[slot.id] = currentPool[0];
+          currentPool = currentPool.slice(1); // CPU ne card liya, pool se delete
         }
       });
       finalTeams.push(cpuTeam);
@@ -438,19 +433,14 @@ export default function BattleDraft({ user, onBattleEnd }) {
 
     setLoading(true);
 
-    // 📊 SCORING LOGIC (With 30% IQ Boost)
     const calculatedScores = finalTeams.map((t) => {
       let total = 0;
-
-      // Strategist (Support) se 10% base value (Total 30% boost for leaders)
       const strategist = t["support"];
       const leaderBoost = strategist
         ? Math.round((Number(strategist.iq) || 100) * 0.1)
         : 0;
-
       const cap = t.captain || { atk: 0, def: 0, spd: 0, iq: 100 };
 
-      // Captain's Aura calculation
       const capTotal =
         (Number(cap.atk) || 0) +
         leaderBoost +
@@ -459,7 +449,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
         (Number(cap.spd) || 0) +
         leaderBoost +
         (Number(cap.iq) || 100);
-
       const aura = capTotal * 0.1;
 
       Object.keys(t).forEach((slotId) => {
@@ -471,7 +460,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
         let spd = Number(char.spd) || 0;
         let iq = Number(char.iq) || 100;
 
-        // 🛡️ 30% Boost (10% per stat) for Captain and Vice Captain
         if (slotId === "captain" || slotId === "vice_cap") {
           atk += leaderBoost;
           def += leaderBoost;
@@ -503,7 +491,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
       if (onBattleEnd)
         onBattleEnd(data.wins, data.fullHistory, data.totalGames);
 
-      // ✅ REMATCH CONNECTIVITY: Universe pass karna zaroori hai
       navigate("/result", {
         state: {
           result: data,
@@ -530,6 +517,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
     }
     setLoading(false);
   };
+
   if (dbLoading)
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#050505]">
@@ -541,7 +529,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
     <div className="h-[100dvh] w-full flex flex-col bg-[#050505] text-white overflow-hidden uppercase font-sans relative">
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
-      {/* 🛡️ FLOATING TACTICAL HUD */}
       <div className="absolute top-0 w-full px-4 py-4 flex justify-between items-start z-50 pointer-events-none">
         <button
           onClick={() => navigate("/modes")}
@@ -568,7 +555,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
         </div>
       </div>
 
-      {/* 🚀 CARD AREA (Centered & Resized) */}
       <div className="flex-1 w-full flex items-center justify-center px-4 relative z-10">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-[60vw] h-[60vw] bg-orange-500/5 blur-[120px] rounded-full animate-pulse"></div>
@@ -597,7 +583,6 @@ export default function BattleDraft({ user, onBattleEnd }) {
         )}
       </div>
 
-      {/* 🎛️ SLOTS DOCK */}
       <div className="w-full h-[35vh] shrink-0 px-4 md:px-8 flex flex-col justify-end pb-6 md:pb-8 bg-gradient-to-t from-black via-black/80 to-transparent relative z-20">
         <div className="w-full max-w-7xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mt-auto">
           {SLOTS.map((s) => (
