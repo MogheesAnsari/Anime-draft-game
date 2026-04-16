@@ -2,7 +2,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import axios from "axios";
-import bcrypt from "bcryptjs"; // package.json ke mutabiq
 import "dotenv/config";
 
 const app = express();
@@ -38,9 +37,10 @@ const CharacterSchema = new mongoose.Schema({
 });
 const Character = mongoose.model("Character", CharacterSchema);
 
+// 🚀 UPDATED USER SCHEMA (No Passwords, Added Avatar)
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  avatar: { type: String, default: "" },
   totalGames: { type: Number, default: 0 },
   wins: { type: Number, default: 0 },
   fullHistory: { type: Array, default: [] },
@@ -48,54 +48,39 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 // -----------------------------------------
-// 🔐 AUTH ROUTES (With Bcrypt Security)
+// 🔐 NEW USER ACCESS ROUTE (NO LAG)
 // -----------------------------------------
 
-// REGISTER
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/user/access", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const cleanUsername = username.trim().toUpperCase();
+    const { username, avatar } = req.body;
+    const cleanUsername = username.trim().toLowerCase();
 
-    const existing = await User.findOne({ username: cleanUsername });
-    if (existing) return res.status(400).json({ error: "USERNAME TAKEN" });
+    // Check if user exists
+    let user = await User.findOne({ username: cleanUsername });
 
-    // Password Hashing
-    const hashedPassword = await bcrypt.hash(password.trim(), 10);
-    const newUser = new User({
-      username: cleanUsername,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-    res.status(201).json({ message: "COMMANDER REGISTERED" });
-  } catch (err) {
-    res.status(500).json({ error: "REGISTRATION FAILED" });
-  }
-});
-
-// LOGIN
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const cleanUsername = username.trim().toUpperCase();
-
-    const user = await User.findOne({ username: cleanUsername });
-    if (!user) return res.status(401).json({ error: "COMMANDER NOT FOUND" });
-
-    // Bcrypt Match Check
-    const isMatch = await bcrypt.compare(password.trim(), user.password);
-    if (!isMatch)
-      return res.status(401).json({ error: "INVALID CLEARANCE CODE" });
+    if (!user) {
+      // Create new user if not found
+      user = new User({
+        username: cleanUsername,
+        avatar: avatar,
+      });
+      await user.save();
+      console.log(`🆕 NEW COMMANDER: ${cleanUsername}`);
+    } else {
+      // Update avatar if user returns and picks a new one
+      user.avatar = avatar;
+      await user.save();
+    }
 
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: "SYSTEM ERROR" });
+    res.status(500).json({ error: "ACCESS DENIED" });
   }
 });
 
 // -----------------------------------------
-// ⚙️ ADMIN ROUTES (AniList & Management)
+// ⚙️ ADMIN ROUTES (Anilist & Management)
 // -----------------------------------------
 app.post("/api/admin/fetch-and-save", async (req, res) => {
   const { searchName, type, universe, pageLimit = 1 } = req.body;
@@ -174,14 +159,48 @@ app.delete("/api/admin/delete-character/:id", async (req, res) => {
 });
 
 // -----------------------------------------
-// 🃏 GAME ROUTES
+// 🃏 GAME & RANKING ROUTES
 // -----------------------------------------
+
+// Character fetch
 app.get("/api/characters", async (req, res) => {
   try {
     const chars = await Character.find({ universe: req.query.universe });
     res.json(chars);
   } catch (err) {
     res.status(500).json({ error: "DB ERROR" });
+  }
+});
+
+// Leaderboard fetch
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const topPlayers = await User.find()
+      .sort({ wins: -1 })
+      .limit(10)
+      .select("username wins totalGames avatar");
+    res.json(topPlayers);
+  } catch (err) {
+    res.status(500).json({ error: "LEADERBOARD FAILED" });
+  }
+});
+
+// Battle Result Sync
+app.post("/api/fight", async (req, res) => {
+  try {
+    const { username, mode, teams } = req.body;
+    const user = await User.findOne({ username: username.toLowerCase() });
+
+    if (user) {
+      user.totalGames += 1;
+      // Logic for wins can be added here if needed,
+      // currently handling via local calculation in BattleDraft
+      await user.save();
+    }
+
+    res.json({ message: "BATTLE SYNCED", totalGames: user?.totalGames || 0 });
+  } catch (err) {
+    res.status(500).json({ error: "SYNC FAILED" });
   }
 });
 

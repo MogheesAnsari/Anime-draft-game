@@ -11,6 +11,9 @@ export default function BattleDraft({ user, onBattleEnd }) {
   const mode = state?.mode || "pve";
   const universe = state?.universe || "all";
 
+  // 🚀 RETRY LOGIC: Result page se aane par isRetry true hoga
+  const isRetry = state?.isRetry || false;
+
   const [playerTurn, setPlayerTurn] = useState(1);
   const [completedTeams, setCompletedTeams] = useState([]);
   const [team, setTeam] = useState({});
@@ -18,7 +21,9 @@ export default function BattleDraft({ user, onBattleEnd }) {
   const [used, setUsed] = useState([]);
   const [skips, setSkips] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [showRules, setShowRules] = useState(true);
+
+  // 🚀 Initial state ab isRetry par depend karegi
+  const [showRules, setShowRules] = useState(!isRetry);
 
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
@@ -130,10 +135,10 @@ export default function BattleDraft({ user, onBattleEnd }) {
 
     setLoading(true);
 
-    // 🧠 LOCAL CALCULATION FIRST
+    // 🧠 STRATEGIST LOGIC (LOCAL CALCULATION FIRST)
     const calculatedScores = finalTeams.map((t) => {
       let total = 0;
-      const strategist = t["support"];
+      const strategist = t["support"]; // Internally slot id is support
       const flatBoost = strategist
         ? Math.round((Number(strategist.iq) || 100) * 0.05)
         : 0;
@@ -167,7 +172,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
         if (slotId === "speedster") bonus = spd * 0.2;
         if (slotId === "tank") bonus = def * 0.3;
         if (slotId === "raw_power") bonus = atk * 0.4;
-        if (slotId === "support") bonus = 0;
+        if (slotId === "support") bonus = 0; // Strategist raw bonus is 0, logic is handled above
 
         total += slotId === "captain" ? base : base + bonus + aura;
       });
@@ -412,6 +417,10 @@ export default function BattleDraft({ user, onBattleEnd }) {
       <div className="w-full max-w-7xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 px-2 mb-4 shrink-0">
         {SLOTS.map((s) => {
           const char = team[s.id];
+          // ✨ Display label update to handle UI side changes easily if your SLOTS array still has "SUPPORT"
+          let displayLabel = s.label.split(" ")[1] || s.label;
+          if (s.id === "support") displayLabel = "STRATEGIST";
+
           return (
             <div
               key={s.id}
@@ -420,7 +429,7 @@ export default function BattleDraft({ user, onBattleEnd }) {
             >
               <div className="pl-3 z-10">
                 <div className="text-[8px] md:text-[10px] font-black text-gray-500">
-                  {s.label.split(" ")[1] || s.label}
+                  {displayLabel}
                 </div>
                 <div
                   className={`text-[11px] md:text-[13px] font-black italic truncate max-w-[80px] md:max-w-[100px] ${char ? "text-white" : "text-gray-600"}`}
