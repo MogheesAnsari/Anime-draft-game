@@ -1,118 +1,103 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { User, Monitor, Users, Swords, Trophy } from "lucide-react";
+import { User, Monitor, Users, Swords } from "lucide-react";
 
-export default function ModeSelection() {
+export default function ModeSelection({ user }) {
   const navigate = useNavigate();
-  const commanderName = localStorage.getItem("commander") || "UNKNOWN";
 
   const modes = [
     {
       id: "PVE",
       name: "PLAYER VS CPU",
-      desc: "Test your squad against a bot.",
+      desc: "Test your squad against a high-tier bot.",
       icon: <Monitor size={32} />,
     },
     {
       id: "PVP",
       name: "PLAYER VS PLAYER",
-      desc: "1v1 local or online clash.",
+      desc: "1v1 local or online tactical clash.",
       icon: <User size={32} />,
     },
     {
       id: "BATTLE ROYALE",
       name: "BATTLE ROYALE",
-      desc: "1v1v1v1 Free-for-all chaos.",
+      desc: "1v1v1v1 Free-for-all total chaos.",
       icon: <Swords size={32} />,
     },
     {
       id: "TEAM BATTLE",
       name: "TEAM BATTLE",
-      desc: "2v2 Cooperative draft.",
+      desc: "2v2 Cooperative tactical draft.",
       icon: <Users size={32} />,
     },
   ];
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
-  };
-
   const handleAction = (id) => {
-    if (id === "DASHBOARD") navigate("/dashboard");
-    else if (id === "LEADERBOARD") navigate("/leaderboard");
-    else navigate("/universe", { state: { mode: id } });
+    navigate("/universe", { state: { mode: id } });
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto font-sans uppercase">
-      <header className="flex flex-wrap justify-between items-center py-6 border-b border-white/5 mb-12 gap-4">
-        <div>
-          <h1 className="text-4xl font-black italic tracking-tighter text-[#ff8c32]">
-            ANIME DRAFT.
-          </h1>
-          <p className="text-[10px] text-gray-500 font-bold tracking-[0.2em] mt-1">
-            COMMANDER: {commanderName}
-          </p>
-        </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <button
-            onClick={() => handleAction("LEADERBOARD")}
-            className="flex items-center gap-2 text-[10px] font-black text-yellow-400 tracking-widest border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 rounded-lg transition-all hover:bg-yellow-400 hover:text-black"
-          >
-            <Trophy size={14} /> RANKINGS
-          </button>
-          <button
-            onClick={() => handleAction("DASHBOARD")}
-            className="text-[10px] font-black text-gray-400 hover:text-[#ff8c32] tracking-widest transition-all"
-          >
-            VIEW DASHBOARD
-          </button>
-          <button
-            onClick={handleLogout}
-            className="text-[10px] font-black text-gray-600 hover:text-red-500 tracking-widest border border-white/10 px-4 py-2 rounded-lg transition-all"
-          >
-            LOGOUT
-          </button>
-        </div>
-      </header>
-
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-10 font-sans uppercase">
+      {/* 🚀 CLEAN HEADER SECTION (No more double navbars) */}
+      <div className="text-center mb-10 md:mb-16">
         <motion.h2
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="text-5xl font-black italic tracking-tighter mb-2 text-white"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl md:text-7xl font-black italic tracking-tighter text-white"
         >
-          SELECT GAME MODE
+          SELECT <span className="text-[#ff8c32]">MISSION</span>
         </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mt-12">
-          {modes.map((mode) => (
-            <motion.button
-              key={mode.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleAction(mode.id)}
-              className="group relative bg-[#111113] border-2 border-white/5 p-8 rounded-[40px] text-left hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all duration-300 overflow-hidden"
-            >
-              <div className="flex items-center gap-6 relative z-10">
-                <div className="p-4 bg-black/40 rounded-2xl text-gray-500 group-hover:text-[#ff8c32] transition-colors border border-white/5">
-                  {mode.icon}
-                </div>
-                <div>
-                  <h3 className="text-xl font-black italic uppercase text-gray-300 group-hover:text-white">
-                    {mode.name}
-                  </h3>
-                  <p className="text-xs text-gray-600 normal-case font-bold">
-                    {mode.desc}
-                  </p>
-                </div>
+        <p className="text-[10px] md:text-xs text-gray-500 font-bold tracking-[0.5em] mt-2">
+          CHOOSE YOUR BATTLE FORMAT
+        </p>
+      </div>
+
+      {/* 🎮 GRID SYSTEM (Mobile & Desktop Optimized) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full max-w-5xl">
+        {modes.map((mode, index) => (
+          <motion.button
+            key={mode.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleAction(mode.id)}
+            className="group relative bg-[#111113] border-2 border-white/5 p-8 md:p-10 rounded-[40px] text-left hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all duration-300 overflow-hidden"
+          >
+            <div className="flex items-center gap-6 md:gap-8 relative z-10">
+              {/* Icon Box */}
+              <div className="p-4 md:p-5 bg-black/40 rounded-3xl text-gray-500 group-hover:text-[#ff8c32] transition-colors border border-white/5 shadow-2xl">
+                {mode.icon}
               </div>
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity text-white pointer-events-none">
-                <Swords size={120} />
+
+              {/* Content */}
+              <div>
+                <h3 className="text-xl md:text-3xl font-black italic uppercase text-gray-300 group-hover:text-white leading-none">
+                  {mode.name}
+                </h3>
+                <p className="text-[10px] md:text-xs text-gray-600 normal-case font-bold mt-2 tracking-wide">
+                  {mode.desc}
+                </p>
               </div>
-            </motion.button>
-          ))}
+            </div>
+
+            {/* Background Aesthetic Decoration */}
+            <div className="absolute -bottom-6 -right-6 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity text-white pointer-events-none transform group-hover:rotate-12 duration-500">
+              <Swords size={150} />
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* 🛡️ SYSTEM FOOTER */}
+      <div className="mt-12 text-center">
+        <div className="flex items-center gap-3 bg-white/5 px-6 py-2 rounded-full border border-white/5">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-[9px] font-black text-gray-500 tracking-[0.3em]">
+            ENGINE ONLINE : SECURE CONNECTION
+          </span>
         </div>
       </div>
     </div>

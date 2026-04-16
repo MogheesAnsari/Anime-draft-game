@@ -1,51 +1,54 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ANIME_OPTIONS } from "../engine"; // 👈 Ye array engine.js se aati hai
+
+const ANIME_OPTIONS = [
+  { id: "naruto", name: "NARUTO" },
+  { id: "one_piece", name: "ONE PIECE" },
+  { id: "jujutsu_kaisen", name: "JJK" },
+  { id: "dragon_ball", name: "DRAGON BALL" },
+  { id: "mha", name: "MHA" },
+  { id: "hxh", name: "HUNTER X HUNTER" },
+  { id: "chainsaw_man", name: "CHAINSAW MAN" },
+  { id: "solo_leveling", name: "SOLO LEVELING" },
+  { id: "demon_slayer", name: "DEMON SLAYER" },
+  { id: "bleach", name: "BLEACH" },
+  { id: "black_clover", name: "BLACK CLOVER" },
+];
 
 export default function UniverseSelection() {
   const navigate = useNavigate();
   const location = useLocation();
-
   const selectedMode = location.state?.mode || "PVE";
 
-  const handleSelect = (universeId) => {
-    navigate("/draft", {
-      state: {
-        mode: selectedMode,
-        universe: universeId,
-      },
-    });
+  const handleSelect = (uId) => {
+    // 🚀 'all' bhej rahe hain bina kisi error ke
+    navigate("/draft", { state: { mode: selectedMode, universe: uId } });
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto flex flex-col items-center justify-center min-h-screen uppercase font-sans">
-      <h2 className="text-5xl md:text-7xl font-black italic text-[#ff8c32] mb-2 tracking-tighter">
-        SELECT UNIVERSE
+    <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col p-6 overflow-hidden items-center justify-center">
+      <h2 className="text-4xl font-black italic mb-8 text-[#ff8c32]">
+        SELECT REALM
       </h2>
-      <p className="text-gray-600 font-bold text-[10px] tracking-[0.3em] mb-12 text-center uppercase">
-        FILTER THE DRAFT POOL FOR {selectedMode}
-      </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-2xl">
+        <button
+          onClick={() => handleSelect("all")}
+          className="col-span-2 md:col-span-3 h-14 bg-[#ff8c32] text-black rounded-2xl font-black italic tracking-widest hover:scale-105 active:scale-95 transition-all"
+        >
+          ALL ANIME BATTLE
+        </button>
+
         {ANIME_OPTIONS.map((opt) => (
           <button
             key={opt.id}
             onClick={() => handleSelect(opt.id)}
-            className="bg-[#111113] border border-white/5 p-8 rounded-3xl hover:border-[#ff8c32] hover:bg-[#ff8c32]/5 transition-all text-xs font-black tracking-widest italic uppercase group"
+            className="h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-[10px] font-black tracking-widest hover:bg-white/10 transition-all uppercase"
           >
-            <span className="group-hover:text-white transition-colors">
-              {opt.name}
-            </span>
+            {opt.name}
           </button>
         ))}
       </div>
-
-      <button
-        onClick={() => navigate("/modes")}
-        className="mt-12 text-gray-500 font-black text-[10px] hover:text-white transition-all tracking-[0.3em]"
-      >
-        ← BACK TO MODES
-      </button>
     </div>
   );
 }

@@ -1,71 +1,108 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LogOut, ShieldAlert, Swords } from "lucide-react";
+import {
+  LogOut,
+  ShieldAlert,
+  Swords,
+  User as UserIcon,
+  Settings,
+  ChevronDown,
+} from "lucide-react";
 
 export default function Navbar({ user, setUser }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
-  // 🚀 SMART LOGIC: Agar user profile bana raha hai, toh navbar mat dikhao
   if (location.pathname === "/" && !user) return null;
 
-  const handleDisconnect = () => {
-    if (window.confirm("ARE YOU SURE YOU WANT TO DISCONNECT YOUR IDENTITY?")) {
-      localStorage.removeItem("commander"); // 🧹 Data clear
+  const handleLogout = () => {
+    if (window.confirm("TERMINATE SESSION?")) {
+      localStorage.removeItem("commander");
       setUser(null);
-      navigate("/"); // Wapas landing page par
+      navigate("/");
     }
   };
 
   return (
-    <nav className="w-full h-16 bg-[#0a0a0b] border-b border-white/5 flex items-center justify-between px-4 md:px-8 uppercase font-sans shrink-0 z-[100] relative">
-      {/* 🌟 LOGO / HOME BUTTON */}
+    <nav className="w-full h-20 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 md:px-12 uppercase font-sans shrink-0 z-[1000] sticky top-0">
       <div
-        className="flex items-center gap-2 cursor-pointer group"
+        className="flex items-center gap-3 cursor-pointer group"
         onClick={() => navigate("/modes")}
       >
-        <div className="p-2 bg-[#ff8c32]/10 rounded-lg group-hover:bg-[#ff8c32]/20 transition-colors">
-          <Swords size={18} className="text-[#ff8c32]" />
+        <div className="p-2.5 bg-[#ff8c32]/10 rounded-xl group-hover:bg-[#ff8c32]/20 group-hover:rotate-12 transition-all duration-500">
+          <Swords size={22} className="text-[#ff8c32]" />
         </div>
-        <span className="text-lg md:text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#ff8c32] to-red-600 tracking-tighter">
-          ANIME DRAFT
+        <span className="text-xl md:text-3xl font-black italic text-white tracking-tighter">
+          ANIME<span className="text-[#ff8c32]">DRAFT</span>
         </span>
       </div>
 
-      {/* 🎭 RIGHT SIDE: PROFILE & ACTIONS */}
-      <div className="flex items-center gap-3 md:gap-5">
-        {/* Admin Shortcut (Desktop Only) */}
+      <div className="flex items-center gap-6">
         <button
           onClick={() => navigate("/admin")}
-          className="hidden md:flex items-center gap-1 text-[10px] font-black text-gray-600 hover:text-[#ff8c32] transition-colors"
+          className="hidden md:flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-[#ff8c32] transition-all tracking-[0.2em]"
         >
-          <ShieldAlert size={14} /> ADMIN
+          <ShieldAlert size={14} /> KERNEL
         </button>
 
-        {/* User Profile Pill */}
-        {user ? (
-          <div className="flex items-center gap-2 bg-[#111113] border border-white/10 pl-2 pr-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(255,140,50,0.05)]">
-            <img
-              src={
-                user.avatar ||
-                "https://api.dicebear.com/7.x/avataaars/svg?seed=Goku"
-              }
-              alt="Avatar"
-              className="w-7 h-7 rounded-full border border-[#ff8c32] object-cover bg-black"
-            />
-            <span className="text-[10px] md:text-xs font-black text-white tracking-widest">
-              {user.username}
-            </span>
-            <div className="w-[1px] h-4 bg-white/10 mx-1"></div> {/* Divider */}
+        {user && (
+          <div className="relative">
             <button
-              onClick={handleDisconnect}
-              className="text-gray-500 hover:text-red-500 active:scale-90 transition-all"
-              title="CHANGE COMMANDER"
+              onClick={() => setIsOpen(!isOpen)}
+              className={`flex items-center gap-3 bg-[#111113] border ${isOpen ? "border-[#ff8c32]" : "border-white/10"} pl-2 pr-4 py-1.5 rounded-2xl transition-all hover:bg-white/5`}
             >
-              <LogOut size={14} />
+              <img
+                src={user.avatar}
+                className="w-9 h-9 rounded-xl border border-[#ff8c32]/50 object-cover"
+                alt=""
+              />
+              <div className="hidden md:block text-left">
+                <p className="text-[10px] font-black text-white leading-none mb-1">
+                  {user.username}
+                </p>
+                <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase">
+                  Elite
+                </p>
+              </div>
+              <ChevronDown
+                size={14}
+                className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
             </button>
+
+            {isOpen && (
+              <div className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e] border border-white/10 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden p-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                <button
+                  onClick={() => {
+                    navigate("/dashboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
+                >
+                  <Settings size={16} className="text-[#ff8c32]" /> PROFILE
+                  SETTINGS
+                </button>
+                <button
+                  onClick={() => {
+                    navigate("/leaderboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-yellow-400/10 text-gray-400 hover:text-yellow-400 transition-all text-[10px] font-black tracking-widest"
+                >
+                  <Swords size={16} /> GLOBAL RANKINGS
+                </button>
+                <div className="h-[1px] bg-white/5 my-2 mx-2"></div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black tracking-widest"
+                >
+                  <LogOut size={16} /> DISCONNECT
+                </button>
+              </div>
+            )}
           </div>
-        ) : null}
+        )}
       </div>
     </nav>
   );

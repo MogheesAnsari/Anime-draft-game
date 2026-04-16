@@ -3,16 +3,16 @@ import axios from "axios";
 
 // 🎭 HIGH-QUALITY ANIME ICONS (Public Folder)
 const AVATARS = [
-  { id: 1, name: "GOJO", img: "/jujutsu kaisen.svg" },
-  { id: 2, name: "ZORO", img: "/download.svg" },
-  { id: 3, name: "LUFFY", img: "/download (1).svg" },
-  { id: 4, name: "SUKUNA", img: "/Ryomen Sukuna💜.svg" },
+  { id: 1, name: "GOJO", img: "/gojo.svg" },
+  { id: 2, name: "ZORO", img: "/zoro.svg" },
+  { id: 3, name: "LUFFY", img: "/luffy.svg" },
+  { id: 4, name: "SUKUNA", img: "/sukuna.svg" },
   {
     id: 5,
     name: "JINWOO",
-    img: "/Sung Jin-Woo Glowing Blue Eyes Wallpaper _ Solo Leveling 4K.svg",
+    img: "/jinwoo.svg",
   },
-  { id: 6, name: "ITACHI", img: "/download (3).svg" },
+  { id: 6, name: "ITACHI", img: "/itachi.svg" },
 ];
 
 export default function ProfileEntry({ setUser }) {

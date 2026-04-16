@@ -1,6 +1,6 @@
 import React from "react";
-import { Crown } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom"; // 👈 ROUTER IMPORT
+import { Crown, RotateCcw } from "lucide-react"; // 🔥 ADDED: Retry icon
+import { useLocation, useNavigate } from "react-router-dom";
 
 const SLOT_UI = {
   captain: {
@@ -42,14 +42,11 @@ const SLOT_UI = {
 };
 
 export default function BattleResult() {
-  // 👈 Props hataye kyunki ab state use hogi
-  const { state } = useLocation(); // 👈 BATTLE DRAFT SE AAYA HUA DATA
-  const navigate = useNavigate(); // 👈 WAPAS JAANE KE LIYE
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // 🛠️ DATA CHECK: Agar state nahi hai toh empty dikhao
-  const result = state?.result;
-  const teams = state?.teams;
-  const mode = state?.mode;
+  // 🔥 FIX: Destructure directly from location.state safely
+  const { result, mode, universe, teams } = location.state || {};
 
   if (!result || !teams) {
     return (
@@ -66,6 +63,17 @@ export default function BattleResult() {
       </div>
     );
   }
+
+  // 🔥 ADDED: Retry Functionality
+  const handleRetry = () => {
+    navigate("/draft", {
+      state: {
+        mode: mode,
+        universe: universe || "all",
+        isRetry: true, // For BattleDraft to know it's a retry
+      },
+    });
+  };
 
   // --- AAPKA ORIGINAL LOGIC (0% CHANGE) ---
   const safeMode = String(mode || "").toLowerCase();
@@ -164,7 +172,7 @@ export default function BattleResult() {
         </h2>
       </div>
 
-      <div className="flex-1 w-full max-w-7xl min-h-0 mb-2 md:mb-4 flex justify-center overflow-y-auto no-scrollbar pb-20 md:pb-0">
+      <div className="flex-1 w-full max-w-7xl min-h-0 mb-2 md:mb-4 flex justify-center overflow-y-auto no-scrollbar pb-24 md:pb-0">
         {isTeamMode ? (
           <div className="flex flex-col md:flex-row w-full gap-4 h-full">
             {[0, 1].map((teamIndex) => {
@@ -252,12 +260,23 @@ export default function BattleResult() {
         )}
       </div>
 
-      <div className="fixed md:relative bottom-4 md:bottom-0 left-0 w-full md:w-auto px-4 md:px-0 shrink-0">
+      {/* 🔥 ADDED: Action Buttons Container */}
+      <div className="fixed md:relative bottom-4 md:bottom-0 left-0 w-full px-4 md:px-0 flex gap-2 md:gap-4 shrink-0 justify-center">
+        {/* RETRY BUTTON */}
         <button
-          onClick={() => navigate("/modes")} // 👈 NAVIGATE BACK TO MODES
-          className="w-full md:w-auto bg-white text-black px-10 py-4 rounded-2xl font-black text-[12px] md:text-xs tracking-[0.2em] hover:bg-orange-500 hover:text-white transition-all active:scale-95"
+          onClick={handleRetry}
+          className="w-full md:w-auto bg-[#ff8c32] text-black px-6 md:px-10 py-4 rounded-2xl font-black text-[12px] md:text-xs tracking-[0.2em] hover:bg-white transition-all flex items-center justify-center gap-2 active:scale-95"
         >
-          RETURN TO LOBBY
+          <RotateCcw size={16} />
+          REMATCH
+        </button>
+
+        {/* LOBBY BUTTON */}
+        <button
+          onClick={() => navigate("/modes")}
+          className="w-full md:w-auto bg-white/10 text-white px-6 md:px-10 py-4 rounded-2xl font-black text-[12px] md:text-xs tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95"
+        >
+          LOBBY
         </button>
       </div>
     </div>

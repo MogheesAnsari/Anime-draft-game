@@ -124,10 +124,14 @@ const AdminPanel = () => {
         >
           {[
             "naruto",
-            "demon_slayer",
-            "jjk",
             "one_piece",
+            "jujutsu_kaisen",
             "dragon_ball",
+            "mha",
+            "hxh",
+            "chainsaw_man",
+            "solo_leveling",
+            "demon_slayer",
             "bleach",
             "black_clover",
           ].map((u) => (
