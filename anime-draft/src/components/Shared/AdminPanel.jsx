@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Save, Database, UploadCloud, Loader2 } from "lucide-react";
+import { Save, Database, UploadCloud, Loader2, Trash2 } from "lucide-react";
 
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,15 +18,26 @@ export default function AdminPanel() {
     else alert("UNAUTHORIZED_ACCESS_DENIED!");
   };
 
+  // Inside fetchChars function in AdminPanel.jsx
   const fetchChars = async () => {
     setLoading(true);
     try {
       const res = await axios.get(
         `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
       );
-      setCharacters(res.data);
+
+      // ✅ FRONTEND FILTER: Ek ID ka sirf ek hi card dikhayega
+      const uniqueIds = new Set();
+      const cleanList = res.data.filter((char) => {
+        const idStr = String(char.id);
+        if (uniqueIds.has(idStr)) return false;
+        uniqueIds.add(idStr);
+        return true;
+      });
+
+      setCharacters(cleanList);
     } catch (err) {
-      console.error(err);
+      console.error("FETCH_ERROR:", err);
     }
     setLoading(false);
   };
@@ -38,7 +49,7 @@ export default function AdminPanel() {
   const handleUpdate = (id, field, val) => {
     setCharacters((prev) =>
       prev.map((c) => {
-        if (c.id === id || c._id === id) {
+        if (String(c.id) === String(id)) {
           let final = val;
           if (field === "iq") final = Math.max(0, Math.min(250, Number(val)));
           else if (["atk", "def", "spd"].includes(field))
@@ -50,22 +61,9 @@ export default function AdminPanel() {
     );
   };
 
-  const syncToDB = async (char) => {
-    try {
-      await axios.put(
-        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-        char,
-      );
-      alert(`✅ ${char.name} UPDATED!`);
-    } catch (e) {
-      alert("❌ SYNC FAILED! Is server online?");
-    }
-  };
-
-  // 🚀 ELITE BULK INJECTOR LOGIC
   const handleBulkSync = async () => {
     try {
-      if (!jsonInput.trim()) return alert("PLEASE PASTE JSON FIRST!");
+      if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
       const dataToSync = JSON.parse(jsonInput);
 
       if (!Array.isArray(dataToSync))
@@ -78,12 +76,31 @@ export default function AdminPanel() {
         "https://anime-draft-game-1.onrender.com/api/admin/bulk-update",
         dataToSync,
       );
-      alert(`🔥 KERNEL UPDATED! ${res.data.updated_count} Characters Synced.`);
+      alert(`🔥 SYNC COMPLETE: ${res.data.updated_count} Units Processed.`);
       setJsonInput("");
       fetchChars();
     } catch (e) {
-      console.error(e);
-      alert("❌ SYNC FAILED: Check Server Connection or JSON Syntax!");
+      alert("❌ SYNC FAILED: Check JSON Syntax or Server Status!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePurge = async () => {
+    if (
+      !window.confirm(`⚠️ WARNING: DELETE ALL ${universe.toUpperCase()} DATA?`)
+    )
+      return;
+
+    setLoading(true);
+    try {
+      await axios.delete(
+        `https://anime-draft-game-1.onrender.com/api/admin/wipe-universe/${universe}`,
+      );
+      alert("🚀 UNIVERSE CLEANED! Ready for fresh sync.");
+      fetchChars(); // Refresh list
+    } catch (e) {
+      alert("❌ PURGE FAILED!");
     } finally {
       setLoading(false);
     }
@@ -91,10 +108,10 @@ export default function AdminPanel() {
 
   if (!isLoggedIn)
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center p-4 uppercase">
-        <div className="w-full max-w-sm bg-[#111113] p-8 rounded-[40px] border border-red-500/20 shadow-2xl">
+      <div className="h-screen bg-[#050505] flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-[#111113] p-8 rounded-[40px] border border-red-500/20 shadow-2xl uppercase">
           <h2 className="text-2xl font-black italic text-red-500 text-center mb-8">
-            RESTRICTED_ACCESS
+            RESTRICTED
           </h2>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -105,7 +122,7 @@ export default function AdminPanel() {
               className="w-full bg-black border border-white/10 p-5 rounded-2xl text-center text-red-500 font-black outline-none focus:border-red-500"
             />
             <button className="w-full bg-red-500 text-black font-black py-5 rounded-2xl italic tracking-widest active:scale-95 transition-all">
-              INITIALIZE_KERNEL
+              INITIALIZE
             </button>
           </form>
         </div>
@@ -116,10 +133,9 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3">
-          <Database /> STATS_TUNER_v2.0
+          <Database /> STATS_TUNER_v2.1
         </h1>
 
-        {/* 🚀 BULK INJECTOR UI */}
         <div className="w-full max-w-4xl bg-[#111113] p-6 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
           <h2 className="text-sm font-black text-[#ff8c32] mb-4 flex items-center gap-2">
             <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
@@ -127,15 +143,20 @@ export default function AdminPanel() {
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            placeholder="PASTE ELITE JSON ARRAY HERE..."
+            placeholder="PASTE CLEAN JSON HERE..."
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-green-500 outline-none focus:border-[#ff8c32] mb-4"
           />
           <button
             onClick={handleBulkSync}
-            disabled={loading}
-            className="w-full md:w-auto px-10 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+            className="px-10 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
           >
-            {loading ? "SYNCING..." : "EXECUTE_BULK_SYNC"}
+            EXECUTE_BULK_SYNC
+          </button>
+          <button
+            onClick={handlePurge}
+            className="ml-4 px-6 py-4 bg-red-600 text-white font-black rounded-xl italic hover:bg-red-700 transition-all"
+          >
+            PURGE_DATABASE
           </button>
         </div>
 
@@ -168,7 +189,7 @@ export default function AdminPanel() {
         <div className="flex flex-col items-center justify-center h-64 text-[#ff8c32] gap-4">
           <Loader2 className="animate-spin" size={48} />
           <span className="font-black italic tracking-widest text-[10px]">
-            ACCESSING_RECORDS...
+            SYNCING_KERNEL...
           </span>
         </div>
       ) : (
@@ -176,34 +197,33 @@ export default function AdminPanel() {
           {characters
             .sort((a, b) => (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9))
             .map((char, index) => (
-              // ✅ UNIQUE KEY FIX: Uses char.id or fallback to index
+              // ✅ UNIQUE KEY FIX: String ID + Index for absolute safety
               <div
-                key={char.id || char._id || `char-${index}`}
+                key={`${char.id}-${index}`}
                 className="bg-[#111113] border border-white/5 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/30 transition-all group"
               >
                 <img
                   src={char.img}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110 transition-transform"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110"
                   alt=""
                   onError={(e) => (e.target.src = "/zoro.svg")}
                 />
-                <h3 className="text-[10px] font-black italic text-white mb-6 truncate max-w-full uppercase">
+                <h3 className="text-[10px] font-black italic text-white mb-6 truncate max-w-full">
                   {char.name}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
                   {["atk", "def", "spd", "iq"].map((s) => (
                     <div key={s} className="flex flex-col">
-                      <span className="text-[7px] font-bold text-gray-500 mb-1 uppercase">
-                        {s}
+                      <span className="text-[7px] font-bold text-gray-500 mb-1">
+                        {s.toUpperCase()}
                       </span>
                       <input
                         type="number"
                         value={char[s] || 0}
                         onChange={(e) =>
-                          handleUpdate(char.id || char._id, s, e.target.value)
+                          handleUpdate(char.id, s, e.target.value)
                         }
-                        onFocus={(e) => e.target.select()}
                         className="bg-black border border-white/10 p-2 rounded-lg text-center font-bold text-xs text-white outline-none focus:border-[#ff8c32]"
                       />
                     </div>
@@ -213,9 +233,9 @@ export default function AdminPanel() {
                 <select
                   value={char.tier}
                   onChange={(e) =>
-                    handleUpdate(char.id || char._id, "tier", e.target.value)
+                    handleUpdate(char.id, "tier", e.target.value)
                   }
-                  className={`w-full bg-black border p-3 rounded-xl text-[10px] font-black mb-6 outline-none ${char.tier === "S+" ? "border-red-500 text-red-500" : "border-white/10 text-gray-400"}`}
+                  className={`w-full bg-black border p-3 rounded-xl text-[10px] font-black mb-6 ${char.tier === "S+" ? "border-red-500 text-red-500" : "border-white/10 text-gray-400"}`}
                 >
                   {["S+", "S", "A", "B", "C"].map((t) => (
                     <option key={t} value={t}>
@@ -225,8 +245,18 @@ export default function AdminPanel() {
                 </select>
 
                 <button
-                  onClick={() => syncToDB(char)}
-                  className="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[9px] font-black hover:bg-[#ff8c32] hover:text-black transition-all flex items-center justify-center gap-2"
+                  onClick={async () => {
+                    try {
+                      await axios.put(
+                        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+                        char,
+                      );
+                      alert(`✅ ${char.name} SYNCED!`);
+                    } catch (e) {
+                      alert("❌ SYNC FAILED!");
+                    }
+                  }}
+                  className="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[9px] font-black hover:bg-[#ff8c32] hover:text-black flex items-center justify-center gap-2"
                 >
                   <Save size={14} /> SYNC_DATABASE
                 </button>

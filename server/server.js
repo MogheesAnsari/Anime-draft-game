@@ -105,6 +105,20 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
+// 🗑️ EMERGENCY WIPE: Delete all characters of a specific universe
+app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
+  try {
+    const { universe } = req.params;
+    const result = await Character.deleteMany({ universe });
+    res.json({
+      message: "UNIVERSE_PURGED",
+      deleted_count: result.deletedCount,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "PURGE_FAILED" });
+  }
+});
+
 // Auth & Battle Routes
 app.post("/api/user/access", async (req, res) => {
   /* Add your logic here */
