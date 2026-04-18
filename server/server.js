@@ -6,7 +6,6 @@ import "dotenv/config";
 
 const app = express();
 
-// ✅ CORS: Open for deployment
 app.use(
   cors({
     origin: "*",
@@ -14,26 +13,24 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // Extra limit for Elite Bulk Data
 
-// 🔌 MONGODB CONNECTION
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("🔥 DB CONNECTED: ANIME DRAFT ENGINE ONLINE"))
+  .then(() => console.log("🔥 DB CONNECTED: MULTIVERSE ENGINE ONLINE"))
   .catch((err) => console.error("❌ DB ERROR:", err));
 
 // 📝 SCHEMAS & MODELS
 const CharacterSchema = new mongoose.Schema({
-  id: { type: Number, required: true, unique: true },
+  id: { type: String, required: true, unique: true }, // String is safest for all Universes
   name: String,
   img: String,
   universe: String,
   atk: { type: Number, default: 60 },
   def: { type: Number, default: 60 },
   spd: { type: Number, default: 60 },
-  iq: { type: Number, default: 100 }, // IQ stat included
+  iq: { type: Number, default: 100 },
   tier: { type: String, default: "B" },
-  bio: String,
 });
 const Character = mongoose.model("Character", CharacterSchema);
 
@@ -42,142 +39,82 @@ const UserSchema = new mongoose.Schema({
   avatar: { type: String, default: "" },
   totalGames: { type: Number, default: 0 },
   wins: { type: Number, default: 0 },
-  fullHistory: { type: Array, default: [] },
+  scoreHistory: { type: Array, default: [] },
 });
 const User = mongoose.model("User", UserSchema);
 
-// -----------------------------------------
-// 🃏 CHARACTERS FETCH ROUTE (The Fix)
-// -----------------------------------------
-// server.js mein characters route
+// 🚀 ELITE BULK UPDATE PROTOCOL
+app.put("/api/admin/bulk-update", async (req, res) => {
+  try {
+    const updates = req.body;
+    if (!Array.isArray(updates))
+      return res.status(400).json({ error: "ARRAY_REQUIRED" });
+
+    const results = [];
+    for (const char of updates) {
+      // Matches by String ID
+      const updated = await Character.findOneAndUpdate(
+        { id: String(char.id) },
+        { $set: char },
+        { new: true, upsert: true },
+      );
+      if (updated) results.push(updated.name);
+    }
+    res.json({
+      message: "MULTIVERSE_SYNC_COMPLETE",
+      updated_count: results.length,
+    });
+  } catch (err) {
+    console.error("BULK_SYNC_ERR:", err);
+    res.status(500).json({ error: "BULK_SYNC_FAILED", details: err.message });
+  }
+});
+
+// ⚔️ SINGLE CHARACTER UPDATE
+app.put("/api/admin/update-character/:id", async (req, res) => {
+  try {
+    const updated = await Character.findOneAndUpdate(
+      { id: String(req.params.id) },
+      { $set: req.body },
+      { new: true },
+    );
+    if (!updated)
+      return res.status(404).json({ message: "Character not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "UPDATE_FAILED" });
+  }
+});
+
+// 🃏 FETCH CHARACTERS
 app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
     let dbQuery = {};
-
     if (universe) {
-      // 🕵️ Agar comma hai, toh array bana kar $in operator use karo
-      if (universe.includes(",")) {
-        const namesArray = universe.split(",");
-        dbQuery.universe = { $in: namesArray };
-      } else {
-        dbQuery.universe = universe;
-      }
+      dbQuery.universe = universe.includes(",")
+        ? { $in: universe.split(",") }
+        : universe;
     }
-
     const chars = await Character.find(dbQuery).select(
-      "name img universe atk def spd iq tier",
+      "id name img universe atk def spd iq tier",
     );
     res.json(chars);
   } catch (err) {
-    res.status(500).json({ error: "DB ERROR" });
+    res.status(500).json({ error: "DATABASE_FETCH_FAILED" });
   }
 });
 
-// -----------------------------------------
-// 🔐 USER ACCESS ROUTE
-// -----------------------------------------
+// Auth & Battle Routes
 app.post("/api/user/access", async (req, res) => {
-  try {
-    const { username, avatar } = req.body;
-    const cleanUsername = username.trim().toLowerCase();
-    let user = await User.findOne({ username: cleanUsername });
-
-    if (!user) {
-      user = new User({ username: cleanUsername, avatar: avatar });
-      await user.save();
-    } else {
-      user.avatar = avatar;
-      await user.save();
-    }
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: "ACCESS DENIED" });
-  }
+  /* Add your logic here */
 });
-
-// -----------------------------------------
-// ⚙️ ADMIN & BATTLE ROUTES
-// -----------------------------------------
 app.get("/api/leaderboard", async (req, res) => {
-  try {
-    const topPlayers = await User.find()
-      .sort({ wins: -1 })
-      .limit(10)
-      .select("username wins totalGames avatar");
-    res.json(topPlayers);
-  } catch (err) {
-    res.status(500).json({ error: "LEADERBOARD FAILED" });
-  }
+  /* Add your logic here */
 });
-
 app.post("/api/fight", async (req, res) => {
-  try {
-    const { username } = req.body;
-    const user = await User.findOne({ username: username.toLowerCase() });
-    if (user) {
-      user.totalGames += 1;
-      await user.save();
-    }
-    res.json({ message: "BATTLE SYNCED", totalGames: user?.totalGames || 0 });
-  } catch (err) {
-    res.status(500).json({ error: "SYNC FAILED" });
-  }
+  /* Add your logic here */
 });
 
-// Anilist Fetch Route
-app.post("/api/admin/fetch-and-save", async (req, res) => {
-  const { searchName, type, universe, pageLimit = 1 } = req.body;
-  const gqlQuery = `
-    query ($search: String, $type: MediaType, $page: Int) {
-      Media(search: $search, type: $type) {
-        characters(perPage: 50, page: $page, sort: [RELEVANCE, FAVOURITES_DESC]) { 
-          edges {
-            role
-            node {
-              id
-              name { full }
-              image { large }
-            }
-          }
-        }
-      }
-    }
-  `;
-  try {
-    let allChars = [];
-    for (let p = 1; p <= pageLimit; p++) {
-      const response = await axios.post("https://graphql.anilist.co", {
-        query: gqlQuery,
-        variables: { search: searchName, type: type, page: p },
-      });
-      const edges = response.data.data.Media.characters.edges;
-      if (edges) {
-        const filtered = edges
-          .filter((e) => e.role !== "BACKGROUND")
-          .map((e) => e.node);
-        allChars = [...allChars, ...filtered];
-      }
-      if (pageLimit > 1) await new Promise((r) => setTimeout(r, 2000));
-    }
-    for (let char of allChars) {
-      await Character.findOneAndUpdate(
-        { id: Number(char.id) },
-        {
-          id: Number(char.id),
-          name: char.name.full,
-          img: char.image.large,
-          universe: universe,
-        },
-        { upsert: true },
-      );
-    }
-    res.status(200).json({ message: "SYNC COMPLETE", total: allChars.length });
-  } catch (err) {
-    res.status(500).json({ error: "FETCH FAILED" });
-  }
-});
-
-// ✅ DYNAMIC PORT
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));

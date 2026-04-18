@@ -1,0 +1,239 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Save, Database, UploadCloud, Loader2 } from "lucide-react";
+
+export default function AdminPanel() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [password, setPassword] = useState("");
+  const [universe, setUniverse] = useState("naruto");
+  const [characters, setCharacters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
+
+  const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === "Ansari@123") setIsLoggedIn(true);
+    else alert("UNAUTHORIZED_ACCESS_DENIED!");
+  };
+
+  const fetchChars = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(
+        `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
+      );
+      setCharacters(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) fetchChars();
+  }, [universe, isLoggedIn]);
+
+  const handleUpdate = (id, field, val) => {
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id === id || c._id === id) {
+          let final = val;
+          if (field === "iq") final = Math.max(0, Math.min(250, Number(val)));
+          else if (["atk", "def", "spd"].includes(field))
+            final = Math.max(0, Math.min(100, Number(val)));
+          return { ...c, [field]: final };
+        }
+        return c;
+      }),
+    );
+  };
+
+  const syncToDB = async (char) => {
+    try {
+      await axios.put(
+        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+        char,
+      );
+      alert(`✅ ${char.name} UPDATED!`);
+    } catch (e) {
+      alert("❌ SYNC FAILED! Is server online?");
+    }
+  };
+
+  // 🚀 ELITE BULK INJECTOR LOGIC
+  const handleBulkSync = async () => {
+    try {
+      if (!jsonInput.trim()) return alert("PLEASE PASTE JSON FIRST!");
+      const dataToSync = JSON.parse(jsonInput);
+
+      if (!Array.isArray(dataToSync))
+        return alert("INVALID_FORMAT: Array Expected!");
+      if (!window.confirm(`DEPLOY STATS TO ${dataToSync.length} UNITS?`))
+        return;
+
+      setLoading(true);
+      const res = await axios.put(
+        "https://anime-draft-game-1.onrender.com/api/admin/bulk-update",
+        dataToSync,
+      );
+      alert(`🔥 KERNEL UPDATED! ${res.data.updated_count} Characters Synced.`);
+      setJsonInput("");
+      fetchChars();
+    } catch (e) {
+      console.error(e);
+      alert("❌ SYNC FAILED: Check Server Connection or JSON Syntax!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isLoggedIn)
+    return (
+      <div className="h-screen bg-[#050505] flex items-center justify-center p-4 uppercase">
+        <div className="w-full max-w-sm bg-[#111113] p-8 rounded-[40px] border border-red-500/20 shadow-2xl">
+          <h2 className="text-2xl font-black italic text-red-500 text-center mb-8">
+            RESTRICTED_ACCESS
+          </h2>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="CLEARANCE_CODE"
+              className="w-full bg-black border border-white/10 p-5 rounded-2xl text-center text-red-500 font-black outline-none focus:border-red-500"
+            />
+            <button className="w-full bg-red-500 text-black font-black py-5 rounded-2xl italic tracking-widest active:scale-95 transition-all">
+              INITIALIZE_KERNEL
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+
+  return (
+    <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
+      <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
+        <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3">
+          <Database /> STATS_TUNER_v2.0
+        </h1>
+
+        {/* 🚀 BULK INJECTOR UI */}
+        <div className="w-full max-w-4xl bg-[#111113] p-6 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
+          <h2 className="text-sm font-black text-[#ff8c32] mb-4 flex items-center gap-2">
+            <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
+          </h2>
+          <textarea
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            placeholder="PASTE ELITE JSON ARRAY HERE..."
+            className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-green-500 outline-none focus:border-[#ff8c32] mb-4"
+          />
+          <button
+            onClick={handleBulkSync}
+            disabled={loading}
+            className="w-full md:w-auto px-10 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loading ? "SYNCING..." : "EXECUTE_BULK_SYNC"}
+          </button>
+        </div>
+
+        <select
+          value={universe}
+          onChange={(e) => setUniverse(e.target.value)}
+          className="bg-[#111113] border border-[#ff8c32]/30 p-4 rounded-2xl text-xs font-black outline-none text-white cursor-pointer"
+        >
+          {[
+            "naruto",
+            "one_piece",
+            "jjk",
+            "dragon_ball",
+            "mha",
+            "hxh",
+            "chainsaw_man",
+            "solo_leveling",
+            "demon_slayer",
+            "bleach",
+            "black_clover",
+          ].map((u) => (
+            <option key={u} value={u}>
+              {u.replace("_", " ")}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center h-64 text-[#ff8c32] gap-4">
+          <Loader2 className="animate-spin" size={48} />
+          <span className="font-black italic tracking-widest text-[10px]">
+            ACCESSING_RECORDS...
+          </span>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-20">
+          {characters
+            .sort((a, b) => (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9))
+            .map((char, index) => (
+              // ✅ UNIQUE KEY FIX: Uses char.id or fallback to index
+              <div
+                key={char.id || char._id || `char-${index}`}
+                className="bg-[#111113] border border-white/5 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/30 transition-all group"
+              >
+                <img
+                  src={char.img}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110 transition-transform"
+                  alt=""
+                  onError={(e) => (e.target.src = "/zoro.svg")}
+                />
+                <h3 className="text-[10px] font-black italic text-white mb-6 truncate max-w-full uppercase">
+                  {char.name}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 w-full mb-6">
+                  {["atk", "def", "spd", "iq"].map((s) => (
+                    <div key={s} className="flex flex-col">
+                      <span className="text-[7px] font-bold text-gray-500 mb-1 uppercase">
+                        {s}
+                      </span>
+                      <input
+                        type="number"
+                        value={char[s] || 0}
+                        onChange={(e) =>
+                          handleUpdate(char.id || char._id, s, e.target.value)
+                        }
+                        onFocus={(e) => e.target.select()}
+                        className="bg-black border border-white/10 p-2 rounded-lg text-center font-bold text-xs text-white outline-none focus:border-[#ff8c32]"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <select
+                  value={char.tier}
+                  onChange={(e) =>
+                    handleUpdate(char.id || char._id, "tier", e.target.value)
+                  }
+                  className={`w-full bg-black border p-3 rounded-xl text-[10px] font-black mb-6 outline-none ${char.tier === "S+" ? "border-red-500 text-red-500" : "border-white/10 text-gray-400"}`}
+                >
+                  {["S+", "S", "A", "B", "C"].map((t) => (
+                    <option key={t} value={t}>
+                      {t}_TIER
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => syncToDB(char)}
+                  className="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[9px] font-black hover:bg-[#ff8c32] hover:text-black transition-all flex items-center justify-center gap-2"
+                >
+                  <Save size={14} /> SYNC_DATABASE
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
