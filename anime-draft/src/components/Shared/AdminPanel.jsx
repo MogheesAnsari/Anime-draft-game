@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Save, Database, UploadCloud, Loader2, Trash2 } from "lucide-react";
+import { Save, Database, UploadCloud, Loader2 } from "lucide-react";
 
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,7 +18,6 @@ export default function AdminPanel() {
     else alert("UNAUTHORIZED_ACCESS_DENIED!");
   };
 
-  // Inside fetchChars function in AdminPanel.jsx
   const fetchChars = async () => {
     setLoading(true);
     try {
@@ -26,7 +25,6 @@ export default function AdminPanel() {
         `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
       );
 
-      // ✅ FRONTEND FILTER: Ek ID ka sirf ek hi card dikhayega
       const uniqueIds = new Set();
       const cleanList = res.data.filter((char) => {
         const idStr = String(char.id);
@@ -91,38 +89,15 @@ export default function AdminPanel() {
       !window.confirm(`⚠️ WARNING: DELETE ALL ${universe.toUpperCase()} DATA?`)
     )
       return;
-
     setLoading(true);
     try {
       await axios.delete(
         `https://anime-draft-game-1.onrender.com/api/admin/wipe-universe/${universe}`,
       );
       alert("🚀 UNIVERSE CLEANED! Ready for fresh sync.");
-      fetchChars(); // Refresh list
+      fetchChars();
     } catch (e) {
       alert("❌ PURGE FAILED!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleImageRefresh = async () => {
-    if (
-      !window.confirm(
-        "⚠️ DEPLOY IMAGE_REFRESH_PROTOCOL? This will update 480+ links.",
-      )
-    )
-      return;
-
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        "https://anime-draft-game-1.onrender.com/api/admin/refresh-images",
-      );
-      alert(`🔥 SUCCESS: ${res.data.total_updated} Images Refreshed!`);
-      fetchChars(); // Refresh the UI
-    } catch (e) {
-      alert("❌ REFRESH FAILED: Is the server online?");
     } finally {
       setLoading(false);
     }
@@ -133,16 +108,15 @@ export default function AdminPanel() {
       !window.confirm("⚠️ INITIATE GOD-TIER IMAGE SYNC? (Takes ~1-2 minutes)")
     )
       return;
-
     setLoading(true);
     try {
       const res = await axios.post(
         "https://anime-draft-game-1.onrender.com/api/admin/auto-refresh-images",
       );
       alert(
-        `🔥 SYNC COMPLETE!\n✅ Successfully Updated: ${res.data.updated}\n❌ Failed/Not Found: ${res.data.failed}`,
+        `🔥 SYNC COMPLETE!\n✅ Successfully Updated: ${res.data.updated}\n❌ Failed/Not Found: ${res.data.failed}\n\nNote: For failed ones, please paste image links manually.`,
       );
-      fetchChars(); // Refresh the screen
+      fetchChars();
     } catch (e) {
       alert("❌ SYNC FAILED! Is the server live?");
     } finally {
@@ -177,7 +151,7 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3">
-          <Database /> STATS_TUNER_v2.1
+          <Database /> STATS_TUNER_v2.2
         </h1>
 
         <div className="w-full max-w-4xl bg-[#111113] p-6 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
@@ -190,31 +164,27 @@ export default function AdminPanel() {
             placeholder="PASTE CLEAN JSON HERE..."
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-green-500 outline-none focus:border-[#ff8c32] mb-4"
           />
-          <button
-            onClick={handleBulkSync}
-            className="px-10 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
-          >
-            EXECUTE_BULK_SYNC
-          </button>
-          <button
-            onClick={handlePurge}
-            className="ml-4 px-6 py-4 bg-red-600 text-white font-black rounded-xl italic hover:bg-red-700 transition-all"
-          >
-            PURGE_DATABASE
-          </button>
-          <button
-            onClick={handleImageRefresh}
-            className="ml-4 px-8 py-4 bg-blue-600 text-white font-black rounded-xl"
-          >
-            REFRESH_ALL_IMAGES
-          </button>
-          <button
-            onClick={handleAutoRefresh}
-            disabled={loading}
-            className="ml-4 px-8 py-4 bg-blue-600 text-white font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {loading ? "FETCHING 480+ IMAGES..." : "AUTO REFRESH ALL IMAGES"}
-          </button>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={handleBulkSync}
+              className="px-8 py-3 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
+            >
+              EXECUTE_BULK_SYNC
+            </button>
+            <button
+              onClick={handlePurge}
+              className="px-8 py-3 bg-red-600 text-white font-black rounded-xl italic hover:bg-red-700 transition-all"
+            >
+              PURGE_DATABASE
+            </button>
+            <button
+              onClick={handleAutoRefresh}
+              disabled={loading}
+              className="px-8 py-3 bg-blue-600 text-white font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {loading ? "FETCHING..." : "AUTO REFRESH IMAGES"}
+            </button>
+          </div>
         </div>
 
         <select
@@ -254,32 +224,31 @@ export default function AdminPanel() {
           {characters
             .sort((a, b) => (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9))
             .map((char, index) => (
-              // ✅ UNIQUE KEY FIX: String ID + Index for absolute safety
               <div
                 key={`${char.id}-${index}`}
                 className="bg-[#111113] border border-white/5 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/30 transition-all group"
               >
                 <img
-                  src={char.img} // ✅ Removed the ?v= parameter which was breaking the link
+                  src={char.img}
                   className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110 transition-transform"
                   alt={char.name}
                   onError={(e) => {
-                    if (!e.target.src.includes("zoro.svg")) {
+                    if (!e.target.src.includes("zoro.svg"))
                       e.target.src = "/zoro.svg";
-                    }
                   }}
                 />
                 <h3 className="text-[10px] font-black italic text-white mb-6 truncate max-w-full">
                   {char.name}
                 </h3>
 
+                {/* 🖼️ MANUAL IMAGE OVERRIDE BOX */}
                 <input
                   type="text"
                   value={char.img || ""}
                   onChange={(e) =>
                     handleUpdate(char.id || char._id, "img", e.target.value)
                   }
-                  placeholder="PASTE IMAGE URL..."
+                  placeholder="PASTE MANUAL IMAGE URL..."
                   className="w-full bg-black border border-white/10 p-2 rounded-lg text-[8px] text-gray-400 outline-none focus:border-[#ff8c32] mb-4 font-mono truncate"
                 />
 

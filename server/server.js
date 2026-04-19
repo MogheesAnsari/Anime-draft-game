@@ -13,7 +13,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "10mb" })); // Extra limit for Elite Bulk Data
+app.use(express.json({ limit: "10mb" }));
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -22,7 +22,7 @@ mongoose
 
 // 📝 SCHEMAS & MODELS
 const CharacterSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true }, // String is safest for all Universes
+  id: { type: String, required: true, unique: true },
   name: String,
   img: String,
   universe: String,
@@ -52,7 +52,6 @@ app.put("/api/admin/bulk-update", async (req, res) => {
 
     const results = [];
     for (const char of updates) {
-      // Matches by String ID
       const updated = await Character.findOneAndUpdate(
         { id: String(char.id) },
         { $set: char },
@@ -105,18 +104,17 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🚀 GOD-TIER AUTO-REFRESH PROTOCOL (With Retry & BulkWrite)
+// 🚀 GOD-TIER AUTO-REFRESH PROTOCOL
 app.post("/api/admin/auto-refresh-images", async (req, res) => {
   try {
     const chars = await Character.find({});
-    // Extract valid IDs
     const validIds = chars
       .map((c) => parseInt(c.id))
       .filter((id) => !isNaN(id));
 
     let updatedCount = 0;
     let failedCount = 0;
-    const chunkSize = 40; // Safe limit for Anilist
+    const chunkSize = 40;
 
     for (let i = 0; i < validIds.length; i += chunkSize) {
       const chunk = validIds.slice(i, i + chunkSize);
@@ -132,7 +130,7 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
       `;
 
       let success = false;
-      let retries = 3; // Agar fail hua, toh 3 baar khud wapas try karega
+      let retries = 3;
 
       while (!success && retries > 0) {
         try {
@@ -142,8 +140,6 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
           });
 
           const fetchedChars = response.data.data.Page.characters;
-
-          // Fast Bulk Update
           const bulkOps = fetchedChars
             .map((apiChar) => {
               if (apiChar.image && apiChar.image.large) {
@@ -169,19 +165,13 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
             })
             .filter(Boolean);
 
-          if (bulkOps.length > 0) {
-            await Character.bulkWrite(bulkOps);
-          }
+          if (bulkOps.length > 0) await Character.bulkWrite(bulkOps);
 
           success = true;
-          // Normal wait between successful requests
           await new Promise((r) => setTimeout(r, 1500));
         } catch (err) {
           retries--;
-          console.log(
-            `⚠️ API blocked. Waiting 3 seconds... Retries left: ${retries}`,
-          );
-          // Agar Anilist ne gussa kiya, toh 3 second wait karke wapas try karega
+          console.log(`⚠️ API blocked. Retries left: ${retries}`);
           await new Promise((r) => setTimeout(r, 3000));
           if (retries === 0) failedCount += chunk.length;
         }
@@ -199,7 +189,7 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
   }
 });
 
-// 🗑️ EMERGENCY WIPE: Delete all characters of a specific universe
+// 🗑️ EMERGENCY WIPE
 app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
   try {
     const { universe } = req.params;
@@ -213,7 +203,7 @@ app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
   }
 });
 
-// Auth & Battle Routes
+// Auth & Battle Routes (Apne purane routes yahan lagayein)
 app.post("/api/user/access", async (req, res) => {
   /* Add your logic here */
 });
