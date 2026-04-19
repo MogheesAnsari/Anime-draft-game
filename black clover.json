@@ -1,0 +1,645 @@
+[{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30fa"
+  },
+  "id": 123285,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b123285-tKijiuQErDS0.png",
+  "name": "Asta",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30fb"
+  },
+  "id": 123283,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b123283-7nJHtKha0LSm.png",
+  "name": "Noelle Silva",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30fc"
+  },
+  "id": 123284,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b123284-w6kIFYnTclMd.png",
+  "name": "Yuno",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30fd"
+  },
+  "id": 124433,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124433-QyoZrgIUsSpd.png",
+  "name": "Finral Roulacase",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30fe"
+  },
+  "id": 124434,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124434-ZmaDj2J5lSId.png",
+  "name": "Charlotte Roselei",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e30ff"
+  },
+  "id": 124435,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124435-gXFVXWrCcieK.jpg",
+  "name": "Julius Novachrono",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3100"
+  },
+  "id": 124436,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124436-dES6CtprlZNy.png",
+  "name": "Vanessa Enoteca",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3102"
+  },
+  "id": 124438,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124438-nTvKfJaMD4d5.jpg",
+  "name": "Mimosa Vermillion",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3103"
+  },
+  "id": 124439,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124439-EqjbyC8GOKW0.jpg",
+  "name": "Magna Swing",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3104"
+  },
+  "id": 124440,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124440-Lpdo6y8cljV6.png",
+  "name": "Yami Sukehiro",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3105"
+  },
+  "id": 124441,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124441-nggzgZExhb1w.png",
+  "name": "William Vangeance",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966bce61aa1aed9e3106"
+  },
+  "id": 124442,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124442-KpZhHmhjw2EG.png",
+  "name": "Nozel Silva",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e3108"
+  },
+  "id": 124444,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124444-01PmRKd8Sned.jpg",
+  "name": "Grey",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e3109"
+  },
+  "id": 124446,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124446-4YXFoCIllCKh.png",
+  "name": "Gauche Adlai",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e310a"
+  },
+  "id": 124447,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124447-2J1PKMgWETNT.png",
+  "name": "Charmy Pappitson",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e310b"
+  },
+  "id": 124448,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124448-YHRpWxJUhNnw.png",
+  "name": "Gordon Agrippa",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e310c"
+  },
+  "id": 124449,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/124449-M67Ex2GcxmYM.jpg",
+  "name": "Luck Voltia",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e310f"
+  },
+  "id": 124456,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124456-llrSWfAXlnbb.png",
+  "name": "Jack the Ripper",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e3110"
+  },
+  "id": 124457,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124457-d3MtJfUT6yqI.png",
+  "name": "Rill Boismortier",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e3111"
+  },
+  "id": 124458,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124458-U6zNf813fDxG.png",
+  "name": "Dorothy Unsworth",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df966cce61aa1aed9e3112"
+  },
+  "id": 124459,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124459-UggsjRUfNtko.png",
+  "name": "Zora Ideale",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9686ce61aa1aed9e3125"
+  },
+  "id": 124462,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124462-6yGm80Um4Gbc.png",
+  "name": "Mars",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9686ce61aa1aed9e3128"
+  },
+  "id": 124472,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124472-sCjDIE5232uS.png",
+  "name": "Licht",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9687ce61aa1aed9e3133"
+  },
+  "id": 124521,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124521-MqX5KT2tGSa8.png",
+  "name": "Fuegoleon Vermillion",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9687ce61aa1aed9e3134"
+  },
+  "id": 124522,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124522-lJK4Hy6Aokie.png",
+  "name": "Mereoleona Vermillion",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9687ce61aa1aed9e3135"
+  },
+  "id": 124524,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124524-FhfE2Y6drZDq.png",
+  "name": "Kirsch Vermillion",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df9687ce61aa1aed9e3136"
+  },
+  "id": 124525,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124525-zX1uOMR5lkKr.png",
+  "name": "Fanzell Kruger",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970cce61aa1aed9e31d4"
+  },
+  "id": 124972,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124972-UiuueASxpsRx.png",
+  "name": "Acier Silva",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970cce61aa1aed9e31d6"
+  },
+  "id": 124974,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124974-Fidlk7tYFper.png",
+  "name": "Solid Silva",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970cce61aa1aed9e31d7"
+  },
+  "id": 124975,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124975-vRUxV3oIOle7.png",
+  "name": "Langris Vaude",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970dce61aa1aed9e31e6"
+  },
+  "id": 124993,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/124993-ThlqIaQV2se3.png",
+  "name": "Kahono",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970dce61aa1aed9e31e7"
+  },
+  "id": 124994,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/124994-PJ7bSrZXb9k2.png",
+  "name": "Kiato",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df970dce61aa1aed9e31e8"
+  },
+  "id": 124995,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b124995-nGV1j21kzQRA.png",
+  "name": "Ladros",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5051"
+  },
+  "id": 137881,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b137881-fQLQZce8CTsY.png",
+  "name": "Leopold Vermillion",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5052"
+  },
+  "id": 158550,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b158550-m0UtbUtvW2ra.png",
+  "name": "Lemiel Silvamillion Clover",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5053"
+  },
+  "id": 161333,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b161333-PqfhwYg3AqKJ.png",
+  "name": "Zagred",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5054"
+  },
+  "id": 163782,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b163782-lbNzUCyy4lk0.png",
+  "name": "Dante Zogratis",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5055"
+  },
+  "id": 167952,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b167952-Giy7Os8XrOKM.jpg",
+  "name": "Zenon Zogratis",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5056"
+  },
+  "id": 168300,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b168300-xpKqucVqnd7j.png",
+  "name": "Vanica Zogratis",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5058"
+  },
+  "id": 179901,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b179901-iF5YUuYzdtWX.png",
+  "name": "Megicula",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e5059"
+  },
+  "id": 181846,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b181846-xm7ss9ZCWENV.png",
+  "name": "Lucifero",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e505a"
+  },
+  "id": 187268,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b187268-vkcrcTvjNSrA.png",
+  "name": "Nacht Faust",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+},
+{
+  "_id": {
+    "$oid": "69df997bce61aa1aed9e505c"
+  },
+  "id": 192196,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the black_clover manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b192196-giZLzC1Xj9Hp.png",
+  "name": "Liebe",
+  "spd": 60,
+  "tier": "B",
+  "universe": "black_clover"
+}]

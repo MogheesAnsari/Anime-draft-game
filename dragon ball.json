@@ -1,0 +1,615 @@
+[{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc1e"
+  },
+  "id": 246,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/246-wsRRr6z1kii8.png",
+  "name": "Gokuu Son",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc1f"
+  },
+  "id": 913,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b913-NIFkKazWM8VO.png",
+  "name": "Vegeta",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc20"
+  },
+  "id": 2707,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b2707-YKWmn4q87oF8.png",
+  "name": "Trunks",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc21"
+  },
+  "id": 2093,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b2093-kdFZhqcNSsqW.png",
+  "name": "Gohan Son",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc22"
+  },
+  "id": 914,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b914-KuS8AWjqBrqa.jpg",
+  "name": "Piccolo",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc25"
+  },
+  "id": 3694,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b3694-bDfOdSSdFfPv.png",
+  "name": "Freeza",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc26"
+  },
+  "id": 4318,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b4318-HfIy9rOIOZXM.png",
+  "name": "Jinzouningen 18-gou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc27"
+  },
+  "id": 76348,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b76348-pGWrznfxgPIV.png",
+  "name": "Beerus",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc28"
+  },
+  "id": 126199,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b126199-SKYF7o73fQtX.jpg",
+  "name": "Goku Black",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc29"
+  },
+  "id": 2159,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b2159-qtEuMYyOUkwY.jpg",
+  "name": "Kuririn",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc2a"
+  },
+  "id": 6167,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b6167-aMPt1bHf5YbV.jpg",
+  "name": "Muten Roushi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc2c"
+  },
+  "id": 1012,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/1012.jpg",
+  "name": "Majin Boo",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6000ce61aa1aed9bcc2d"
+  },
+  "id": 2147,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b2147-AQ0iJ9QEmwPf.png",
+  "name": "Jinzouningen 17-gou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc2f"
+  },
+  "id": 76346,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b76346-BNh2DE5Rh2IW.jpg",
+  "name": "Whis",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc30"
+  },
+  "id": 5499,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b5499-Cn9kTD2J9dU5.png",
+  "name": "Tenshinhan",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc33"
+  },
+  "id": 126883,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b126883-TeOFpUuzgqgW.png",
+  "name": "Hit",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc35"
+  },
+  "id": 126257,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b126257-nGjgbsnxZkUB.png",
+  "name": "Jiren",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc38"
+  },
+  "id": 126882,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/126882-NQ14AE5TZCCr.jpg",
+  "name": "Zamasu",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6001ce61aa1aed9bcc3b"
+  },
+  "id": 126822,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/126822-yhQlVdPAIAhi.jpg",
+  "name": "Caulifla",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6002ce61aa1aed9bcc44"
+  },
+  "id": 146259,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b146259-JOcHMVKvRiWB.png",
+  "name": "Zeno",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6002ce61aa1aed9bcc45"
+  },
+  "id": 162508,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b162508-Zv2hTgwLsy7W.jpg",
+  "name": "Kale",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6002ce61aa1aed9bcc47"
+  },
+  "id": 127218,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/127218-JwMt8dLYwdRr.jpg",
+  "name": "Vados",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6002ce61aa1aed9bcc4b"
+  },
+  "id": 6134,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/6134.jpg",
+  "name": "Ginyu",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603ace61aa1aed9bccf5"
+  },
+  "id": 3908,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/3908.jpg",
+  "name": "Cell",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603ace61aa1aed9bccf6"
+  },
+  "id": 6122,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b6122-N8XCxV2YPd1r.png",
+  "name": "Bardock",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603bce61aa1aed9bccf8"
+  },
+  "id": 2099,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/2099.jpg",
+  "name": "Jinzouningen 16-gou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603bce61aa1aed9bccfb"
+  },
+  "id": 2104,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/2104.jpg",
+  "name": "Gohan Son",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603bce61aa1aed9bccfe"
+  },
+  "id": 9392,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/9392.jpg",
+  "name": "Oob",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df603cce61aa1aed9bcd02"
+  },
+  "id": 9770,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/9770.jpg",
+  "name": "Paikuhan",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6065ce61aa1aed9bcd0b"
+  },
+  "id": 4945,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b4945-iE59qIP7TxPu.png",
+  "name": "Broly",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6066ce61aa1aed9bcd0c"
+  },
+  "id": 252133,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b252133-Ysk9bi9WLyZB.png",
+  "name": "Gamma 2",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd0e"
+  },
+  "id": 217819,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b217819-bNGzIXFt1IRt.png",
+  "name": "Granolah",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd0f"
+  },
+  "id": 252132,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b252132-T00yirW1GXOD.png",
+  "name": "Gamma 1",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd11"
+  },
+  "id": 181305,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b181305-868RORHbk70Y.png",
+  "name": "Moro",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd12"
+  },
+  "id": 127217,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/127217-c4K0tjHvgL8x.jpg",
+  "name": "Daishinkan",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd13"
+  },
+  "id": 127219,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b127219-K9EvieXhNYzg.png",
+  "name": "Kyabe",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df6067ce61aa1aed9bcd15"
+  },
+  "id": 127220,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/127220-yWeW7rlEJP4V.jpg",
+  "name": "Champa",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df607bce61aa1aed9bcd17"
+  },
+  "id": 225369,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b225369-vNUI0HDLu3gD.png",
+  "name": "Merus",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df607bce61aa1aed9bcd18"
+  },
+  "id": 130282,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/n130282-DyPDybbJKEAc.png",
+  "name": "Toppo",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df607bce61aa1aed9bcd1c"
+  },
+  "id": 220662,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b220662-WTkefwEQGwbk.png",
+  "name": "Super Shen Long",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+},
+{
+  "_id": {
+    "$oid": "69df607bce61aa1aed9bcd22"
+  },
+  "id": 267066,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the dragon_ball manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b267066-mNmSnrQuv3Sr.png",
+  "name": "Gas Heata",
+  "spd": 60,
+  "tier": "B",
+  "universe": "dragon_ball"
+}]

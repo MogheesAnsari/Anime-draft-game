@@ -1,0 +1,826 @@
+[{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8991"
+  },
+  "id": 130102,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b130102-FO1VHNnEnLlB.png",
+  "name": "Denji",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8992"
+  },
+  "id": 137079,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b137079-6yLEUYR3bmpr.png",
+  "name": "Power",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8993"
+  },
+  "id": 137080,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b137080-UHcynYNjb5ZU.png",
+  "name": "Makima",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8994"
+  },
+  "id": 137081,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b137081-TSrUR3mUJL6r.png",
+  "name": "Aki Hayakawa",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8995"
+  },
+  "id": 170266,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b170266-bBXPkNJnd3mg.png",
+  "name": "Pochita",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8996"
+  },
+  "id": 144596,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b144596-kvL6SD2litJu.png",
+  "name": "Himeno",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a7ce61aa1aed9f8997"
+  },
+  "id": 144593,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b144593-hdCTT9t54z0s.png",
+  "name": "Kishibe",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f8998"
+  },
+  "id": 144594,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b144594-0dbO1NSYeZ12.png",
+  "name": "Kobeni Higashiyama",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f8999"
+  },
+  "id": 174263,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174263-TTMWfBlU1k3f.png",
+  "name": "Hirokazu Arai ",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899a"
+  },
+  "id": 157241,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b157241-GkgQVzkFrmUD.jpg",
+  "name": "Samurai Sword",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899b"
+  },
+  "id": 174264,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174264-dLiZkMXoltQ9.png",
+  "name": "Akane Sawatari ",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899c"
+  },
+  "id": 152231,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b152231-vHM4WlaYIVB5.jpg",
+  "name": "Tenshi no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899d"
+  },
+  "id": 157231,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b157231-hV81SwGqxl2R.jpg",
+  "name": "Bouryoku no Majin",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899e"
+  },
+  "id": 157232,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b157232-5GuWeqoFN9Kq.jpg",
+  "name": "Beam",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f899f"
+  },
+  "id": 157277,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b157277-h6M1umQ3N2ve.jpg",
+  "name": "Prinz",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a0"
+  },
+  "id": 172887,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b172887-qMCjXPXMSKRk.png",
+  "name": "Mirai no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a1"
+  },
+  "id": 290671,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b290671-YaauAZvHLnyo.png",
+  "name": "Kitsune no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a2"
+  },
+  "id": 174282,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174282-YFLwuvogHMod.png",
+  "name": "Zombie no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a3"
+  },
+  "id": 174272,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174272-cU9W4oNykNM0.png",
+  "name": "Koumori no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a4"
+  },
+  "id": 174275,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174275-cCAGptyn7ZrR.png",
+  "name": "Hiru no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a5"
+  },
+  "id": 144595,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b144595-R8Lfn0egUR3q.png",
+  "name": "Michiko Tendou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a6"
+  },
+  "id": 144592,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b144592-pUY67nacCeud.png",
+  "name": "Yuutarou Kurose",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a7"
+  },
+  "id": 172885,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b172885-hvF2nRMCqNaX.png",
+  "name": "Fushi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a8"
+  },
+  "id": 174267,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174267-2VJVkMILqQpY.png",
+  "name": "Madoka",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0a8ce61aa1aed9f89a9"
+  },
+  "id": 174262,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174262-e1ctdgffT3MP.png",
+  "name": "Yuurei no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b6e"
+  },
+  "id": 148740,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b148740-ceAibPxLW8rR.png",
+  "name": "Reze",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b6f"
+  },
+  "id": 282389,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b282389-Mr4vAa8Du2Jx.jpg",
+  "name": "Asa Mitaka",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b70"
+  },
+  "id": 162123,
+  "__v": 0,
+  "atk": 80,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b162123-GmQLb9p2iWxQ.jpg",
+  "name": "Quanxi",
+  "spd": 60,
+  "tier": "A",
+  "universe": "chainsaw_man",
+  "iq": 100
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b71"
+  },
+  "id": 282872,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b282872-taoHfD0JGiZG.jpg",
+  "name": "Sensou no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b72"
+  },
+  "id": 162080,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b162080-fbX6t96GUQpo.jpg",
+  "name": "Hirofumi Yoshida",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e1ce61aa1aed9f8b73"
+  },
+  "id": 199767,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b199767-VU8RyHRj9MVY.png",
+  "name": "Nayuta",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b74"
+  },
+  "id": 294475,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b294475-3DOVtMBudU9f.jpg",
+  "name": "Kiga no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b75"
+  },
+  "id": 174271,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174271-iC0Ul9YfLOk6.png",
+  "name": "Nyaako",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b76"
+  },
+  "id": 172890,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b172890-l35ftRwlTBwh.png",
+  "name": "Cosmo",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b77"
+  },
+  "id": 311954,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b311954-UZrETT038ijt.png",
+  "name": "Fumiko Mifune",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b78"
+  },
+  "id": 172888,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b172888-gmaZJ0PeLNM6.png",
+  "name": "Tolka no Shishou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b79"
+  },
+  "id": 366135,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b366135-oxWYuhy1bAFv.png",
+  "name": "Kiga no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b7a"
+  },
+  "id": 283491,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b283491-eifgbV15QBqH.png",
+  "name": "Yuuko",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b7b"
+  },
+  "id": 301803,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b301803-LNY3TmVxZAgQ.jpg",
+  "name": "Rakka no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b7c"
+  },
+  "id": 306233,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b306233-SX48ZhKbxKCB.png",
+  "name": "Miri Sugou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e2ce61aa1aed9f8b7d"
+  },
+  "id": 172891,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b172891-FrW2rKbqRTd8.png",
+  "name": "Pingtsi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b7e"
+  },
+  "id": 306235,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b306235-bPYpZKw5I9wi.png",
+  "name": "Barem Bridge",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b7f"
+  },
+  "id": 162129,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b162129-00gT6tLfmrec.png",
+  "name": "Aldo",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b80"
+  },
+  "id": 199766,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b199766-byV68lheQ2q4.png",
+  "name": "Tsugihagi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b81"
+  },
+  "id": 312718,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b312718-4uisSu4lpyyt.png",
+  "name": "Nobana Higashiyama",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b82"
+  },
+  "id": 306236,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b306236-RFZ8jQQJ8oZ9.png",
+  "name": "Buki Ningen Muchi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b83"
+  },
+  "id": 174268,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174268-6hOGseNoWTsA.png",
+  "name": "Doitsu no Santa Claus ",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b84"
+  },
+  "id": 347492,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b347492-BEMdPULyAwRQ.png",
+  "name": "Oi no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b85"
+  },
+  "id": 174261,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174261-qRcr40Q3zsyM.png",
+  "name": "Taiyou",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b86"
+  },
+  "id": 294718,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b294718-GZnza1AmHXHd.jpg",
+  "name": "Haruka Iseumi",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b87"
+  },
+  "id": 289198,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b289198-QxBRgBSAVkkK.png",
+  "name": "Yakuza",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b88"
+  },
+  "id": 174279,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b174279-C8UY2A5oLTph.png",
+  "name": "Tolka",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb0e3ce61aa1aed9f8b89"
+  },
+  "id": 306234,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b306234-7hYRPt46Z9C5.png",
+  "name": "Buki Ningen Yari",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb12bce61aa1aed9f8b8f"
+  },
+  "id": 282390,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b282390-2DJRyIwqEoy2.jpg",
+  "name": "Tanaka",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+},
+{
+  "_id": {
+    "$oid": "69dfb12bce61aa1aed9f8b90"
+  },
+  "id": 311638,
+  "__v": 0,
+  "atk": 60,
+  "bio": "Elite warrior from the chainsaw_man manga series.",
+  "def": 60,
+  "img": "https://s4.anilist.co/file/anilistcdn/character/large/b311638-jJI5QklsvY5s.png",
+  "name": "Jigoku no Akuma",
+  "spd": 60,
+  "tier": "B",
+  "universe": "chainsaw_man"
+}]

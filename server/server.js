@@ -105,6 +105,41 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
+// 🖼️ IMAGE_REFRESH_PROTOCOL: Only updates images for existing characters
+app.post("/api/admin/refresh-images", async (req, res) => {
+  try {
+    const chars = await Character.find({}); // Poore 480+ characters uthayega
+    let updatedCount = 0;
+
+    for (const char of chars) {
+      try {
+        // Anilist se fresh image link mangna (sirf ID use karke)
+        const query = `query ($id: Int) { Character (id: $id) { image { large } } }`;
+        const response = await axios.post("https://graphql.anilist.co", {
+          query,
+          variables: { id: parseInt(char.id) },
+        });
+
+        const newImg = response.data.data.Character.image.large;
+
+        if (newImg) {
+          // DATABASE UPDATE: Sirf 'img' field ko update karega
+          await Character.updateOne({ id: char.id }, { $set: { img: newImg } });
+          updatedCount++;
+        }
+
+        // API Rate Limit (Anilist) se bachne ke liye thoda gap
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (err) {
+        console.log(`⚠️ Skip: Character ${char.name} image not found.`);
+      }
+    }
+    res.json({ message: "REFRESH_COMPLETE", total_updated: updatedCount });
+  } catch (err) {
+    res.status(500).json({ error: "REFRESH_FAILED" });
+  }
+});
+
 // 🗑️ EMERGENCY WIPE: Delete all characters of a specific universe
 app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
   try {
