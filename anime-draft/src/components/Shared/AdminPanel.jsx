@@ -231,12 +231,10 @@ export default function AdminPanel() {
                 className="bg-[#111113] border border-white/5 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/30 transition-all group"
               >
                 <img
-                  // ✅ Adding timestamp to force browser to ignore old cache
-                  src={`${char.img}?v=${new Date().getTime()}`}
+                  src={char.img} // ✅ Removed the ?v= parameter which was breaking the link
                   className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110 transition-transform"
                   alt={char.name}
                   onError={(e) => {
-                    // Prevent infinite loop if zoro.svg itself is missing
                     if (!e.target.src.includes("zoro.svg")) {
                       e.target.src = "/zoro.svg";
                     }

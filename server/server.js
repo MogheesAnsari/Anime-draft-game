@@ -105,31 +105,49 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
+// 🖼️ ELITE IMAGE REFRESH (BATCH PROTOCOL)
 app.post("/api/admin/refresh-images", async (req, res) => {
   try {
     const chars = await Character.find({});
+    // Extract valid numeric IDs
+    const ids = chars.map((c) => parseInt(c.id)).filter((id) => !isNaN(id));
     let updatedCount = 0;
 
-    for (const char of chars) {
+    // Fetch 50 characters at once to bypass Rate Limits
+    for (let i = 0; i < ids.length; i += 50) {
+      const chunk = ids.slice(i, i + 50);
+      const query = `
+        query ($in: [Int]) {
+          Page(perPage: 50) {
+            characters(id_in: $in) {
+              id
+              image { large }
+            }
+          }
+        }
+      `;
+
       try {
-        const query = `query ($id: Int) { Character (id: $id) { image { large } } }`;
         const response = await axios.post("https://graphql.anilist.co", {
           query,
-          variables: { id: parseInt(char.id) },
+          variables: { in: chunk },
         });
 
-        const newImg = response.data.data.Character.image.large;
-        if (newImg) {
-          // ✅ FORCE FIX: Matches Number or String ID and forces String conversion
-          await Character.updateOne(
-            { $or: [{ id: char.id }, { id: String(char.id) }] },
-            { $set: { img: newImg, id: String(char.id) } },
-          );
-          updatedCount++;
+        const fetchedChars = response.data.data.Page.characters;
+        for (const apiChar of fetchedChars) {
+          if (apiChar.image && apiChar.image.large) {
+            // Update both String and Number ID formats safely
+            await Character.updateMany(
+              { $or: [{ id: String(apiChar.id) }, { id: Number(apiChar.id) }] },
+              { $set: { img: apiChar.image.large, id: String(apiChar.id) } },
+            );
+            updatedCount++;
+          }
         }
-        await new Promise((r) => setTimeout(r, 600)); // Anilist rate limit safety
-      } catch (err) {
-        console.log(`Skipping character: ${char.name}`);
+        // Small delay to keep API happy
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch (apiErr) {
+        console.error("BATCH_ERROR:", apiErr.message);
       }
     }
     res.json({ message: "REFRESH_COMPLETE", total_updated: updatedCount });
