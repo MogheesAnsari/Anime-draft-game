@@ -105,17 +105,21 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🖼️ ELITE IMAGE REFRESH (BATCH PROTOCOL)
-app.post("/api/admin/refresh-images", async (req, res) => {
+// 🚀 GOD-TIER AUTO-REFRESH PROTOCOL (With Retry & BulkWrite)
+app.post("/api/admin/auto-refresh-images", async (req, res) => {
   try {
     const chars = await Character.find({});
-    // Extract valid numeric IDs
-    const ids = chars.map((c) => parseInt(c.id)).filter((id) => !isNaN(id));
-    let updatedCount = 0;
+    // Extract valid IDs
+    const validIds = chars
+      .map((c) => parseInt(c.id))
+      .filter((id) => !isNaN(id));
 
-    // Fetch 50 characters at once to bypass Rate Limits
-    for (let i = 0; i < ids.length; i += 50) {
-      const chunk = ids.slice(i, i + 50);
+    let updatedCount = 0;
+    let failedCount = 0;
+    const chunkSize = 40; // Safe limit for Anilist
+
+    for (let i = 0; i < validIds.length; i += chunkSize) {
+      const chunk = validIds.slice(i, i + chunkSize);
       const query = `
         query ($in: [Int]) {
           Page(perPage: 50) {
@@ -127,32 +131,71 @@ app.post("/api/admin/refresh-images", async (req, res) => {
         }
       `;
 
-      try {
-        const response = await axios.post("https://graphql.anilist.co", {
-          query,
-          variables: { in: chunk },
-        });
+      let success = false;
+      let retries = 3; // Agar fail hua, toh 3 baar khud wapas try karega
 
-        const fetchedChars = response.data.data.Page.characters;
-        for (const apiChar of fetchedChars) {
-          if (apiChar.image && apiChar.image.large) {
-            // Update both String and Number ID formats safely
-            await Character.updateMany(
-              { $or: [{ id: String(apiChar.id) }, { id: Number(apiChar.id) }] },
-              { $set: { img: apiChar.image.large, id: String(apiChar.id) } },
-            );
-            updatedCount++;
+      while (!success && retries > 0) {
+        try {
+          const response = await axios.post("https://graphql.anilist.co", {
+            query,
+            variables: { in: chunk },
+          });
+
+          const fetchedChars = response.data.data.Page.characters;
+
+          // Fast Bulk Update
+          const bulkOps = fetchedChars
+            .map((apiChar) => {
+              if (apiChar.image && apiChar.image.large) {
+                updatedCount++;
+                return {
+                  updateOne: {
+                    filter: {
+                      $or: [
+                        { id: String(apiChar.id) },
+                        { id: Number(apiChar.id) },
+                      ],
+                    },
+                    update: {
+                      $set: {
+                        img: apiChar.image.large,
+                        id: String(apiChar.id),
+                      },
+                    },
+                  },
+                };
+              }
+              return null;
+            })
+            .filter(Boolean);
+
+          if (bulkOps.length > 0) {
+            await Character.bulkWrite(bulkOps);
           }
+
+          success = true;
+          // Normal wait between successful requests
+          await new Promise((r) => setTimeout(r, 1500));
+        } catch (err) {
+          retries--;
+          console.log(
+            `⚠️ API blocked. Waiting 3 seconds... Retries left: ${retries}`,
+          );
+          // Agar Anilist ne gussa kiya, toh 3 second wait karke wapas try karega
+          await new Promise((r) => setTimeout(r, 3000));
+          if (retries === 0) failedCount += chunk.length;
         }
-        // Small delay to keep API happy
-        await new Promise((r) => setTimeout(r, 1000));
-      } catch (apiErr) {
-        console.error("BATCH_ERROR:", apiErr.message);
       }
     }
-    res.json({ message: "REFRESH_COMPLETE", total_updated: updatedCount });
-  } catch (err) {
-    res.status(500).json({ error: "REFRESH_FAILED" });
+
+    res.json({
+      message: "AUTO_REFRESH_COMPLETE",
+      updated: updatedCount,
+      failed: failedCount,
+    });
+  } catch (error) {
+    console.error("CRITICAL_FAIL:", error);
+    res.status(500).json({ error: "CRITICAL_FAILURE" });
   }
 });
 

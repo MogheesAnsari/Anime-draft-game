@@ -128,6 +128,28 @@ export default function AdminPanel() {
     }
   };
 
+  const handleAutoRefresh = async () => {
+    if (
+      !window.confirm("⚠️ INITIATE GOD-TIER IMAGE SYNC? (Takes ~1-2 minutes)")
+    )
+      return;
+
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        "https://anime-draft-game-1.onrender.com/api/admin/auto-refresh-images",
+      );
+      alert(
+        `🔥 SYNC COMPLETE!\n✅ Successfully Updated: ${res.data.updated}\n❌ Failed/Not Found: ${res.data.failed}`,
+      );
+      fetchChars(); // Refresh the screen
+    } catch (e) {
+      alert("❌ SYNC FAILED! Is the server live?");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isLoggedIn)
     return (
       <div className="h-screen bg-[#050505] flex items-center justify-center p-4">
@@ -186,6 +208,13 @@ export default function AdminPanel() {
           >
             REFRESH_ALL_IMAGES
           </button>
+          <button
+            onClick={handleAutoRefresh}
+            disabled={loading}
+            className="ml-4 px-8 py-4 bg-blue-600 text-white font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {loading ? "FETCHING 480+ IMAGES..." : "AUTO REFRESH ALL IMAGES"}
+          </button>
         </div>
 
         <select
@@ -243,6 +272,16 @@ export default function AdminPanel() {
                 <h3 className="text-[10px] font-black italic text-white mb-6 truncate max-w-full">
                   {char.name}
                 </h3>
+
+                <input
+                  type="text"
+                  value={char.img || ""}
+                  onChange={(e) =>
+                    handleUpdate(char.id || char._id, "img", e.target.value)
+                  }
+                  placeholder="PASTE IMAGE URL..."
+                  className="w-full bg-black border border-white/10 p-2 rounded-lg text-[8px] text-gray-400 outline-none focus:border-[#ff8c32] mb-4 font-mono truncate"
+                />
 
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
                   {["atk", "def", "spd", "iq"].map((s) => (
