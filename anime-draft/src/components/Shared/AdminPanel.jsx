@@ -95,26 +95,28 @@ export default function AdminPanel() {
     }
   };
 
-  // 🚀 FIXED INDIVIDUAL SYNC OVERRIDE
-  const syncIndividual = async (char) => {
-    try {
-      // 🛡️ CRITICAL: MongoDB ki internal _id ko remove karna zaroori hai
-      // taaki "Plan executor error" na aaye
-      const { _id, ...updateData } = char;
-
-      const res = await axios.put(
-        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-        updateData, // Sirf stats aur tier bhej rahe hain
-      );
-
-      if (res.status === 200) {
-        alert(`✅ ${char.name} SECURED IN KERNEL!`);
-      }
-    } catch (e) {
-      console.error("SYNC_ERROR:", e.response?.data);
-      alert("❌ UPLOAD FAILED! Character data format is conflicting.");
+const syncIndividual = async (char) => {
+  try {
+    // 🛡️ Pre-sync check: Agar image URL missing hai toh alert dega
+    if (!char.img || char.img.trim() === "") {
+      return alert("❌ ERROR: IMAGE URL CANNOT BE EMPTY!");
     }
-  };
+
+    const { _id, ...updateData } = char; 
+
+    const res = await axios.put(
+      `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+      updateData 
+    );
+
+    if (res.status === 200) {
+      alert(`✅ ${char.name} FULLY SYNCED (STATS + IMAGE)!`);
+      fetchChars(); // ✅ UI refresh taaki naya image dikhe
+    }
+  } catch (e) {
+    alert("❌ SYNC FAILED!");
+  }
+};
 
   // 🗑️ INDIVIDUAL DELETE
   const handleDelete = async (charId, charName) => {

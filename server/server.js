@@ -88,31 +88,40 @@ app.put("/api/admin/bulk-update", async (req, res) => {
   }
 });
 
-// ⚔️ TARGETED OVERRIDE: Individual Sync Fix
+// ⚔️ TARGETED OVERRIDE: Image and Stats Fix
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // 🛡️ Backend side safety: Remove internal MongoDB fields
-    delete updateData._id;
+    // 🛡️ Remove MongoDB internal fields to prevent Plan Executor Error
+    delete updateData._id; 
     delete updateData.__v;
 
+    // ✅ FORCE UPDATE: Ensure img is part of the $set operation
     const updated = await Character.findOneAndUpdate(
       { $or: [{ id: String(id) }, { id: Number(id) }] },
-      { $set: updateData },
-      { new: true, upsert: true, runValidators: true },
+      { 
+        $set: {
+          name: updateData.name,
+          img: updateData.img, // 🔥 Image ko specifically yahan set kiya hai
+          atk: updateData.atk,
+          def: updateData.def,
+          spd: updateData.spd,
+          iq: updateData.iq,
+          tier: updateData.tier,
+          universe: updateData.universe
+        } 
+      },
+      { new: true, upsert: true } 
     );
 
-    if (!updated)
-      return res.status(404).json({ message: "Character Sync Failed" });
-
+    if (!updated) return res.status(404).json({ message: "Character Sync Failed" });
+    
+    console.log(`✅ Image Synced for: ${updated.name}`);
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
-    console.error("🔥 SERVER_ERROR:", err.message);
-    res
-      .status(500)
-      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+    res.status(500).json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 
