@@ -231,13 +231,13 @@ export default function AdminPanel() {
                 className="bg-[#111113] border border-white/5 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/30 transition-all group"
               >
                 <img
-                  src={char.img || "/zoro.svg"} // Agar database mein img field hi missing ho toh Zoro dikhao
+                  // ✅ Adding timestamp to force browser to ignore old cache
+                  src={`${char.img}?v=${new Date().getTime()}`}
                   className="w-16 h-16 rounded-full object-cover border-2 border-white/10 mb-4 group-hover:scale-110 transition-transform"
                   alt={char.name}
-                  loading="lazy" // Performance ke liye
                   onError={(e) => {
-                    // Agar link break ho jaye tabhi Zoro dikhao aur loop roko
-                    if (e.target.src !== window.location.origin + "/zoro.svg") {
+                    // Prevent infinite loop if zoro.svg itself is missing
+                    if (!e.target.src.includes("zoro.svg")) {
                       e.target.src = "/zoro.svg";
                     }
                   }}
