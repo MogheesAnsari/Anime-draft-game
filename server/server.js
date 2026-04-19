@@ -92,20 +92,24 @@ app.put("/api/admin/bulk-update", async (req, res) => {
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = { ...req.body };
 
-    // ✅ FORCE SYNC: Matches by String or Number ID and overrides stats
+    // 🛡️ Backend side safety: Remove internal MongoDB fields
+    delete updateData._id;
+    delete updateData.__v;
+
     const updated = await Character.findOneAndUpdate(
       { $or: [{ id: String(id) }, { id: Number(id) }] },
-      { $set: req.body },
-      { new: true, upsert: true }, // Upsert: Agar ID nahi hai toh naya bana dega
+      { $set: updateData },
+      { new: true, upsert: true, runValidators: true },
     );
 
     if (!updated)
       return res.status(404).json({ message: "Character Sync Failed" });
 
-    console.log(`✅ ${updated.name} updated successfully!`);
-    res.json(updated);
+    res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
+    console.error("🔥 SERVER_ERROR:", err.message);
     res
       .status(500)
       .json({ error: "DATABASE_SYNC_ERROR", details: err.message });

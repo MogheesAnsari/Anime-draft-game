@@ -95,16 +95,24 @@ export default function AdminPanel() {
     }
   };
 
-  // 🚀 INDIVIDUAL SYNC/OVERRIDE
+  // 🚀 FIXED INDIVIDUAL SYNC OVERRIDE
   const syncIndividual = async (char) => {
     try {
+      // 🛡️ CRITICAL: MongoDB ki internal _id ko remove karna zaroori hai
+      // taaki "Plan executor error" na aaye
+      const { _id, ...updateData } = char;
+
       const res = await axios.put(
         `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-        char,
+        updateData, // Sirf stats aur tier bhej rahe hain
       );
-      if (res.status === 200) alert(`✅ ${char.name} SECURED IN KERNEL!`);
+
+      if (res.status === 200) {
+        alert(`✅ ${char.name} SECURED IN KERNEL!`);
+      }
     } catch (e) {
-      alert("❌ UPLOAD FAILED! Check Backend Logs.");
+      console.error("SYNC_ERROR:", e.response?.data);
+      alert("❌ UPLOAD FAILED! Character data format is conflicting.");
     }
   };
 
