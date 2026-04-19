@@ -88,43 +88,90 @@ app.put("/api/admin/bulk-update", async (req, res) => {
   }
 });
 
-// ⚔️ TARGETED OVERRIDE: Image and Stats Fix
+// ⚔️ STRICT OVERRIDE: Prevent Doubling Issue
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const charId = req.params.id;
     const updateData = { ...req.body };
 
-    // 🛡️ Remove MongoDB internal fields to prevent Plan Executor Error
-    delete updateData._id; 
+    // 🛡️ CRITICAL: MongoDB ki internal IDs aur versioning ko nikaal dein
+    delete updateData._id;
     delete updateData.__v;
 
-    // ✅ FORCE UPDATE: Ensure img is part of the $set operation
+    // 🚨 STRICT UPDATE: Upsert hata diya hai taaki naya clone na bane
+    // $in operator ensure karega ki chahe ID string ho ya number, wo dono ko match karega
     const updated = await Character.findOneAndUpdate(
-      { $or: [{ id: String(id) }, { id: Number(id) }] },
-      { 
+      { id: { $in: [Number(charId), String(charId)] } },
+      {
         $set: {
           name: updateData.name,
-          img: updateData.img, // 🔥 Image ko specifically yahan set kiya hai
-          atk: updateData.atk,
-          def: updateData.def,
-          spd: updateData.spd,
-          iq: updateData.iq,
+          img: updateData.img, // 🔥 Image override
+          atk: Number(updateData.atk),
+          def: Number(updateData.def),
+          spd: Number(updateData.spd),
+          iq: Number(updateData.iq),
           tier: updateData.tier,
-          universe: updateData.universe
-        } 
+          universe: updateData.universe,
+        },
       },
-      { new: true, upsert: true } 
+      { new: true }, // ❌ upsert: true HATA DIYA HAI
     );
 
-    if (!updated) return res.status(404).json({ message: "Character Sync Failed" });
-    
-    console.log(`✅ Image Synced for: ${updated.name}`);
+    if (!updated) {
+      return res.status(404).json({
+        error: "CHARACTER_NOT_FOUND",
+        message: "Cannot find original character to update.",
+      });
+    }
+
+    console.log(`✅ Character Updated Safely: ${updated.name}`);
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
-    res.status(500).json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+    console.error("🔥 SERVER_ERROR:", err.message);
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 
+// 🧹 CLONE CLEANUP ROUTE: Removes duplicates keeping one safely
+app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
+  try {
+    // 1. Aise characters ko dhundo jinka Name aur Universe same hai
+    const duplicates = await Character.aggregate([
+      {
+        $group: {
+          _id: { name: "$name", universe: "$universe" },
+          uniqueIds: { $addToSet: "$_id" }, // Saare IDs ek array me daal lo
+          count: { $sum: 1 }, // Total count nikaalo
+        },
+      },
+      {
+        $match: { count: { $gt: 1 } }, // Sirf unhe lo jo 1 se zyada hain (Duplicates)
+      },
+    ]);
+
+    let deletedCount = 0;
+
+    // 2. Har duplicate group mein loop chalao
+    for (const doc of duplicates) {
+      // Pehle ID ko chhod do (Original), baaki sab nikaal lo (Clones)
+      const idsToDelete = doc.uniqueIds.slice(1);
+
+      // Clones ko delete maaro
+      const result = await Character.deleteMany({ _id: { $in: idsToDelete } });
+      deletedCount += result.deletedCount;
+    }
+
+    console.log(`✅ Cleanup Complete: Removed ${deletedCount} shadow clones.`);
+    res.json({ message: "CLEANUP_SUCCESS", deletedCount });
+  } catch (err) {
+    console.error("🔥 CLEANUP_ERROR:", err.message);
+    res
+      .status(500)
+      .json({ error: "DATABASE_CLEANUP_ERROR", details: err.message });
+  }
+});
 // 🚀 TARGETED GOD-TIER AUTO-REFRESH (Anilist - Universe Specific)
 app.post("/api/admin/auto-refresh-images", async (req, res) => {
   try {

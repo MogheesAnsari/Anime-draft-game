@@ -95,29 +95,57 @@ export default function AdminPanel() {
     }
   };
 
-const syncIndividual = async (char) => {
-  try {
-    // 🛡️ Pre-sync check: Agar image URL missing hai toh alert dega
-    if (!char.img || char.img.trim() === "") {
-      return alert("❌ ERROR: IMAGE URL CANNOT BE EMPTY!");
+  // AdminPanel.jsx ke andar
+  const syncIndividual = async (char) => {
+    try {
+      const { _id, ...updateData } = char;
+
+      // ✅ LOG CHECK: Console mein dekhein ki img ka URL naya wala hi hai na?
+      console.log("SENDING_NEW_IMG_URL:", updateData.img);
+
+      const res = await axios.put(
+        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+        updateData,
+      );
+
+      if (res.status === 200) {
+        alert(`✅ ${char.name} FULLY OVERRIDDEN!`);
+        // 🚀 Delay fetch taaki DB refresh ho jaye
+        setTimeout(() => fetchChars(), 1000);
+      }
+    } catch (e) {
+      alert("❌ SYNC FAILED!");
     }
+  };
 
-    const { _id, ...updateData } = char; 
+  // 🧹 SHADOW CLONE DESTROYER FUNCTION
+  const cleanupDuplicates = async () => {
+    // Safety check taaki galti se button na dab jaye
+    if (
+      !window.confirm(
+        "🚨 WARNING: Do you want to delete all duplicate clones? It will keep 1 original and destroy the rest safely!",
+      )
+    )
+      return;
 
-    const res = await axios.put(
-      `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-      updateData 
-    );
+    try {
+      console.log("📡 INITIATING CLONE CLEANUP...");
 
-    if (res.status === 200) {
-      alert(`✅ ${char.name} FULLY SYNCED (STATS + IMAGE)!`);
-      fetchChars(); // ✅ UI refresh taaki naya image dikhe
+      const res = await axios.delete(
+        "https://anime-draft-game-1.onrender.com/api/admin/cleanup-duplicates",
+      );
+
+      if (res.status === 200) {
+        alert(
+          `✅ KERNEL CLEANED! Destroyed ${res.data.deletedCount} duplicate shadow clones.`,
+        );
+        fetchChars(); // 🔄 UI ko refresh karega taaki clones gayab ho jayein
+      }
+    } catch (e) {
+      console.error("CLEANUP_ERROR:", e);
+      alert("❌ CLEANUP FAILED! Did you redeploy the backend?");
     }
-  } catch (e) {
-    alert("❌ SYNC FAILED!");
-  }
-};
-
+  };
   // 🗑️ INDIVIDUAL DELETE
   const handleDelete = async (charId, charName) => {
     if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
@@ -266,6 +294,30 @@ const syncIndividual = async (char) => {
               {loading
                 ? "FETCHING..."
                 : `AUTO REFRESH: ${universe.toUpperCase()}`}
+            </button>
+            <button
+              onClick={cleanupDuplicates}
+              className="group flex items-center gap-2 px-6 py-3 bg-red-600/20 text-red-500 border border-red-500/50 rounded-2xl font-black italic text-sm hover:bg-red-600 hover:text-black transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)]"
+            >
+              {/* SVG ya Icon laga sakte hain */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="group-hover:animate-bounce"
+              >
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              DESTROY CLONES
             </button>
           </div>
         </div>

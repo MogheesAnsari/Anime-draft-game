@@ -1,3 +1,45 @@
+// ✅ 10% Universe Synergy Boost Logic
+export const getUniverseSynergy = (team) => {
+  const chars = Object.values(team).filter(Boolean);
+  if (chars.length < 6) return false;
+  const firstUniverse = chars[0].universe;
+  if (!firstUniverse || firstUniverse === "all") return false;
+  const isSynergy = chars.every((c) => c.universe === firstUniverse);
+  return isSynergy ? firstUniverse : false;
+};
+
+// ✅ Accurate Slot-Specific Math
+export const calculateEffectiveScore = (
+  char,
+  slotId,
+  leaderBoost = 0,
+  aura = 0,
+) => {
+  if (!char) return 0;
+  let atk =
+    (Number(char.atk) || 0) +
+    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
+  let def =
+    (Number(char.def) || 0) +
+    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
+  let spd =
+    (Number(char.spd) || 0) +
+    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
+  let iq = Number(char.iq) || 100;
+
+  let base = atk + def + spd + iq;
+  let bonus = 0;
+
+  if (slotId === "vice_cap") bonus = aura * 2;
+  if (slotId === "speedster") bonus = spd * 0.2;
+  if (slotId === "tank") bonus = def * 0.3;
+  if (slotId === "raw_power") bonus = atk * 0.4;
+
+  let total = slotId === "captain" ? base : base + bonus + aura;
+  return Math.round(total);
+};
+
+// ✅ Total Team Score Logic
 export const calculateTeamScore = (team) => {
   let total = 0;
   const strategist = team["support"];
@@ -14,30 +56,14 @@ export const calculateTeamScore = (team) => {
   const aura = capTotal * 0.1;
 
   Object.keys(team).forEach((slotId) => {
-    const char = team[slotId];
-    if (!char) return;
-    let atk =
-      (Number(char.atk) || 0) +
-      (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-    let def =
-      (Number(char.def) || 0) +
-      (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-    let spd =
-      (Number(char.spd) || 0) +
-      (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-    let iq = Number(char.iq) || 100;
-
-    let base = atk + def + spd + iq;
-    let bonus = 0;
-    if (slotId === "vice_cap") bonus = aura * 2;
-    if (slotId === "speedster") bonus = spd * 0.2;
-    if (slotId === "tank") bonus = def * 0.3;
-    if (slotId === "raw_power") bonus = atk * 0.4;
-    total += slotId === "captain" ? base : base + bonus + aura;
+    total += calculateEffectiveScore(team[slotId], slotId, leaderBoost, aura);
   });
+
+  if (getUniverseSynergy(team)) total = Math.round(total * 1.1);
   return Math.round(total);
 };
 
+// ✅ CPU Generation Logic
 export const generateCpuTeam = (pool) => {
   const SLOTS = [
     "captain",
@@ -53,10 +79,10 @@ export const generateCpuTeam = (pool) => {
       ? [...pool]
       : [{ name: "BOT", atk: 70, def: 70, spd: 70, iq: 70, img: "/zoro.svg" }];
 
-  while (availableChars.length < 6) {
+  while (availableChars.length < 6)
     availableChars = [...availableChars, ...availableChars];
-  }
   const shuffled = availableChars.sort(() => 0.5 - Math.random());
+
   SLOTS.forEach((id, i) => {
     cpuTeam[id] = shuffled[i];
   });
