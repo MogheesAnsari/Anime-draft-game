@@ -17,11 +17,11 @@ export const useDraftLogic = (universe, mode, isRetry) => {
       try {
         const baseUrl =
           "https://anime-draft-game-1.onrender.com/api/characters";
-        // Inside useDraftLogic.js
         const allUniverses =
           "naruto,one_piece,jjk,dragon_ball,mha,hxh,chainsaw_man,solo_leveling,demon_slayer,bleach,black_clover";
         const universeQuery = universe === "all" ? allUniverses : universe;
         const finalUrl = `${baseUrl}?universe=${universeQuery}&t=${Date.now()}`;
+
         const res = await axios.get(finalUrl);
         if (res.data?.length > 0) {
           const shuffled = [...res.data].sort(() => 0.5 - Math.random());
@@ -38,33 +38,23 @@ export const useDraftLogic = (universe, mode, isRetry) => {
     if (universe) fetchFromDB();
   }, [universe, isRetry]);
 
-  // 🚫 PULL LOGIC (Enforces 6-Slot Limit)
   const pull = () => {
-    if (Object.keys(team).length >= 6) {
-      return alert("SQUAD FULL! INITIATE FIGHT PROTOCOL.");
-    }
+    if (Object.keys(team).length >= 6) return alert("SQUAD FULL!");
     if (characterPool.length === 0) return alert("POOL EXHAUSTED!");
-
     const nextCard = characterPool[0];
     setCurrentCard(nextCard);
     setCharacterPool((prev) => prev.slice(1));
   };
 
-  // 🛡️ ASSIGN LOGIC (Prevents Overfilling)
   const assign = (slotId) => {
     if (!currentCard || team[slotId]) return;
-
-    if (Object.keys(team).length >= 6) {
-      setCurrentCard(null);
-      return alert("SQUAD COMPLETE!");
-    }
-
     setTeam({ ...team, [slotId]: currentCard });
     setCurrentCard(null);
   };
 
+  // ✅ FIXED: Functional update to prevent race conditions during multiplayer drafts
   const nextTurn = () => {
-    setCompletedTeams([...completedTeams, team]);
+    setCompletedTeams((prev) => [...prev, { ...team }]);
     setTeam({});
     setSkips(1);
     setCurrentCard(null);

@@ -43,6 +43,25 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", UserSchema);
 
+// 🚀 HYBRID FETCH: Pure stats from DB
+app.get("/api/characters", async (req, res) => {
+  try {
+    const { universe } = req.query;
+    let dbQuery = {};
+    if (universe) {
+      dbQuery.universe = universe.includes(",")
+        ? { $in: universe.split(",") }
+        : universe;
+    }
+    const chars = await Character.find(dbQuery).select(
+      "id name img universe atk def spd iq tier",
+    );
+    res.json(chars);
+  } catch (err) {
+    res.status(500).json({ error: "DATABASE_FETCH_FAILED" });
+  }
+});
+
 // 🚀 ELITE BULK UPDATE PROTOCOL
 app.put("/api/admin/bulk-update", async (req, res) => {
   try {
@@ -69,45 +88,38 @@ app.put("/api/admin/bulk-update", async (req, res) => {
   }
 });
 
-// ⚔️ SINGLE CHARACTER UPDATE
+// ⚔️ TARGETED OVERRIDE: Individual Sync Fix
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
+    const { id } = req.params;
+
+    // ✅ FORCE SYNC: Matches by String or Number ID and overrides stats
     const updated = await Character.findOneAndUpdate(
-      { id: String(req.params.id) },
+      { $or: [{ id: String(id) }, { id: Number(id) }] },
       { $set: req.body },
-      { new: true },
+      { new: true, upsert: true }, // Upsert: Agar ID nahi hai toh naya bana dega
     );
+
     if (!updated)
-      return res.status(404).json({ message: "Character not found" });
+      return res.status(404).json({ message: "Character Sync Failed" });
+
+    console.log(`✅ ${updated.name} updated successfully!`);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: "UPDATE_FAILED" });
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 
-// 🃏 FETCH CHARACTERS
-app.get("/api/characters", async (req, res) => {
-  try {
-    const { universe } = req.query;
-    let dbQuery = {};
-    if (universe) {
-      dbQuery.universe = universe.includes(",")
-        ? { $in: universe.split(",") }
-        : universe;
-    }
-    const chars = await Character.find(dbQuery).select(
-      "id name img universe atk def spd iq tier",
-    );
-    res.json(chars);
-  } catch (err) {
-    res.status(500).json({ error: "DATABASE_FETCH_FAILED" });
-  }
-});
-
-// 🚀 GOD-TIER AUTO-REFRESH PROTOCOL
+// 🚀 TARGETED GOD-TIER AUTO-REFRESH (Anilist - Universe Specific)
 app.post("/api/admin/auto-refresh-images", async (req, res) => {
   try {
-    const chars = await Character.find({});
+    const { universe } = req.body; // ✅ Ab backend dekhega ki kaunsa universe refresh karna hai
+    if (!universe) return res.status(400).json({ error: "UNIVERSE_REQUIRED" });
+
+    // ✅ Sirf current universe ka data uthayega (e.g., Only Naruto)
+    const chars = await Character.find({ universe });
     const validIds = chars
       .map((c) => parseInt(c.id))
       .filter((id) => !isNaN(id));
@@ -182,6 +194,7 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
       message: "AUTO_REFRESH_COMPLETE",
       updated: updatedCount,
       failed: failedCount,
+      universe_refreshed: universe,
     });
   } catch (error) {
     console.error("CRITICAL_FAIL:", error);
@@ -189,29 +202,27 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
   }
 });
 
-// 🗑️ EMERGENCY WIPE
-app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
   try {
-    const { universe } = req.params;
-    const result = await Character.deleteMany({ universe });
-    res.json({
-      message: "UNIVERSE_PURGED",
-      deleted_count: result.deletedCount,
-    });
+    const { id } = req.params;
+    const result = await Character.deleteOne({ id: String(id) });
+    if (result.deletedCount === 0)
+      return res.status(404).json({ message: "Not found" });
+    res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
   } catch (err) {
-    res.status(500).json({ error: "PURGE_FAILED" });
+    res.status(500).json({ error: "DELETE_FAILED" });
   }
 });
 
-// Auth & Battle Routes (Apne purane routes yahan lagayein)
+// Auth & Battle Routes
 app.post("/api/user/access", async (req, res) => {
-  /* Add your logic here */
+  /* Logic */
 });
 app.get("/api/leaderboard", async (req, res) => {
-  /* Add your logic here */
+  /* Logic */
 });
 app.post("/api/fight", async (req, res) => {
-  /* Add your logic here */
+  /* Logic */
 });
 
 const PORT = process.env.PORT || 5000;

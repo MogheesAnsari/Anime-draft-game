@@ -5,8 +5,8 @@ const API_BASE = "https://anime-draft-game-1.onrender.com/api";
 
 // 🃏 SLOTS CONFIGURATION
 export const SLOTS = [
-  { id: "captain", label: "TEAM CAPTAIN", icon: "Crown" },
-  { id: "vice_cap", label: "VICE CAPTAIN", icon: "Swords" },
+  { id: "captain", label: "CAPTAIN", icon: "Crown" },
+  { id: "vice_cap", label: "CAPTAIN VICE", icon: "Swords" },
   { id: "speedster", label: "SPEEDSTER", icon: "Zap" },
   { id: "tank", label: "DEFENCE TANK", icon: "Shield" },
   { id: "support", label: "STRATEGIST", icon: "Brain" },

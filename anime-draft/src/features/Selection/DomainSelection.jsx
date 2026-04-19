@@ -1,13 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Swords, Trophy, Ghost } from "lucide-react";
 
-/**
- * 🌌 DOMAIN SELECTION
- * Select between Anime, Comics, or Sports.
- */
 const DomainSelection = () => {
   const navigate = useNavigate();
+  const { state } = useLocation(); // ✅ Receives mode from previous screen
 
   const domains = [
     {
@@ -42,8 +39,11 @@ const DomainSelection = () => {
         {domains.map((d) => (
           <button
             key={d.id}
-            onClick={() => navigate(d.path, { state: { domain: d.id } })}
-            className={`group relative p-10 rounded-[40px] border border-white/5 bg-white/2 hover:scale-105 transition-all overflow-hidden`}
+            // 🚀 CRITICAL FIX: Passing existing state forward
+            onClick={() =>
+              navigate(d.path, { state: { ...state, domain: d.id } })
+            }
+            className="group relative p-10 rounded-[40px] border border-white/5 bg-white/5 hover:scale-105 transition-all overflow-hidden"
           >
             <div
               className={`absolute inset-0 bg-gradient-to-br ${d.color} opacity-0 group-hover:opacity-10 transition-opacity`}
@@ -63,5 +63,4 @@ const DomainSelection = () => {
   );
 };
 
-// 🛡️ CRITICAL FIX: Ensure this line exists!
 export default DomainSelection;
