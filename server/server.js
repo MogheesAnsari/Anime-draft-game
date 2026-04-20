@@ -23,7 +23,7 @@ mongoose
 
 app.get("/api/health", (req, res) => res.status(200).send("ACTIVE"));
 
-// 📝 SCHEMAS & MODELS
+// 📝 SCHEMAS
 const CharacterSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: String,
@@ -46,16 +46,15 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", UserSchema);
 
-// 🚀 HYBRID FETCH: Pure stats from DB
+// 🚀 CHARACTER ROUTES
 app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
     let dbQuery = {};
-    if (universe) {
+    if (universe)
       dbQuery.universe = universe.includes(",")
         ? { $in: universe.split(",") }
         : universe;
-    }
     const chars = await Character.find(dbQuery).select(
       "id name img universe atk def spd iq tier",
     );
@@ -65,65 +64,25 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🚀 ELITE BULK UPDATE PROTOCOL
-app.put("/api/admin/bulk-update", async (req, res) => {
-  try {
-    const updates = req.body;
-    if (!Array.isArray(updates))
-      return res.status(400).json({ error: "ARRAY_REQUIRED" });
-    const results = [];
-    for (const char of updates) {
-      const updated = await Character.findOneAndUpdate(
-        { id: String(char.id) },
-        { $set: char },
-        { new: true, upsert: true },
-      );
-      if (updated) results.push(updated.name);
-    }
-    res.json({
-      message: "MULTIVERSE_SYNC_COMPLETE",
-      updated_count: results.length,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "BULK_SYNC_FAILED", details: err.message });
-  }
-});
-
-// ⚔️ STRICT OVERRIDE: Prevent Doubling Issue
+// ⚔️ ADMIN ROUTES
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
     const charId = req.params.id;
     const updateData = { ...req.body };
     delete updateData._id;
     delete updateData.__v;
-
     const updated = await Character.findOneAndUpdate(
       { id: { $in: [Number(charId), String(charId)] } },
-      {
-        $set: {
-          name: updateData.name,
-          img: updateData.img,
-          atk: Number(updateData.atk),
-          def: Number(updateData.def),
-          spd: Number(updateData.spd),
-          iq: Number(updateData.iq),
-          tier: updateData.tier,
-          universe: updateData.universe,
-        },
-      },
+      { $set: updateData },
       { new: true },
     );
-
     if (!updated) return res.status(404).json({ error: "CHARACTER_NOT_FOUND" });
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+    res.status(500).json({ error: "DATABASE_SYNC_ERROR" });
   }
 });
 
-// 🧹 CLONE CLEANUP ROUTE
 app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
   try {
     const duplicates = await Character.aggregate([
@@ -144,62 +103,60 @@ app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
     }
     res.json({ message: "CLEANUP_SUCCESS", deletedCount });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "DATABASE_CLEANUP_ERROR", details: err.message });
+    res.status(500).json({ error: "DATABASE_CLEANUP_ERROR" });
   }
 });
 
-app.delete("/api/admin/delete-character/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await Character.deleteOne({ id: String(id) });
-    if (result.deletedCount === 0)
-      return res.status(404).json({ message: "Not found" });
-    res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
-  } catch (err) {
-    res.status(500).json({ error: "DELETE_FAILED" });
-  }
-});
-
-// ✅ THE MISSING PIECE: User Access/Creation (Fixes the Pending Issue)
+// ✅ USER ACCESS ROUTE
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
-
-    // Find if user exists
     let user = await User.findOne({ username });
-
     if (user) {
-      // If user exists and avatar is new, update it
       if (avatar && user.avatar !== avatar) {
         user.avatar = avatar;
         await user.save();
       }
-      console.log(`👤 COMMANDER_LOGIN: ${username}`);
     } else {
-      // If user does not exist, create new
       user = new User({ username, avatar, wins: 0, totalGames: 0 });
       await user.save();
-      console.log(`👤 NEW_COMMANDER_REGISTERED: ${username}`);
     }
-
-    res.status(200).json(user); // Send response back to stop 'Pending'
+    res.status(200).json(user);
   } catch (err) {
-    console.error("🔥 USER_ACCESS_ERROR:", err.message);
-    res
-      .status(500)
-      .json({ error: "INTERNAL_SERVER_ERROR", details: err.message });
+    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
   }
 });
 
-// Ignored routes for now
-app.get("/api/leaderboard", async (req, res) => {
-  res.json([]);
+// 🌟 NEW: RECORD MATCH RESULT (Call this when a battle ends)
+app.post("/api/user/record-match", async (req, res) => {
+  try {
+    const { username, isWin } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+    user.totalGames += 1;
+    if (isWin) user.wins += 1;
+
+    await user.save();
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ error: "FAILED_TO_RECORD_MATCH" });
+  }
 });
-app.post("/api/fight", async (req, res) => {
-  res.json({ message: "FIGHT_INIT" });
+
+// 🌟 NEW: GLOBAL LEADERBOARD ROUTE
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    // Fetch top 50 users sorted by wins in descending order
+    const leaders = await User.find({})
+      .sort({ wins: -1 })
+      .limit(50)
+      .select("username avatar wins totalGames");
+    res.status(200).json(leaders);
+  } catch (err) {
+    res.status(500).json({ error: "FAILED_TO_FETCH_LEADERBOARD" });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
