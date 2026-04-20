@@ -15,11 +15,14 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
+// ✅ MongoDB Connection with strict logs
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("🔥 DB CONNECTED: MULTIVERSE ENGINE ONLINE"))
-  .catch((err) => console.error("❌ DB ERROR:", err));
+  .then(() => console.log("📡 KERNEL_ONLINE: MongoDB Connected Successfully"))
+  .catch((err) => console.error("🔥 KERNEL_CRASH: DB Connection Failed", err));
 
+// Add a simple Health Check route to wake up the server
+app.get("/api/health", (req, res) => res.status(200).send("ACTIVE"));
 // 📝 SCHEMAS & MODELS
 const CharacterSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
@@ -271,6 +274,36 @@ app.delete("/api/admin/delete-character/:id", async (req, res) => {
     res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
   } catch (err) {
     res.status(500).json({ error: "DELETE_FAILED" });
+  }
+});
+
+// ✅ STABLE USER PROFILE CREATION
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    // 🛡️ Pre-validation check
+    if (!username || !email) {
+      return res.status(400).json({ error: "USERNAME_OR_EMAIL_MISSING" });
+    }
+
+    const newUser = new User({
+      username,
+      email,
+      password, // Password hashing zaroori hai
+      wins: 0,
+      totalGames: 0,
+    });
+
+    await newUser.save();
+    console.log(`👤 PROFILE_CREATED: ${username}`);
+    res.status(201).json(newUser); // Success response
+  } catch (err) {
+    console.error("🔥 PROFILE_ERROR:", err.message);
+    // Duplicate email ya username error handle karein
+    res
+      .status(400)
+      .json({ error: "REGISTRATION_FAILED", details: err.message });
   }
 });
 

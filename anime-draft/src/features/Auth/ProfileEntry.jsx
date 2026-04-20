@@ -40,7 +40,49 @@ export default function ProfileEntry({ setUser }) {
       setLoading(false);
     }
   };
+  // ✅ POWER-UP PROFILE HANDLER: Retries until Render wakes up
+  const handleProfileCreation = async (formData) => {
+    setLoading(true);
+    let attempts = 0;
+    const maxAttempts = 3;
 
+    const attemptConnection = async () => {
+      try {
+        console.log(`📡 ATTEMPT ${attempts + 1}: Waking up the kernel...`);
+
+        const res = await axios.post(
+          "https://anime-draft-game-1.onrender.com/api/auth/register",
+          formData,
+          { timeout: 30000 }, // 🛡️ Wait 30s for Render to wake up
+        );
+
+        if (res.status === 201 || res.status === 200) {
+          setUser(res.data);
+          navigate("/modes");
+          return true;
+        }
+      } catch (err) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          console.warn("⚠️ SERVER_ASLEEP: Retrying in 3 seconds...");
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          return attemptConnection();
+        } else {
+          alert(
+            "🚨 CORE_ERROR: Server is taking too long. Please refresh and try again.",
+          );
+        }
+      }
+      return false;
+    };
+
+    const success = await attemptConnection();
+    if (success) {
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  };
   return (
     <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-[420px] bg-[#111113] p-8 rounded-[40px] border border-[#ff8c32]/20 text-center shadow-2xl relative">
