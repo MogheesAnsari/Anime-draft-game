@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import {
-  Camera,
-  Edit3,
-  ArrowLeft,
-  ShieldCheck,
-  Zap,
-  Target,
-} from "lucide-react";
+import { Camera, ArrowLeft, ShieldCheck, Zap, Target } from "lucide-react";
 
 export default function Dashboard({ user, setUser }) {
   const [editing, setEditing] = useState(false);
@@ -19,6 +12,7 @@ export default function Dashboard({ user, setUser }) {
     if (!newName.trim()) return;
     setSaving(true);
     try {
+      // ✅ Same route as login (it functions as an Upsert/Update now)
       const res = await axios.post(
         "https://anime-draft-game-1.onrender.com/api/user/access",
         {
@@ -30,7 +24,8 @@ export default function Dashboard({ user, setUser }) {
       setUser(res.data);
       setEditing(false);
     } catch (err) {
-      console.error("SYNC FAILED");
+      console.error("SYNC FAILED", err);
+      alert("Failed to sync profile updates.");
     } finally {
       setSaving(false);
     }
@@ -58,7 +53,7 @@ export default function Dashboard({ user, setUser }) {
             onClick={() => setEditing(true)}
           >
             <img
-              src={newAvatar}
+              src={newAvatar || "/zoro.svg"}
               className="w-32 h-32 md:w-52 md:h-52 rounded-[40px] border-2 border-[#ff8c32] object-cover object-top p-1"
               alt=""
             />
@@ -73,7 +68,9 @@ export default function Dashboard({ user, setUser }) {
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full bg-black border border-[#ff8c32]/50 p-4 rounded-2xl text-center font-black text-xs outline-none"
+                readOnly // Blocked username changes for consistency unless intended
+                title="Username cannot be changed to prevent tracking issues"
+                className="w-full bg-black border border-white/10 p-4 rounded-2xl text-center font-black text-xs outline-none text-gray-500 cursor-not-allowed"
               />
               <div className="flex gap-2">
                 <button
@@ -84,6 +81,7 @@ export default function Dashboard({ user, setUser }) {
                 </button>
                 <button
                   onClick={handleUpdate}
+                  disabled={saving}
                   className="flex-[2] bg-[#ff8c32] text-black py-3 rounded-xl font-black text-[9px]"
                 >
                   {saving ? "SYNCING..." : "SAVE_ID"}

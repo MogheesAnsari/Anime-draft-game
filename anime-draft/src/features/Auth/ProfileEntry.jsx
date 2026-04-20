@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ✅ Missing Import Fixed
 
 const AVATARS = [
   { id: 1, name: "GOJO", img: "/gojo.svg" },
@@ -15,7 +16,9 @@ export default function ProfileEntry({ setUser }) {
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // ✅ Hook initialized
 
+  // ✅ MERGED PROFILE HANDLER: Retries until Render wakes up and uses correct route
   const handleEntry = async () => {
     const specialCharRegex = /[._@#$]/;
     if (name.length < 3) return setError("NAME TOO SHORT! (MIN 3)");
@@ -24,65 +27,41 @@ export default function ProfileEntry({ setUser }) {
     if (name.includes(" ")) return setError("NO SPACES ALLOWED!");
 
     setLoading(true);
-    try {
-      const res = await axios.post(
-        "https://anime-draft-game-1.onrender.com/api/user/access",
-        {
-          username: name.toLowerCase().trim(),
-          avatar: selectedAvatar.img,
-        },
-      );
-      localStorage.setItem("commander", JSON.stringify(res.data));
-      setUser(res.data);
-    } catch (err) {
-      setError("OFFLINE! ENGINE BOOTING...");
-    } finally {
-      setLoading(false);
-    }
-  };
-  // ✅ POWER-UP PROFILE HANDLER: Retries until Render wakes up
-  const handleProfileCreation = async (formData) => {
-    setLoading(true);
     let attempts = 0;
     const maxAttempts = 3;
 
     const attemptConnection = async () => {
       try {
-        console.log(`📡 ATTEMPT ${attempts + 1}: Waking up the kernel...`);
-
+        console.log(`📡 ATTEMPT ${attempts + 1}: Contacting Database...`);
         const res = await axios.post(
-          "https://anime-draft-game-1.onrender.com/api/auth/register",
-          formData,
-          { timeout: 30000 }, // 🛡️ Wait 30s for Render to wake up
+          "https://anime-draft-game-1.onrender.com/api/user/access",
+          { username: name.toLowerCase().trim(), avatar: selectedAvatar.img },
+          { timeout: 20000 }, // 🛡️ 20s timeout
         );
 
-        if (res.status === 201 || res.status === 200) {
+        if (res.status === 200 || res.status === 201) {
+          localStorage.setItem("commander", JSON.stringify(res.data));
           setUser(res.data);
-          navigate("/modes");
+          navigate("/modes"); // ✅ Navigate to modes after login
           return true;
         }
       } catch (err) {
         attempts++;
         if (attempts < maxAttempts) {
-          console.warn("⚠️ SERVER_ASLEEP: Retrying in 3 seconds...");
+          setError(`WAKING SERVER... RETRY ${attempts}/3`);
           await new Promise((resolve) => setTimeout(resolve, 3000));
           return attemptConnection();
         } else {
-          alert(
-            "🚨 CORE_ERROR: Server is taking too long. Please refresh and try again.",
-          );
+          setError("🚨 KERNEL OFFLINE. TRY AGAIN.");
         }
       }
       return false;
     };
 
     const success = await attemptConnection();
-    if (success) {
-      setLoading(false);
-    } else {
-      setLoading(false);
-    }
+    setLoading(false);
   };
+
   return (
     <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-[420px] bg-[#111113] p-8 rounded-[40px] border border-[#ff8c32]/20 text-center shadow-2xl relative">
@@ -123,7 +102,7 @@ export default function ProfileEntry({ setUser }) {
           className="w-full bg-black border border-white/10 p-5 rounded-3xl text-center text-white font-black mb-4 focus:border-[#ff8c32] outline-none transition-all uppercase"
         />
         {error && (
-          <p className="text-[10px] text-red-500 font-bold mb-4 animate-pulse">
+          <p className="text-[10px] text-red-500 font-bold mb-4 animate-pulse uppercase">
             {error}
           </p>
         )}
@@ -132,7 +111,7 @@ export default function ProfileEntry({ setUser }) {
           disabled={loading}
           className="w-full bg-[#ff8c32] text-black font-black py-5 rounded-3xl italic tracking-widest hover:shadow-[0_0_30px_rgba(255,140,50,0.3)] transition-all uppercase"
         >
-          {loading ? "Initializing..." : "DEPLOY COMMANDER"}
+          {loading ? "INITIALIZING..." : "DEPLOY COMMANDER"}
         </button>
       </div>
     </div>
