@@ -9,7 +9,13 @@ export default function Leaderboard() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
+  const wins = parseInt(localStorage.getItem("user_wins") || "0");
+  const totalMatches = parseInt(
+    localStorage.getItem("user_total_matches") || "0",
+  );
+  const winRate =
+    totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+  // Use {wins} for Victories, {totalMatches} for Total Missions, and {winRate}% for Win Rate
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {

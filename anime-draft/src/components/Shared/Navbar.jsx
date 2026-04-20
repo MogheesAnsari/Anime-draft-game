@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LogOut,
@@ -7,12 +7,25 @@ import {
   ChevronDown,
   Trophy,
   Database,
+  ShoppingCart,
+  Coins,
 } from "lucide-react";
 
 export default function Navbar({ user, setUser }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [coins, setCoins] = useState(0);
+
+  // 🔥 Navbar mein hamesha live coins dikhane ke liye
+  useEffect(() => {
+    const updateCoins = () => {
+      setCoins(parseInt(localStorage.getItem("user_coins") || "0"));
+    };
+    updateCoins();
+    window.addEventListener("storage", updateCoins); // Dusre tabs/pages se update handle karne ke liye
+    return () => window.removeEventListener("storage", updateCoins);
+  }, []);
 
   if (location.pathname === "/" && !user) return null;
 
@@ -39,74 +52,103 @@ export default function Navbar({ user, setUser }) {
       </div>
 
       {user && (
-        <div className="relative">
+        <div className="flex items-center gap-4 md:gap-8">
+          {/* 💰 LIVE COIN INDICATOR (Quick Access to Shop) */}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={`flex items-center gap-3 bg-[#111113] border ${isOpen ? "border-[#ff8c32]" : "border-white/10"} pl-2 pr-4 py-1.5 rounded-2xl transition-all`}
+            onClick={() => navigate("/shop")}
+            className="hidden sm:flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 px-4 py-1.5 rounded-full hover:bg-yellow-500/20 transition-all group"
           >
-            <img
-              src={user.avatar || "/zoro.svg"}
-              className="w-9 h-9 rounded-xl border border-[#ff8c32]/50 object-cover"
-              alt=""
+            <Coins
+              size={16}
+              className="text-yellow-500 group-hover:scale-110 transition-transform"
             />
-            <div className="hidden md:block text-left">
-              <p className="text-[10px] font-black text-white leading-none">
-                {user.username}
-              </p>
-              <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase">
-                Elite
-              </p>
-            </div>
-            <ChevronDown
-              size={14}
-              className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
-            />
+            <span className="text-[10px] font-black text-yellow-500 tracking-widest">
+              {coins}
+            </span>
           </button>
 
-          {isOpen && (
-            <div className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e] border border-white/10 rounded-[24px] shadow-2xl p-2 animate-in fade-in slide-in-from-top-4">
-              {/* 📊 LEADERBOARD LINK */}
-              <button
-                onClick={() => {
-                  navigate("/leaderboard");
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
-              >
-                <Trophy size={16} className="text-yellow-500" /> HALL_OF_FAME
-              </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`flex items-center gap-3 bg-[#111113] border ${isOpen ? "border-[#ff8c32]" : "border-white/10"} pl-2 pr-4 py-1.5 rounded-2xl transition-all`}
+            >
+              <img
+                src={user.avatar || "/zoro.svg"}
+                className="w-9 h-9 rounded-xl border border-[#ff8c32]/50 object-cover"
+                alt=""
+              />
+              <div className="hidden md:block text-left">
+                <p className="text-[10px] font-black text-white leading-none">
+                  {user.username}
+                </p>
+                <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase">
+                  Elite
+                </p>
+              </div>
+              <ChevronDown
+                size={14}
+                className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
 
-              {/* 🛠️ ADMIN PANEL LINK */}
-              <button
-                onClick={() => {
-                  navigate("/admin");
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
-              >
-                <Database size={16} className="text-orange-500" /> KERNEL_ADMIN
-              </button>
+            {isOpen && (
+              <div className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e] border border-white/10 rounded-[24px] shadow-2xl p-2 animate-in fade-in slide-in-from-top-4">
+                {/* 🛒 BLACK MARKET (SHOP) LINK */}
+                <button
+                  onClick={() => {
+                    navigate("/shop");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500 transition-all text-[10px] font-black"
+                >
+                  <ShoppingCart size={16} className="text-yellow-500" />{" "}
+                  BLACK_MARKET
+                </button>
 
-              <button
-                onClick={() => {
-                  navigate("/dashboard");
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
-              >
-                <Settings size={16} className="text-blue-500" /> PROFILE_STATS
-              </button>
+                {/* 📊 LEADERBOARD LINK */}
+                <button
+                  onClick={() => {
+                    navigate("/leaderboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
+                >
+                  <Trophy size={16} className="text-[#ff8c32]" /> HALL_OF_FAME
+                </button>
 
-              <div className="h-[1px] bg-white/5 my-2 mx-2"></div>
+                {/* 🛠️ ADMIN PANEL LINK */}
+                <button
+                  onClick={() => {
+                    navigate("/admin");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-orange-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
+                >
+                  <Database size={16} className="text-orange-500" />{" "}
+                  KERNEL_ADMIN
+                </button>
 
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black"
-              >
-                <LogOut size={16} /> DISCONNECT
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    navigate("/dashboard");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-blue-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
+                >
+                  <Settings size={16} className="text-blue-500" /> PROFILE_STATS
+                </button>
+
+                <div className="h-[1px] bg-white/5 my-2 mx-2"></div>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black"
+                >
+                  <LogOut size={16} /> DISCONNECT
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </nav>

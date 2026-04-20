@@ -16,6 +16,7 @@ import DomainSelection from "./features/Selection/DomainSelection";
 import UniverseSelection from "./features/Selection/UniverseSelection";
 import DraftManager from "./features/Draft/DraftManager";
 import BattleResult from "./features/Battle/BattleResult";
+import Shop from "./features/Shop/Shop";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -88,6 +89,7 @@ export default function App() {
             path="/result"
             element={user ? <BattleResult /> : <Navigate to="/" />}
           />
+          <Route path="/shop" element={<Shop />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route
             path="/leaderboard"

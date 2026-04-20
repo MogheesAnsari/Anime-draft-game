@@ -1,78 +1,290 @@
-// ✅ 1. Universe Synergy Logic
 export const getUniverseSynergy = (team) => {
   const chars = Object.values(team).filter(Boolean);
   if (chars.length < 6) return false;
   const firstUniverse = chars[0].universe;
   if (!firstUniverse || firstUniverse === "all") return false;
-  const isSynergy = chars.every((c) => c.universe === firstUniverse);
-  return isSynergy ? firstUniverse : false;
+  return chars.every((c) => c.universe === firstUniverse)
+    ? firstUniverse
+    : false;
 };
 
-// ✅ 2. Accurate Slot Math (Base Stats)
-export const calculateEffectiveScore = (
+export const DOMAINS = [
+  {
+    name: "VALLEY OF THE END",
+    universe: "naruto",
+    buffText: "+15% CHAKRA BOOST",
+  },
+  { name: "MARINEFORD", universe: "onepiece", buffText: "+15% HAKI RESONANCE" },
+  { name: "SOUL SOCIETY", universe: "bleach", buffText: "+15% REIATSU SPIKE" },
+  {
+    name: "SHIBUYA INCIDENT",
+    universe: "jujutsu",
+    buffText: "+15% CURSED ENERGY",
+  },
+  {
+    name: "TOURNAMENT OF POWER",
+    universe: "dragonball",
+    buffText: "+15% GODLY KI",
+  },
+  {
+    name: "INFINITY CASTLE",
+    universe: "demon",
+    buffText: "+15% BREATHING MASTERY",
+  },
+  {
+    name: "U.A. HIGH ARENA",
+    universe: "heroacademia",
+    buffText: "+15% QUIRK AWAKENING",
+  },
+  { name: "DARK CONTINENT", universe: "hunter", buffText: "+15% NEN OVERFLOW" },
+  {
+    name: "FINAL DESTINATION",
+    universe: "all",
+    buffText: "PURE SKILL (NO BUFFS)",
+  },
+];
+export const getRandomDomain = () =>
+  DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
+
+export const ARTIFACTS = [
+  {
+    name: "POTARA EARRINGS",
+    effect: "balanced",
+    boost: 1.1,
+    desc: "Fuses power for +10% ATK & DEF",
+  },
+  {
+    name: "DEATH NOTE",
+    effect: "iq",
+    boost: 1.3,
+    desc: "Absolute Strategy: +30% IQ boost",
+  },
+  {
+    name: "ZANPAKUTO",
+    effect: "atk",
+    boost: 1.2,
+    desc: "Soul Cutter: +20% Physical ATK",
+  },
+  {
+    name: "STRAW HAT",
+    effect: "all",
+    boost: 1.1,
+    desc: "Captain's Will: +10% to ALL stats",
+  },
+  {
+    name: "NINJA SCROLL",
+    effect: "spd",
+    boost: 1.2,
+    desc: "Hidden Arts: +20% Speed increase",
+  },
+  {
+    name: "CURSED FINGER",
+    effect: "berserk",
+    boost: 1.25,
+    desc: "Cursed Might: +25% ATK (Risky)",
+  },
+  {
+    name: "HUNTER LICENSE",
+    effect: "tactical",
+    boost: 1.15,
+    desc: "Pro Hunter: +15% IQ & SPD",
+  },
+  {
+    name: "AEGIS SHIELD",
+    effect: "tank",
+    boost: 1.3,
+    desc: "Absolute Defense: +30% DEF",
+  },
+];
+export const getRandomArtifact = () =>
+  ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
+
+export const getRoleAction = (char, slot) => {
+  if (!char) return null;
+  const rng = Math.random();
+  if (slot === "speedster" && rng < 0.2)
+    return {
+      text: "SPEED MIRAGE",
+      boost: 1.2,
+      color: "text-blue-400 border-blue-400",
+    };
+  if (slot === "tank" && rng < 0.25)
+    return {
+      text: "ABSOLUTE BLOCK",
+      boost: 1.25,
+      color: "text-gray-400 border-gray-400",
+    };
+  if (slot === "support" && rng < 0.3)
+    return {
+      text: "200 IQ PLAY",
+      boost: 1.3,
+      color: "text-purple-400 border-purple-400",
+    };
+  if (slot === "raw_power" && rng < 0.15)
+    return {
+      text: "FATAL STRIKE",
+      boost: 1.5,
+      color: "text-red-500 border-red-500",
+    };
+  if (slot === "vice_cap" && rng < 0.2)
+    return {
+      text: "AURA BURST",
+      boost: 1.15,
+      color: "text-yellow-400 border-yellow-400",
+    };
+  return null;
+};
+
+export const getCharacterPassive = (char) => {
+  if (!char) return null;
+  const name = char.name?.toLowerCase() || "";
+  if (name.includes("goku") || name.includes("vegeta"))
+    return { name: "SAIYAN BLOOD", boost: 1.15 };
+  if (
+    name.includes("itachi") ||
+    name.includes("madara") ||
+    name.includes("sasuke")
+  )
+    return { name: "UCHIHA PRIDE", boost: 1.2 };
+  if (name.includes("gojo")) return { name: "LIMITLESS", boost: 1.25 };
+  return null;
+};
+
+export const calculateFinalBattleScore = (
   char,
-  slotId,
-  leaderBoost = 0,
-  aura = 0,
+  slot,
+  domain,
+  artifact,
+  rngBoost = 1,
+  rngText = null,
+  isAwakened = false,
 ) => {
-  if (!char) return 0;
-  let atk =
+  if (!char) return { final: 0, breakdown: [] };
+
+  let base =
     (Number(char.atk) || 0) +
-    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-  let def =
     (Number(char.def) || 0) +
-    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-  let spd =
     (Number(char.spd) || 0) +
-    (slotId === "captain" || slotId === "vice_cap" ? leaderBoost : 0);
-  let iq = Number(char.iq) || 100;
+    (Number(char.iq) || 100);
+  let multiplier = 1;
+  if (slot === "speedster") multiplier = 1.2;
+  if (slot === "tank") multiplier = 1.3;
+  if (slot === "raw_power") multiplier = 1.4;
 
-  let base = atk + def + spd + iq;
-  let bonus = 0;
+  let total = base * multiplier;
+  let breakdown = [
+    { label: "Base Stats (with Slot Bonus)", value: Math.round(total) },
+  ];
 
-  if (slotId === "vice_cap") bonus = aura * 2;
-  if (slotId === "speedster") bonus = spd * 0.2;
-  if (slotId === "tank") bonus = def * 0.3;
-  if (slotId === "raw_power") bonus = atk * 0.4;
+  const passive = getCharacterPassive(char);
+  if (passive) {
+    total *= passive.boost;
+    breakdown.push({
+      label: `Passive: ${passive.name}`,
+      value: `x${passive.boost}`,
+    });
+  }
 
-  let total = slotId === "captain" ? base : base + bonus + aura;
-  return Math.round(total);
+  if (artifact) {
+    total *= artifact.boost;
+    breakdown.push({
+      label: `Artifact: ${artifact.name}`,
+      value: `x${artifact.boost}`,
+    });
+  }
+
+  let domainMatched = false;
+  if (domain && domain.universe !== "all") {
+    const charUni = char.universe?.toLowerCase().replace(/[^a-z]/g, "") || "";
+    if (charUni.includes(domain.universe)) {
+      total *= 1.15;
+      domainMatched = true;
+      breakdown.push({ label: `Field Buff`, value: `x1.15` });
+    }
+  }
+
+  if (rngBoost !== 1) {
+    total *= rngBoost;
+    breakdown.push({ label: `RNG: ${rngText}`, value: `x${rngBoost}` });
+  }
+
+  if (isAwakened) {
+    total *= 1.2;
+    breakdown.push({ label: `Awakened Power`, value: `x1.2` });
+  }
+
+  return {
+    final: Math.round(total),
+    breakdown,
+    domainMatched,
+    passive,
+    artifact,
+  };
 };
 
-// ✅ 3. Total Team Score
+export const calculateEffectiveScore = (char, slotId) => {
+  if (!char) return 0;
+  let base =
+    (Number(char.atk) || 0) +
+    (Number(char.def) || 0) +
+    (Number(char.spd) || 0) +
+    (Number(char.iq) || 100);
+  let multiplier = 1;
+  if (slotId === "speedster") multiplier = 1.2;
+  if (slotId === "tank") multiplier = 1.3;
+  if (slotId === "raw_power") multiplier = 1.4;
+  return Math.round(base * multiplier);
+};
+
 export const calculateTeamScore = (team) => {
-  let total = 0;
-  const strategist = team["support"];
-  const leaderBoost = strategist
-    ? Math.round((Number(strategist.iq) || 100) * 0.1)
-    : 0;
-  const cap = team.captain || { atk: 0, def: 0, spd: 0, iq: 100 };
-  const capTotal =
-    (Number(cap.atk) || 0) +
-    (Number(cap.def) || 0) +
-    (Number(cap.spd) || 0) +
-    (Number(cap.iq) || 100) +
-    leaderBoost * 3;
-  const aura = capTotal * 0.1;
-
-  Object.keys(team).forEach((slotId) => {
-    total += calculateEffectiveScore(team[slotId], slotId, leaderBoost, aura);
-  });
-
-  if (getUniverseSynergy(team)) total = Math.round(total * 1.1);
-  return Math.round(total);
+  return Object.keys(team).reduce(
+    (acc, slot) => acc + calculateEffectiveScore(team[slot], slot),
+    0,
+  );
 };
 
-// 🌟 NEW: Combat Tier Grading
+export const getSlotSkill = (char, slot, synergy) => {
+  if (!char) return "STRIKE";
+  const prefix = synergy ? "AWAKENED " : "";
+  if (slot === "captain") {
+    const uni = char.universe?.toLowerCase() || "";
+    if (uni.includes("naruto")) return prefix + "WILL OF FIRE";
+    if (uni.includes("onepiece") || uni.includes("one piece"))
+      return prefix + "SUPREME CONQUEROR";
+    if (uni.includes("bleach")) return prefix + "SPIRITUAL PRESSURE";
+    if (uni.includes("jujutsu")) return prefix + "BLACK FLASH SYNC";
+    return prefix + "COMMANDER'S WRATH";
+  }
+  if (slot === "raw_power") {
+    const uni = char.universe?.toLowerCase() || "";
+    if (uni.includes("naruto")) return prefix + "SECRET NINJUTSU";
+    if (uni.includes("onepiece") || uni.includes("one piece"))
+      return prefix + "FRUIT AWAKENING";
+    if (uni.includes("bleach")) return prefix + "BANKAI RELEASE";
+    if (uni.includes("jujutsu")) return prefix + "DOMAIN EXPANSION";
+    return prefix + "CATASTROPHIC END";
+  }
+  const slotSkills = {
+    vice_cap: "AURA BURST",
+    speedster: "FLASH STEP",
+    tank: "ABSOLUTE DEFENSE",
+    support: "STRATEGIC OVERLAY",
+  };
+  return prefix + (slotSkills[slot] || "COMBAT STRIKE");
+};
+
+export const getRankTier = (wins) => ({
+  title: wins >= 50 ? "HOKAGE" : "GENIN",
+  color: wins >= 50 ? "text-orange-500" : "text-gray-400",
+});
+
 export const getCombatTier = (totalScore) => {
   if (totalScore >= 5000) return { tier: "S-CLASS", color: "text-red-500" };
   if (totalScore >= 4000) return { tier: "A-CLASS", color: "text-[#ff8c32]" };
   if (totalScore >= 3000) return { tier: "B-CLASS", color: "text-purple-500" };
-  if (totalScore >= 2000) return { tier: "C-CLASS", color: "text-blue-500" };
-  return { tier: "D-CLASS", color: "text-gray-400" };
+  return { tier: "C-CLASS", color: "text-blue-500" };
 };
 
-// ✅ 4. CPU Generation
 export const generateCpuTeam = (pool) => {
   const SLOTS = [
     "captain",
@@ -95,118 +307,52 @@ export const generateCpuTeam = (pool) => {
   });
   return cpuTeam;
 };
+// 👹 PHASE 6: RAID BOSS DATA & MATH
+export const RAID_BOSSES = [
+  {
+    id: "boss_aizen",
+    name: "AIZEN (HOGYOKU)",
+    universe: "bleach",
+    img: "/boss_aizen.jpg", // Add a cool image in public folder
+    title: "THE TRANSCENDENT",
+    atk: 220,
+    def: 240,
+    spd: 210,
+    iq: 250, // Peak Intelligence
+    maxHp: 12000,
+    skill: "KYOKA SUIGETSU: COMPLETE HYPNOSIS",
+    passive: { name: "EVOLUTION", effect: "all", boost: 1.2 },
+  },
+  {
+    id: "boss_madara",
+    name: "MADARA (TEN-TAILS)",
+    universe: "naruto",
+    img: "/boss_madara.jpg", // Add image
+    title: "GHOST OF THE UCHIHA",
+    atk: 250,
+    def: 250,
+    spd: 220,
+    iq: 200,
+    maxHp: 15000, // Massive Tank
+    skill: "INFINITE TSUKUYOMI",
+    passive: { name: "SIX PATHS CHAKRA", effect: "atk", boost: 1.25 },
+  },
+  {
+    id: "boss_sukuna",
+    name: "SUKUNA (TRUE FORM)",
+    universe: "jujutsu kaisen",
+    img: "/boss_sukuna.jpg", // Add image
+    title: "KING OF CURSES",
+    atk: 280,
+    def: 180,
+    spd: 240,
+    iq: 180, // Pure Aggression
+    maxHp: 10000,
+    skill: "MALEVOLENT SHRINE",
+    passive: { name: "CURSED REGENERATION", effect: "def", boost: 1.15 },
+  },
+];
 
-// 🌟 5. Elite Rank Progression System
-export const getRankTier = (wins) => {
-  if (wins >= 100) return { title: "MYTHIC COMMANDER", color: "text-red-500" };
-  if (wins >= 50) return { title: "HOKAGE", color: "text-[#ff8c32]" };
-  if (wins >= 25) return { title: "JONIN", color: "text-purple-500" };
-  if (wins >= 10) return { title: "CHUNIN", color: "text-blue-500" };
-  return { title: "GENIN", color: "text-gray-400" };
-};
-
-// 🌟 6. THE GOD-MODE SKILL ENGINE (Universe + Character Name Auto-Detect)
-export const getSlotSkill = (char, slot, hasSynergy = false) => {
-  if (!char) return "COMBAT STRIKE";
-
-  const uniKey = String(char.universe || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-  const nameKey = String(char.name || "")
-    .toLowerCase()
-    .replace(/[^a-z]/g, "");
-
-  const prefix = hasSynergy ? "AWAKENED " : "";
-
-  // 🔥 MAGIC: Auto-detect anime from character names if DB universe is wrong/empty!
-  const isDemonSlayer =
-    uniKey.includes("demon") ||
-    uniKey.includes("kimetsu") ||
-    nameKey.includes("sanemi") ||
-    nameKey.includes("tanjirou") ||
-    nameKey.includes("yoriichi") ||
-    nameKey.includes("gyokko");
-  const isNaruto =
-    uniKey.includes("naruto") ||
-    uniKey.includes("boruto") ||
-    nameKey.includes("kaguya") ||
-    nameKey.includes("madara") ||
-    nameKey.includes("sasuke");
-  const isBleach =
-    uniKey.includes("bleach") ||
-    uniKey.includes("soul") ||
-    nameKey.includes("askin") ||
-    nameKey.includes("ichigo") ||
-    nameKey.includes("aizen");
-  const isOnePiece =
-    uniKey.includes("onepiece") ||
-    nameKey.includes("luffy") ||
-    nameKey.includes("zoro") ||
-    nameKey.includes("sanji");
-  const isJJK =
-    uniKey.includes("jujutsu") ||
-    uniKey.includes("jjk") ||
-    nameKey.includes("yorozu") ||
-    nameKey.includes("gojo") ||
-    nameKey.includes("sukuna");
-  const isMHA =
-    uniKey.includes("heroacademia") ||
-    uniKey.includes("mha") ||
-    nameKey.includes("tenya") ||
-    nameKey.includes("mirai") ||
-    nameKey.includes("deku");
-  const isDBZ =
-    uniKey.includes("dragonball") ||
-    uniKey.includes("dbz") ||
-    nameKey.includes("zamasu") ||
-    nameKey.includes("goku") ||
-    nameKey.includes("vegeta");
-  const isHxH =
-    uniKey.includes("hunter") ||
-    uniKey.includes("hxh") ||
-    nameKey.includes("tserriednich") ||
-    nameKey.includes("gon") ||
-    nameKey.includes("killua");
-  // 🛡️ PROPER CAPTAIN SLOT LOGIC
-  if (slot === "captain") {
-    if (isNaruto) return prefix + "WILL OF FIRE";
-    if (isOnePiece) return prefix + "SUPREME CONQUEROR";
-    if (isBleach) return prefix + "SPIRITUAL PRESSURE";
-    if (isJJK) return prefix + "BLACK FLASH SYNC";
-    if (isDBZ) return prefix + "SAIYAN PRIDE";
-    if (isDemonSlayer) return prefix + "HASHIRA RESOLVE";
-    if (isMHA) return prefix + "PLUS ULTRA WILL";
-    if (uniKey.includes("solo")) return prefix + "SHADOW COMMAND";
-    if (uniKey.includes("blackclover")) return prefix + "WIZARD KING ART";
-    if (uniKey.includes("chainsaw")) return prefix + "DEVIL CONTRACT";
-
-    return (
-      prefix +
-      (char.iq >= char.atk ? "TACTICAL MASTERMIND" : "COMMANDER'S WRATH")
-    );
-  }
-
-  // ⚔️ PROPER RAW POWER SLOT LOGIC
-  if (slot === "raw_power") {
-    if (isNaruto) return prefix + "SECRET NINJUTSU";
-    if (isOnePiece) return prefix + "FRUIT AWAKENING";
-    if (isBleach) return prefix + "BANKAI RELEASE";
-    if (isJJK) return prefix + "DOMAIN EXPANSION";
-    if (isDBZ) return prefix + "FINAL FLASH IMPACT";
-    if (isDemonSlayer) return prefix + "TOTAL CONCENTRATION";
-    if (isMHA) return prefix + "QUIRK AWAKENING";
-    if (uniKey.includes("solo")) return prefix + "MONARCH'S DOMAIN";
-    if (uniKey.includes("blackclover")) return prefix + "ULTIMATE MAGIC";
-    if (uniKey.includes("chainsaw")) return prefix + "BLOOD DEVIL RAGE";
-
-    return prefix + "MULTIVERSE OVERLOAD";
-  }
-
-  const slotSkills = {
-    vice_cap: "AURA BURST",
-    speedster: "FLASH STEP",
-    tank: "ABSOLUTE DEFENSE",
-    support: "STRATEGIC OVERLAY",
-  };
-  return prefix + (slotSkills[slot] || "STRIKE");
+export const getRandomRaidBoss = () => {
+  return RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
 };

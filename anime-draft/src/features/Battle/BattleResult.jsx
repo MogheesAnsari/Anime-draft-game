@@ -1,6 +1,16 @@
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Trophy, RotateCcw, Home, Crown, Flame, Swords } from "lucide-react";
+import {
+  Trophy,
+  RotateCcw,
+  Home,
+  Crown,
+  Flame,
+  Swords,
+  ShieldAlert,
+  Coins,
+  Gem,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateEffectiveScore } from "../Draft/utils/draftUtils";
 
@@ -8,9 +18,12 @@ export default function BattleResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [showStats, setShowStats] = useState(false);
+  const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
+
+  // 🔥 THE GATEKEEPER: Stops infinite loops and duplicate rewards
+  const hasDistributedRewards = useRef(false);
 
   const teams = state?.teams || [];
-  const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
   const SLOTS = [
     "captain",
@@ -21,68 +34,158 @@ export default function BattleResult() {
     "raw_power",
   ];
 
-  // 🛰️ DATA PROCESSING
-  const { displayCards, headerText } = useMemo(() => {
-    let players = teams.map((team, idx) => {
+  // 🧠 Safe Data Extraction
+  const processedTeams = useMemo(() => {
+    if (!teams || teams.length === 0) return [];
+
+    const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
+    const parsedData = savedDataRaw ? JSON.parse(savedDataRaw) : {};
+    const battleData =
+      parsedData.finalScores || state?.result?.finalScores || [];
+
+    return teams.map((team, idx) => {
       let charList = [];
-      let bestChar = { name: "N/A", score: 0, slot: "N/A" };
+      let bestChar = { name: "N/A", score: 0, slot: "N/A", scoreData: null };
+      let teamTotalScore = 0;
+
+      const teamScores = battleData[idx] || {};
 
       SLOTS.forEach((slot) => {
         const char = team[slot];
         if (!char) return;
-        const cScore = calculateEffectiveScore(char, slot);
-        charList.push({ ...char, finalScore: cScore, slot: slot });
-        if (cScore > bestChar.score)
-          bestChar = { ...char, score: cScore, slot: slot };
+
+        const slotData = teamScores[slot];
+        const finalScore = slotData
+          ? slotData.final
+          : calculateEffectiveScore(char, slot);
+
+        teamTotalScore += finalScore;
+        charList.push({
+          ...char,
+          finalScore: finalScore,
+          slot: slot,
+          scoreData: slotData,
+        });
+
+        if (finalScore > bestChar.score) {
+          bestChar = {
+            ...char,
+            score: finalScore,
+            slot: slot,
+            scoreData: slotData,
+          };
+        }
       });
+
       charList.sort((a, b) => b.finalScore - a.finalScore);
 
       return {
         id: idx + 1,
         name: `COMMANDER 0${idx + 1}`,
-        score: rawScores[idx] || 0,
+        score: teamTotalScore,
         mvp: bestChar,
         characters: charList,
       };
     });
+  }, [teams, state]);
 
+  // 🔥 100% BUG-FREE LEADERBOARD & REWARD SYSTEM
+  useEffect(() => {
+    // Return immediately if rewards are already given OR if teams aren't loaded
+    if (hasDistributedRewards.current || processedTeams.length === 0) return;
+
+    // Lock the gate! This ensures the code below runs EXACTLY ONCE per match.
+    hasDistributedRewards.current = true;
+
+    const winner = [...processedTeams].sort((a, b) => b.score - a.score)[0];
+    const isPlayer1InMatch = processedTeams.some(
+      (p) => p.name === "COMMANDER 01",
+    );
+
+    if (isPlayer1InMatch) {
+      const isWin = winner && winner.name === "COMMANDER 01";
+      let coinsWon = 25; // Base loss reward
+      let gemsWon = 0;
+
+      // 1. Track Total Matches Played (For Win Rate)
+      const totalMatches =
+        parseInt(localStorage.getItem("user_total_matches") || "0") + 1;
+      localStorage.setItem("user_total_matches", totalMatches.toString());
+
+      // 2. Track Wins and Set Big Rewards
+      if (isWin) {
+        coinsWon = 100;
+        gemsWon = 1;
+        const currentWins =
+          parseInt(localStorage.getItem("user_wins") || "0") + 1;
+        localStorage.setItem("user_wins", currentWins.toString());
+      }
+
+      // 3. Track Highest Score
+      const player1Score =
+        processedTeams.find((p) => p.name === "COMMANDER 01")?.score || 0;
+      const currentHighestScore = parseInt(
+        localStorage.getItem("user_highest_score") || "0",
+      );
+      if (player1Score > currentHighestScore) {
+        localStorage.setItem("user_highest_score", player1Score.toString());
+      }
+
+      // 4. Update Currency Safely
+      const currentCoins = parseInt(localStorage.getItem("user_coins") || "0");
+      const currentGems = parseInt(localStorage.getItem("user_gems") || "0");
+      localStorage.setItem("user_coins", (currentCoins + coinsWon).toString());
+      localStorage.setItem("user_gems", (currentGems + gemsWon).toString());
+
+      setEarnedLoot({ coins: coinsWon, gems: gemsWon });
+
+      // Fire event so Navbar updates instantly
+      window.dispatchEvent(new Event("storage"));
+    }
+  }, [processedTeams]);
+
+  // UI Build Logic
+  const { displayCards, headerText } = useMemo(() => {
     let builtCards = [];
     let status = "MATCH OVER";
+    if (processedTeams.length === 0)
+      return { displayCards: [], headerText: status };
 
     const isTeamMode = mode.includes("2v2") || mode.includes("team");
     const isRoyaleMode =
       mode.includes("royale") ||
       mode.includes("ffa") ||
-      (players.length > 2 && !isTeamMode);
+      (processedTeams.length > 2 && !isTeamMode);
 
-    if (isTeamMode && players.length >= 4) {
-      const alphaScore = players[0].score + players[1].score;
-      const betaScore = players[2].score + players[3].score;
+    if (isTeamMode && processedTeams.length >= 4) {
+      const alphaScore = processedTeams[0].score + processedTeams[1].score;
+      const betaScore = processedTeams[2].score + processedTeams[3].score;
       const isDraw = alphaScore === betaScore;
       status = isDraw
         ? "STALEMATE"
         : alphaScore > betaScore
           ? "TEAM ALPHA WINS"
           : "TEAM BETA WINS";
-
       builtCards = [
         {
           title: "TEAM ALPHA",
           score: alphaScore,
           rank: alphaScore >= betaScore ? 1 : 2,
           isWinner: !isDraw && alphaScore > betaScore,
-          members: [players[0], players[1]],
+          members: [processedTeams[0], processedTeams[1]],
         },
         {
           title: "TEAM BETA",
           score: betaScore,
           rank: betaScore >= alphaScore ? 1 : 2,
           isWinner: !isDraw && betaScore > alphaScore,
-          members: [players[2], players[3]],
+          members: [processedTeams[2], processedTeams[3]],
         },
       ];
     } else if (isRoyaleMode) {
-      const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+      const sortedPlayers = [...processedTeams].sort(
+        (a, b) => b.score - a.score,
+      );
       status = `${sortedPlayers[0].name} SURVIVES`;
       builtCards = sortedPlayers.map((p, index) => ({
         title: p.name,
@@ -92,38 +195,36 @@ export default function BattleResult() {
         members: [p],
       }));
     } else {
-      const p1Score = players[0]?.score || 0;
-      const p2Score = players[1]?.score || 0;
+      const p1Score = processedTeams[0]?.score || 0;
+      const p2Score = processedTeams[1]?.score || 0;
       const isDraw = p1Score === p2Score;
       status = isDraw
         ? "STALEMATE"
         : p1Score > p2Score
           ? "VICTORY ACHIEVED"
           : "DEFEAT";
-
       builtCards = [
         {
           title: "YOUR SQUAD",
           score: p1Score,
           rank: p1Score >= p2Score ? 1 : 2,
           isWinner: !isDraw && p1Score > p2Score,
-          members: [players[0]].filter(Boolean),
+          members: [processedTeams[0]].filter(Boolean),
         },
         {
           title: "ENEMY SQUAD",
           score: p2Score,
           rank: p2Score >= p1Score ? 1 : 2,
           isWinner: !isDraw && p2Score > p1Score,
-          members: [players[1]].filter(Boolean),
+          members: [processedTeams[1]].filter(Boolean),
         },
       ];
     }
-
     return { displayCards: builtCards, headerText: status };
-  }, [teams, rawScores, mode]);
+  }, [processedTeams, mode]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowStats(true), 600);
+    const timer = setTimeout(() => setShowStats(true), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -131,54 +232,94 @@ export default function BattleResult() {
     headerText.includes("VICTORY") ||
     headerText.includes("WINS") ||
     headerText.includes("SURVIVES");
+  const isDefeat = headerText.includes("DEFEAT");
 
   const getRankColor = (rank) => {
-    if (rank === 1) return "border-[#ff8c32]";
-    if (rank === 2) return "border-blue-500";
-    if (rank === 3) return "border-purple-500";
+    if (rank === 1)
+      return "border-[#ff8c32] shadow-[0_0_40px_rgba(255,140,50,0.15)]";
+    if (rank === 2)
+      return "border-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.15)]";
     return "border-gray-600";
   };
+
+  // If page is refreshed and state is lost
+  if (processedTeams.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center flex-col text-white font-black italic">
+        <h1 className="text-4xl text-gray-500 mb-8">BATTLE DATA PURGED</h1>
+        <button
+          onClick={() => navigate("/modes")}
+          className="bg-[#ff8c32] text-black px-10 py-4 rounded-2xl text-xl"
+        >
+          RETURN TO HQ
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 md:p-8 uppercase font-sans selection:bg-[#ff8c32] relative overflow-y-auto overflow-x-hidden custom-scrollbar">
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
-          className={`absolute inset-0 opacity-20 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#ea580c_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#991b1b_0%,_transparent_60%)]"}`}
+          className={`absolute inset-0 opacity-20 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#ea580c_0%,_transparent_60%)]" : isDefeat ? "bg-[radial-gradient(circle_at_top,_#2563eb_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#4b5563_0%,_transparent_60%)]"}`}
         />
       </div>
 
-      <div className="w-full max-w-[1600px] relative z-10 flex flex-col items-center pb-24">
-        {/* Header */}
+      <div className="w-full max-w-[1600px] relative z-10 flex flex-col items-center pb-32">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mt-6 mb-12 w-full"
+          className="text-center mt-6 mb-6 w-full"
         >
-          <div className="flex justify-center items-center gap-6 mb-4">
-            <div className="h-[1px] w-24 bg-gradient-to-r from-transparent to-gray-500" />
+          <div className="flex justify-center items-center gap-4 md:gap-6 mb-2">
+            <div className="h-[1px] w-12 md:w-24 bg-gradient-to-r from-transparent to-gray-500" />
             {isVictory ? (
               <Trophy
-                size={48}
-                className="text-[#ff8c32] drop-shadow-[0_0_15px_rgba(255,140,50,0.8)]"
+                size={40}
+                className="text-[#ff8c32] md:w-12 md:h-12 drop-shadow-[0_0_15px_rgba(255,140,50,0.8)]"
+              />
+            ) : isDefeat ? (
+              <ShieldAlert
+                size={40}
+                className="text-blue-500 md:w-12 md:h-12"
               />
             ) : (
-              <Swords size={48} className="text-gray-600" />
+              <Swords size={40} className="text-gray-400 md:w-12 md:h-12" />
             )}
-            <div className="h-[1px] w-24 bg-gradient-to-l from-transparent to-gray-500" />
+            <div className="h-[1px] w-12 md:w-24 bg-gradient-to-l from-transparent to-gray-500" />
           </div>
-          <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-600 leading-tight">
+          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-tight">
             {headerText}
           </h1>
         </motion.div>
 
-        {/* 🃏 BENTO BOX GRID LAYOUT */}
+        {/* 🔥 THE LOOT DISPLAY */}
+        <AnimatePresence>
+          {showStats && earnedLoot.coins > 0 && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex gap-4 mb-10"
+            >
+              <div className="bg-yellow-500/10 border border-yellow-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-yellow-400 font-black">
+                <Coins size={18} /> +{earnedLoot.coins} COINS
+              </div>
+              {earnedLoot.gems > 0 && (
+                <div className="bg-purple-500/10 border border-purple-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-purple-400 font-black">
+                  <Gem size={18} /> +{earnedLoot.gems} GEM
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {showStats && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ staggerChildren: 0.2 }}
-              className={`w-full grid gap-6 ${displayCards.length > 2 ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4" : "grid-cols-1 xl:grid-cols-2 max-w-6xl"}`}
+              className="w-full grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2 max-w-7xl"
             >
               {displayCards.map((card, cIdx) => {
                 const borderStyles = getRankColor(card.rank);
@@ -189,15 +330,14 @@ export default function BattleResult() {
                     key={cIdx}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`flex flex-col bg-[#0a0a0c] border-2 rounded-[32px] overflow-hidden ${borderStyles} ${isFirst ? "shadow-[0_0_40px_rgba(255,140,50,0.15)] scale-[1.02] z-20" : "opacity-90 bg-black"}`}
+                    className={`flex flex-col bg-[#0a0a0c] border-2 rounded-[24px] md:rounded-[32px] overflow-hidden ${borderStyles} relative`}
                   >
-                    {/* Card Banner */}
-                    <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5 relative">
+                    <div className="flex justify-between items-center p-4 md:p-6 border-b border-white/5 bg-white/5 relative">
                       <div
-                        className={`absolute top-0 left-0 w-2 h-full ${isFirst ? "bg-[#ff8c32]" : "bg-gray-700"}`}
+                        className={`absolute top-0 left-0 w-1 md:w-2 h-full ${isFirst ? "bg-[#ff8c32]" : "bg-blue-600"}`}
                       />
-                      <div className="pl-4">
-                        <div className="text-[10px] font-black text-gray-500 tracking-[0.3em] mb-1 flex items-center gap-2">
+                      <div className="pl-3 md:pl-4">
+                        <div className="text-[8px] md:text-[10px] font-black text-gray-500 tracking-[0.3em] mb-1 flex items-center gap-2">
                           {card.title}{" "}
                           {displayCards.length > 2 && (
                             <span
@@ -208,74 +348,109 @@ export default function BattleResult() {
                           )}
                         </div>
                         <div
-                          className={`text-5xl font-black italic ${isFirst ? "text-[#ff8c32]" : "text-white"}`}
+                          className={`text-4xl md:text-6xl font-black italic ${isFirst ? "text-[#ff8c32]" : "text-blue-500"}`}
                         >
                           {card.score}
                         </div>
                       </div>
                       {isFirst && (
                         <Crown
-                          size={32}
-                          className="text-[#ff8c32] opacity-80 absolute right-6"
+                          size={28}
+                          className="text-[#ff8c32] opacity-80 absolute right-4 md:right-6"
                         />
                       )}
                     </div>
 
                     <div
-                      className={`flex-1 flex ${card.members.length > 1 ? "flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/5" : "flex-col"} p-4`}
+                      className={`flex-1 flex ${card.members.length > 1 ? "flex-col xl:flex-row divide-y xl:divide-y-0 xl:divide-x divide-white/5" : "flex-col"} p-4 md:p-6`}
                     >
                       {card.members.map((player, pIdx) => (
-                        <div key={pIdx} className="flex-1 flex flex-col p-2">
-                          {/* MVP Spotlight (Bento Header) */}
-                          <div className="flex flex-col bg-gradient-to-b from-white/5 to-transparent p-4 rounded-2xl border border-white/5 mb-4">
-                            <div className="text-[9px] text-[#ff8c32] font-black flex items-center justify-center gap-1 mb-3 tracking-widest">
+                        <div
+                          key={pIdx}
+                          className="flex-1 flex flex-col gap-4 md:gap-6 p-2"
+                        >
+                          <div
+                            className={`flex flex-col bg-black/40 p-4 md:p-5 rounded-2xl md:rounded-3xl border ${isFirst ? "border-[#ff8c32]/30" : "border-blue-500/30"}`}
+                          >
+                            <div
+                              className={`text-[8px] md:text-[10px] font-black flex items-center justify-center gap-1 mb-3 tracking-widest ${isFirst ? "text-[#ff8c32]" : "text-blue-400"}`}
+                            >
                               <Flame size={12} /> {player.name} SQUAD MVP
                             </div>
-                            <div className="flex items-center gap-4">
+
+                            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-5">
                               <img
                                 src={player.mvp?.img || "/zoro.svg"}
-                                className={`w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl border-2 ${borderStyles}`}
-                                alt=""
+                                className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-xl md:rounded-2xl border-2 ${isFirst ? "border-[#ff8c32]" : "border-blue-600"}`}
+                                alt="MVP"
                               />
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm md:text-base font-black text-white truncate w-full">
+
+                              <div className="flex-1 w-full">
+                                <div className="text-lg md:text-2xl font-black text-white truncate text-center sm:text-left mb-1">
                                   {player.mvp?.name}
                                 </div>
-                                <div className="text-[10px] text-gray-500 font-black mb-1">
+                                <div className="text-[10px] md:text-xs text-gray-500 font-black mb-2 md:mb-3 text-center sm:text-left">
                                   {player.mvp?.slot?.replace("_", " ")}
                                 </div>
-                                <div
-                                  className={`text-2xl font-black italic leading-none ${isFirst ? "text-[#ff8c32]" : "text-gray-300"}`}
-                                >
-                                  {player.mvp?.score} PTS
-                                </div>
+
+                                {player.mvp?.scoreData?.breakdown && (
+                                  <div className="bg-black/60 rounded-xl p-2 md:p-3 border border-white/5 w-full">
+                                    <div className="text-[8px] text-gray-500 border-b border-white/10 pb-1 mb-1.5 md:mb-2 tracking-widest">
+                                      TACTICAL BREAKDOWN
+                                    </div>
+                                    <div className="space-y-1">
+                                      {player.mvp.scoreData.breakdown.map(
+                                        (log, li) => (
+                                          <div
+                                            key={li}
+                                            className="flex justify-between items-center text-[8px] md:text-[10px]"
+                                          >
+                                            <span className="text-gray-400 truncate pr-2">
+                                              {log.label}
+                                            </span>
+                                            <span
+                                              className={`font-mono flex-shrink-0 ${log.value.toString().includes("x") ? "text-green-400" : "text-white"}`}
+                                            >
+                                              {log.value}
+                                            </span>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                    <div
+                                      className={`flex justify-between items-center border-t border-white/10 pt-1.5 md:pt-2 mt-1.5 md:mt-2 text-[10px] md:text-sm font-black italic ${isFirst ? "text-[#ff8c32]" : "text-blue-400"}`}
+                                    >
+                                      <span>FINAL OUTPUT</span>
+                                      <span>{player.mvp?.score}</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          {/* Roster Grid (Replaces messy tables/lists) */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                             {player.characters
                               .filter((c) => c.slot !== player.mvp?.slot)
                               .map((char, cIndex) => (
                                 <div
                                   key={cIndex}
-                                  className="flex items-center gap-3 bg-black/40 rounded-xl p-2 border border-white/5 hover:border-white/20 transition-colors"
+                                  className="flex items-center gap-2 md:gap-3 bg-white/5 rounded-xl md:rounded-2xl p-2 md:p-3 border border-white/5 hover:border-white/20 transition-colors"
                                 >
                                   <img
                                     src={char.img}
-                                    className="w-10 h-10 rounded-lg object-cover border border-white/10"
+                                    className="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover border border-white/10"
                                     alt=""
                                   />
                                   <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                    <div className="text-[8px] text-gray-500 font-black uppercase">
+                                    <div className="text-[7px] md:text-[8px] text-gray-500 font-black uppercase tracking-widest mb-0.5">
                                       {char.slot?.replace("_", " ")}
                                     </div>
-                                    <div className="text-[10px] text-white font-bold truncate">
+                                    <div className="text-[9px] md:text-[11px] text-white font-bold truncate">
                                       {char.name}
                                     </div>
                                   </div>
-                                  <div className="text-xs font-black italic text-gray-400 text-right pr-1">
+                                  <div className="text-xs md:text-sm font-black italic text-gray-300 text-right pr-1 md:pr-2">
                                     {char.finalScore}
                                   </div>
                                 </div>
@@ -291,22 +466,27 @@ export default function BattleResult() {
           )}
         </AnimatePresence>
 
-        {/* 🎮 ACTION BUTTONS */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="flex flex-wrap justify-center gap-4 mt-12 w-full z-20"
+          className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 px-4 flex flex-col sm:flex-row justify-center gap-3 sm:gap-6 z-50"
         >
           <button
             onClick={() => navigate("/draft", { state })}
-            className="px-10 py-5 bg-[#ff8c32] text-black font-black italic text-sm rounded-xl hover:bg-orange-400 transition-transform hover:scale-105 flex items-center gap-2 shadow-[0_0_30px_rgba(255,140,50,0.3)]"
+            className="bg-[#ff8c32] text-black px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl text-xs md:text-lg font-black italic hover:scale-105 transition-transform flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,140,50,0.3)]"
           >
             <RotateCcw size={18} /> DEPLOY AGAIN
           </button>
           <button
+            onClick={() => navigate("/shop")}
+            className="bg-yellow-500 text-black px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl text-xs md:text-lg font-black italic hover:scale-105 transition-transform flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+          >
+            <Coins size={18} /> VISIT SHOP
+          </button>
+          <button
             onClick={() => navigate("/modes")}
-            className="px-10 py-5 bg-transparent border-2 border-white/10 text-white font-black italic text-sm rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2"
+            className="bg-black/80 backdrop-blur-md px-6 md:px-10 py-3 md:py-4 rounded-xl md:rounded-2xl text-xs md:text-lg font-black italic hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border border-white/10"
           >
             <Home size={18} /> COMMAND CENTER
           </button>

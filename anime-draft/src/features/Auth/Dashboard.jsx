@@ -22,7 +22,13 @@ export default function Dashboard({ user, setUser }) {
 
   // 🏅 Calculate Player's Rank based on Wins
   const rank = getRankTier(user?.wins || 0);
-
+  const wins = parseInt(localStorage.getItem("user_wins") || "0");
+  const totalMatches = parseInt(
+    localStorage.getItem("user_total_matches") || "0",
+  );
+  const winRate =
+    totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+  // Use {wins} for Victories, {totalMatches} for Total Missions, and {winRate}% for Win Rate
   const handleUpdate = async () => {
     if (!newName.trim()) return;
     setSaving(true);
