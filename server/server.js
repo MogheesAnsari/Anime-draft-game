@@ -142,7 +142,7 @@ app.post("/api/user/sync", async (req, res) => {
   }
 });
 
-// 🌟 RECORD MATCH (Saves Wins/Coins)
+// 🌟 RECORD MATCH
 app.post("/api/user/record-match", async (req, res) => {
   try {
     const { username, sessionId, isWin, coinsWon, gemsWon } = req.body;
@@ -190,6 +190,80 @@ app.post("/api/admin/bulk-fetch-superhero", async (req, res) => {
     res.status(200).json({ message: "Sync Complete", results });
   } catch (err) {
     res.status(500).json({ error: "BULK_FETCH_FAILED" });
+  }
+});
+
+// 🛡️ ADMIN: BULK JSON SYNC (Fixes 404 Error)
+app.put("/api/admin/bulk-update", async (req, res) => {
+  try {
+    const data = req.body;
+    let count = 0;
+    for (const char of data) {
+      await Character.findOneAndUpdate(
+        { id: char.id },
+        { $set: char },
+        { upsert: true },
+      );
+      count++;
+    }
+    res.status(200).json({ updated_count: count });
+  } catch (err) {
+    res.status(500).json({ error: "BULK_UPDATE_FAILED" });
+  }
+});
+
+// 🛡️ ADMIN: SINGLE CHARACTER UPDATE
+app.put("/api/admin/update-character/:id", async (req, res) => {
+  try {
+    const updatedChar = await Character.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: req.body },
+      { new: true },
+    );
+    res.status(200).json(updatedChar);
+  } catch (err) {
+    res.status(500).json({ error: "UPDATE_FAILED" });
+  }
+});
+
+// 🛡️ ADMIN: INDIVIDUAL DELETE
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
+  try {
+    await Character.findOneAndDelete({ id: req.params.id });
+    res.status(200).json({ message: "DELETED" });
+  } catch (err) {
+    res.status(500).json({ error: "DELETE_FAILED" });
+  }
+});
+
+// 🛡️ ADMIN: WIPE UNIVERSE
+app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
+  try {
+    await Character.deleteMany({ universe: req.params.universe });
+    res.status(200).json({ message: "PURGED" });
+  } catch (err) {
+    res.status(500).json({ error: "PURGE_FAILED" });
+  }
+});
+
+// 🛡️ ADMIN: CLEANUP DUPLICATES
+app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
+  try {
+    const result = await Character.aggregate([
+      {
+        $group: { _id: "$id", ids: { $addToSet: "$_id" }, count: { $sum: 1 } },
+      },
+      { $match: { count: { $gt: 1 } } },
+    ]);
+    let deletedCount = 0;
+    for (const group of result) {
+      group.ids.shift();
+      const del = await Character.deleteMany({ _id: { $in: group.ids } });
+      deletedCount += del.deletedCount;
+    }
+    res.status(200).json({ deletedCount });
+  } catch (err) {
+    res.status(500).json({ error: "CLEANUP_FAILED" });
   }
 });
 
