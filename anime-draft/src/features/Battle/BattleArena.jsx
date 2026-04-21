@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
-  Crown,
   MapPin,
   Sparkles,
   Gem,
@@ -23,27 +21,27 @@ import {
 const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [phase, setPhase] = useState("INTRO");
   const [currentSlot, setCurrentSlot] = useState(0);
-  const [battleDomain] = useState(getRandomDomain());
 
-  const [teamArtifacts] = useState(() => {
-    if (artifacts && artifacts.length > 0) return artifacts;
-    return allTeams.map(() => null);
-  });
+  // 🔥 Identify Category dynamically based on the first character
+  const isComicArena =
+    allTeams[0]?.captain?.category === "comic" ||
+    allTeams[0]?.captain?.universe?.match(/marvel|dc/i);
 
+  const [battleDomain] = useState(
+    getRandomDomain(isComicArena ? "comic" : "anime"),
+  );
+  const [isFastForward, setIsFastForward] = useState(false);
+  const speedRef = useRef(false);
+
+  const [teamArtifacts] = useState(() =>
+    artifacts.length > 0 ? artifacts : allTeams.map(() => null),
+  );
   const [gauges, setGauges] = useState(allTeams.map(() => 0));
   const [capturedScores, setCapturedScores] = useState(
     allTeams.map(() => ({})),
   );
   const [currentActions, setCurrentActions] = useState([]);
   const [clashText, setClashText] = useState("");
-
-  const [isFastForward, setIsFastForward] = useState(false);
-  const speedRef = useRef(false);
-
-  const toggleSpeed = () => {
-    setIsFastForward(!isFastForward);
-    speedRef.current = !isFastForward;
-  };
 
   const SLOTS = [
     "captain",
@@ -53,6 +51,15 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     "support",
     "raw_power",
   ];
+  const toggleSpeed = () => {
+    setIsFastForward(!isFastForward);
+    speedRef.current = !isFastForward;
+  };
+
+  // 🎨 Terminology Switcher
+  const gaugeText = isComicArena ? "POWER METER" : "AURA GAUGE";
+  const readyText = isComicArena ? "SUITED UP" : "ENGAGED";
+  const ultimateText = isComicArena ? "SUPERCHARGED" : "AWAKENED";
 
   useEffect(() => {
     let timer;
@@ -112,19 +119,16 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       timer = setTimeout(() => {
         const scores = roundResults.map((r) => r.final);
         setGauges((prev) =>
-          prev.map((g, idx) => {
-            const performanceRatio = Math.min(1, scores[idx] / 800);
-            const earnedMana = 10 + Math.round(performanceRatio * 25);
-            return Math.min(100, g + earnedMana);
-          }),
+          prev.map((g, idx) =>
+            Math.min(
+              100,
+              g + (10 + Math.round(Math.min(1, scores[idx] / 800) * 25)),
+            ),
+          ),
         );
 
-        if (currentSlot < SLOTS.length - 1) {
-          setCurrentSlot((s) => s + 1);
-          setPhase("SKILL_FLASH");
-        } else {
-          setPhase("FINISHER");
-        }
+        if (currentSlot < SLOTS.length - 1) setCurrentSlot((s) => s + 1);
+        else setPhase("FINISHER");
       }, getDelay(4000));
     }
 
@@ -141,22 +145,19 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         onComplete({ finalScores: capturedScores });
       }, getDelay(1500));
     }
-
     return () => clearTimeout(timer);
-  }, [phase, currentSlot, allTeams, battleDomain, teamArtifacts]);
+  }, [phase, currentSlot, allTeams, battleDomain, teamArtifacts, onComplete]);
 
   const currentScores = allTeams.map(
     (team, idx) => capturedScores[idx]?.[SLOTS[currentSlot]]?.final || 0,
   );
   const maxScoreRender = Math.max(...currentScores);
-  const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
       <button
         onClick={toggleSpeed}
-        className={`fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${isFastForward ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110" : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"}`}
-        title="Toggle 2x Speed"
+        className={`fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] p-4 rounded-full border-2 transition-all duration-300 flex items-center gap-2 ${isFastForward ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110" : "bg-black/80 text-white border-white/20 hover:bg-white/10"}`}
       >
         <FastForward
           size={24}
@@ -187,9 +188,9 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         >
           <MapPin
             size={60}
-            className="mx-auto text-purple-500 mb-4 md:mb-6 animate-bounce"
+            className="mx-auto text-purple-500 mb-4 animate-bounce"
           />
-          <div className="text-orange-500 text-lg md:text-2xl tracking-[0.5em] mb-2">
+          <div className="text-orange-500 text-lg tracking-[0.5em] mb-2">
             FIELD SELECTED
           </div>
           <h2 className="text-4xl md:text-7xl drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]">
@@ -202,36 +203,28 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       )}
 
       <AnimatePresence>
-        {phase === "ARTIFACT_REVEAL" && hasAnyArtifact && (
+        {phase === "ARTIFACT_REVEAL" && teamArtifacts.some((a) => a) && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className="bg-white/5 backdrop-blur-2xl p-6 md:p-12 border-2 border-yellow-500/50 rounded-[30px] md:rounded-[50px] flex flex-col items-center max-w-5xl w-[95%] shadow-[0_0_100px_rgba(234,179,8,0.2)]"
+            className="bg-white/5 backdrop-blur-2xl p-6 md:p-12 border-2 border-yellow-500/50 rounded-[30px] flex flex-col items-center max-w-5xl shadow-[0_0_100px_rgba(234,179,8,0.2)]"
           >
-            <Gem
-              size={50}
-              className="text-yellow-500 mb-4 md:mb-6 animate-pulse"
-            />
-            <h2 className="text-2xl md:text-4xl text-orange-500 mb-6 md:mb-10 tracking-widest text-center">
-              LEGENDARY ARTIFACTS
+            <Gem size={50} className="text-yellow-500 mb-4 animate-pulse" />
+            <h2 className="text-2xl md:text-4xl text-orange-500 mb-10 tracking-widest text-center">
+              EQUIPMENT TRIGGERED
             </h2>
-            <div
-              className={`grid gap-4 md:gap-10 w-full justify-center ${allTeams.length > 2 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"}`}
-            >
+            <div className={`grid gap-4 w-full justify-center grid-cols-2`}>
               {teamArtifacts.map((art, i) => (
                 <div
                   key={i}
                   className="text-center bg-black/40 p-4 rounded-2xl border border-white/10 w-full"
                 >
-                  <div className="text-gray-500 mb-1 text-[10px] md:text-sm tracking-widest">
+                  <div className="text-gray-500 mb-1 text-[10px] tracking-widest">
                     CMD 0{i + 1}
                   </div>
                   <div className="text-lg md:text-2xl mb-2 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]">
                     {art ? art.name : "NONE"}
-                  </div>
-                  <div className="text-[10px] md:text-xs text-yellow-200 bg-yellow-500/10 px-2 py-1 rounded-lg border border-yellow-500/20">
-                    {art ? art.desc : "No active boost"}
                   </div>
                 </div>
               ))}
@@ -249,7 +242,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
           <div className="text-center px-4">
             <div className="text-orange-500 tracking-[0.5em] mb-4 text-sm md:text-lg flex justify-center items-center gap-2">
               <Flame size={20} className="animate-pulse" /> {SLOTS[currentSlot]}{" "}
-              CLASH
+              STRIKE
             </div>
             <h2 className="text-4xl sm:text-5xl md:text-8xl drop-shadow-[0_0_30px_rgba(255,255,255,0.5)] skew-x-[-10deg] leading-tight">
               {clashText}
@@ -260,7 +253,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
       {phase === "CLASH" && (
         <div className="w-full flex flex-col items-center pt-24 pb-20 px-4 md:px-10 relative min-h-screen">
-          <div className="absolute top-6 bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500/50 text-[10px] md:text-xs flex items-center gap-2 text-purple-200 z-50 shadow-[0_0_20px_rgba(168,85,247,0.5)]">
+          <div className="absolute top-6 bg-purple-900/50 px-4 py-2 rounded-full border border-purple-500/50 text-[10px] md:text-xs flex items-center gap-2 text-purple-200 z-50">
             <MapPin size={12} /> {battleDomain.name} ACTIVE
           </div>
 
@@ -277,19 +270,86 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
               const rng = currentActions[idx];
 
               return (
-                <BattleSide
+                <motion.div
                   key={idx}
-                  teamIdx={idx}
-                  char={char}
-                  slot={SLOTS[currentSlot]}
-                  scoreData={scoreData}
-                  score={score}
-                  isWinner={isWinner}
-                  isAwakened={isAwakened}
-                  rng={rng}
-                  artifact={teamArtifacts[idx]}
-                  gauge={gauges[idx]}
-                />
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{
+                    scale: isWinner ? 1.05 : 1,
+                    opacity: 1,
+                    y: isWinner ? -10 : 0,
+                  }}
+                  className={`w-full bg-[#0a0a0a] border-2 rounded-[20px] md:rounded-[40px] p-3 md:p-8 flex flex-col items-center relative ${isWinner ? "border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.3)] z-30" : "border-white/10 opacity-80 z-10"}`}
+                >
+                  <div
+                    className={`text-[8px] md:text-xs mb-3 md:mb-6 tracking-widest px-2 py-1 rounded-full border ${isAwakened ? "bg-orange-500 text-black animate-bounce shadow-[0_0_20px_#ea580c]" : "bg-black/50 text-gray-500 border-white/5"}`}
+                  >
+                    {isAwakened ? ultimateText : readyText}
+                  </div>
+
+                  <div className="absolute -top-6 md:-top-10 flex flex-col gap-1 items-center w-full z-50">
+                    {scoreData?.domainMatched && (
+                      <span className="bg-purple-600 text-white text-[8px] md:text-[10px] px-2 py-1 rounded-full">
+                        +15% FIELD
+                      </span>
+                    )}
+                    {rng && (
+                      <span
+                        className={`bg-black border ${rng.color} text-[8px] md:text-[10px] px-2 py-1 rounded-full animate-bounce flex items-center gap-1`}
+                      >
+                        <Zap size={10} /> {rng.text}
+                      </span>
+                    )}
+                    {scoreData?.passive && (
+                      <span className="bg-blue-600 text-white text-[8px] md:text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
+                        <Sparkles size={8} /> {scoreData.passive.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    className={`text-4xl md:text-7xl mb-3 md:mb-6 font-black italic ${rng ? "text-yellow-400" : isAwakened ? "text-white" : isWinner ? "text-[#ff8c32]" : "text-gray-500"}`}
+                  >
+                    {score || "---"}
+                  </div>
+
+                  <img
+                    src={char?.img || "/zoro.svg"}
+                    className={`w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48 object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}
+                    alt=""
+                  />
+                  <div className="text-sm md:text-2xl text-white mb-2 md:mb-4 text-center truncate w-full px-2">
+                    {char?.name}
+                  </div>
+
+                  <div className="hidden sm:flex gap-2 md:gap-4 mb-4 bg-black/50 px-3 py-1.5 rounded-full border border-white/5">
+                    <div className="flex items-center gap-1 text-[10px] md:text-xs text-orange-500">
+                      <Zap size={12} /> {char?.atk || 0}
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] md:text-xs text-blue-500">
+                      <Shield size={12} /> {char?.def || 0}
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] md:text-xs text-purple-500">
+                      <Target size={12} /> {char?.spd || 0}
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-black/40 p-2 md:p-3 rounded-xl md:rounded-2xl border border-white/5 mt-auto">
+                    <div className="flex justify-between w-full text-[8px] md:text-[10px] mb-1 text-gray-400">
+                      <span>{gaugeText}</span>
+                      <span
+                        className={gauges[idx] >= 100 ? "text-orange-500" : ""}
+                      >
+                        {gauges[idx]}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 md:h-2 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        animate={{ width: `${gauges[idx]}%` }}
+                        className={`h-full ${gauges[idx] >= 100 ? "bg-[#ff8c32] shadow-[0_0_10px_#ff8c32]" : "bg-gray-500"}`}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
               );
             })}
           </div>
@@ -304,109 +364,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         />
       </div>
     </div>
-  );
-};
-
-const BattleSide = ({
-  char,
-  slot,
-  scoreData,
-  score,
-  isWinner,
-  isAwakened,
-  rng,
-  artifact,
-  gauge,
-}) => {
-  const isAtk = slot === "raw_power" || slot === "captain";
-  const isDef = slot === "tank" || slot === "captain";
-  const isSpd = slot === "speedster" || slot === "captain";
-
-  return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{
-        scale: isWinner ? 1.05 : 1,
-        opacity: 1,
-        y: isWinner ? -10 : 0,
-      }}
-      className={`w-full bg-[#0a0a0a] border-2 rounded-[20px] md:rounded-[40px] p-3 md:p-8 flex flex-col items-center relative ${isWinner ? "border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.3)] z-30" : "border-white/10 opacity-80 z-10"}`}
-    >
-      <div
-        className={`text-[8px] md:text-xs mb-3 md:mb-6 tracking-widest px-2 py-1 rounded-full border ${isAwakened ? "bg-orange-500 text-black border-white animate-bounce shadow-[0_0_20px_#ea580c]" : "bg-black/50 text-gray-500 border-white/5"}`}
-      >
-        {isAwakened ? "AWAKENED" : "ENGAGED"}
-      </div>
-      <div className="absolute -top-6 md:-top-10 flex flex-col gap-1 items-center w-full z-50">
-        {scoreData?.domainMatched && (
-          <span className="bg-purple-600 text-white text-[8px] md:text-[10px] px-2 py-1 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.8)]">
-            +15% FIELD
-          </span>
-        )}
-        {rng && (
-          <span
-            className={`bg-black border ${rng.color} text-[8px] md:text-[10px] px-2 py-1 rounded-full animate-bounce shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center gap-1`}
-          >
-            <Zap size={10} /> {rng.text}
-          </span>
-        )}
-        {scoreData?.passive && (
-          <span className="bg-blue-600 text-white text-[8px] md:text-[10px] px-2 py-1 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.8)] flex items-center gap-1">
-            <Sparkles size={8} /> {scoreData.passive.name}
-          </span>
-        )}
-      </div>
-      {artifact && (
-        <div className="absolute top-2 left-2 bg-yellow-500/20 text-yellow-400 text-[8px] md:text-[10px] px-2 py-1 rounded-lg flex items-center gap-1 border border-yellow-500/30">
-          <Gem size={8} />{" "}
-          <span className="hidden sm:inline">{artifact.name}</span>
-        </div>
-      )}
-      <div
-        className={`text-4xl md:text-7xl mb-3 md:mb-6 font-black italic ${rng ? "text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]" : isAwakened ? "text-white drop-shadow-[0_0_30px_#fff]" : isWinner ? "text-[#ff8c32]" : "text-gray-500"}`}
-      >
-        {score || "---"}
-      </div>
-      <img
-        src={char?.img || "/zoro.svg"}
-        className={`w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48 object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}
-        alt=""
-      />
-      <div className="text-sm md:text-2xl text-white mb-2 md:mb-4 text-center truncate w-full px-2">
-        {char?.name}
-      </div>
-      <div className="hidden sm:flex gap-2 md:gap-4 mb-4 bg-black/50 px-3 py-1.5 rounded-full border border-white/5">
-        <div
-          className={`flex items-center gap-1 text-[10px] md:text-xs ${isAtk && isWinner ? "text-orange-500" : "text-orange-500/50"}`}
-        >
-          <Zap size={12} /> {char?.atk || 0}
-        </div>
-        <div
-          className={`flex items-center gap-1 text-[10px] md:text-xs ${isDef && isWinner ? "text-blue-500" : "text-blue-500/50"}`}
-        >
-          <Shield size={12} /> {char?.def || 0}
-        </div>
-        <div
-          className={`flex items-center gap-1 text-[10px] md:text-xs ${isSpd && isWinner ? "text-purple-500" : "text-purple-500/50"}`}
-        >
-          <Target size={12} /> {char?.spd || 0}
-        </div>
-      </div>
-      <div className="w-full bg-black/40 p-2 md:p-3 rounded-xl md:rounded-2xl border border-white/5 mt-auto">
-        <div className="flex justify-between w-full text-[8px] md:text-[10px] mb-1 text-gray-400">
-          <span>AURA GAUGE</span>
-          <span className={gauge >= 100 ? "text-orange-500" : ""}>
-            {gauge}%
-          </span>
-        </div>
-        <div className="w-full h-1.5 md:h-2 bg-white/10 rounded-full overflow-hidden">
-          <motion.div
-            animate={{ width: `${gauge}%` }}
-            className={`h-full ${gauge >= 100 ? "bg-[#ff8c32] shadow-[0_0_10px_#ff8c32]" : "bg-gray-500"}`}
-          />
-        </div>
-      </div>
-    </motion.div>
   );
 };
 

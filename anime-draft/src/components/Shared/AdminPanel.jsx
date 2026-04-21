@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-// ✅ FIXED: Added Trash2 to the imports here!
 import {
   Save,
   Database,
@@ -11,6 +10,8 @@ import {
 } from "lucide-react";
 
 export default function AdminPanel() {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
   const [universe, setUniverse] = useState("naruto");
@@ -19,6 +20,27 @@ export default function AdminPanel() {
   const [jsonInput, setJsonInput] = useState("");
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
+
+  // 🔥 MULTIVERSE CATEGORY MAPPING
+  const categoryMap = {
+    naruto: "anime",
+    one_piece: "anime",
+    jjk: "anime",
+    dragon_ball: "anime",
+    mha: "anime",
+    hxh: "anime",
+    chainsaw_man: "anime",
+    solo_leveling: "anime",
+    demon_slayer: "anime",
+    bleach: "anime",
+    black_clover: "anime",
+    marvel: "comic",
+    dc: "comic",
+    football: "sports",
+    cricket: "sports",
+  };
+
+  const currentCategory = categoryMap[universe] || "anime";
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -30,7 +52,7 @@ export default function AdminPanel() {
     setLoading(true);
     try {
       const res = await axios.get(
-        `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
+        `${API_URL}/api/characters?universe=${universe}`,
       );
 
       const uniqueIds = new Set();
@@ -67,8 +89,11 @@ export default function AdminPanel() {
     );
   };
 
-  // 🎯 SINGLE REFRESH WEAPON: Fetches from Jikan (MyAnimeList) via Name
+  // 🎯 SINGLE REFRESH WEAPON (ANIME ONLY)
   const refreshSingleImage = async (charName, charId) => {
+    if (currentCategory !== "anime")
+      return alert("JIKAN API ONLY SUPPORTS ANIME CHARACTERS.");
+
     try {
       setLoading(true);
       const res = await axios.get(
@@ -95,22 +120,17 @@ export default function AdminPanel() {
     }
   };
 
-  // AdminPanel.jsx ke andar
+  // 🚀 INDIVIDUAL SYNC OVERRIDE
   const syncIndividual = async (char) => {
     try {
       const { _id, ...updateData } = char;
-
-      // ✅ LOG CHECK: Console mein dekhein ki img ka URL naya wala hi hai na?
-      console.log("SENDING_NEW_IMG_URL:", updateData.img);
-
       const res = await axios.put(
-        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+        `${API_URL}/api/admin/update-character/${char.id}`,
         updateData,
       );
 
       if (res.status === 200) {
         alert(`✅ ${char.name} FULLY OVERRIDDEN!`);
-        // 🚀 Delay fetch taaki DB refresh ho jaye
         setTimeout(() => fetchChars(), 1000);
       }
     } catch (e) {
@@ -120,41 +140,31 @@ export default function AdminPanel() {
 
   // 🧹 SHADOW CLONE DESTROYER FUNCTION
   const cleanupDuplicates = async () => {
-    // Safety check taaki galti se button na dab jaye
     if (
-      !window.confirm(
-        "🚨 WARNING: Do you want to delete all duplicate clones? It will keep 1 original and destroy the rest safely!",
-      )
+      !window.confirm("🚨 WARNING: Do you want to delete all duplicate clones?")
     )
       return;
 
     try {
-      console.log("📡 INITIATING CLONE CLEANUP...");
-
-      const res = await axios.delete(
-        "https://anime-draft-game-1.onrender.com/api/admin/cleanup-duplicates",
-      );
-
+      const res = await axios.delete(`${API_URL}/api/admin/cleanup-duplicates`);
       if (res.status === 200) {
         alert(
-          `✅ KERNEL CLEANED! Destroyed ${res.data.deletedCount} duplicate shadow clones.`,
+          `✅ KERNEL CLEANED! Destroyed ${res.data.deletedCount} duplicate clones.`,
         );
-        fetchChars(); // 🔄 UI ko refresh karega taaki clones gayab ho jayein
+        fetchChars();
       }
     } catch (e) {
-      console.error("CLEANUP_ERROR:", e);
-      alert("❌ CLEANUP FAILED! Did you redeploy the backend?");
+      alert("❌ CLEANUP FAILED!");
     }
   };
+
   // 🗑️ INDIVIDUAL DELETE
   const handleDelete = async (charId, charName) => {
     if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
       return;
     setLoading(true);
     try {
-      await axios.delete(
-        `https://anime-draft-game-1.onrender.com/api/admin/delete-character/${charId}`,
-      );
+      await axios.delete(`${API_URL}/api/admin/delete-character/${charId}`);
       alert("🚀 REMOVED FROM KERNEL!");
       fetchChars();
     } catch (e) {
@@ -164,19 +174,32 @@ export default function AdminPanel() {
     }
   };
 
+  // 📦 SMART BULK SYNC (Injects Universe & Category automatically)
   const handleBulkSync = async () => {
     try {
       if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
-      const dataToSync = JSON.parse(jsonInput);
+      let dataToSync = JSON.parse(jsonInput);
 
       if (!Array.isArray(dataToSync))
         return alert("INVALID_FORMAT: Array Expected!");
-      if (!window.confirm(`DEPLOY STATS TO ${dataToSync.length} UNITS?`))
+
+      // 🚀 SMART INJECTION: Force current universe and category into the JSON
+      dataToSync = dataToSync.map((char) => ({
+        ...char,
+        universe: universe,
+        category: currentCategory,
+      }));
+
+      if (
+        !window.confirm(
+          `DEPLOY ${dataToSync.length} UNITS TO ${universe.toUpperCase()} (${currentCategory.toUpperCase()})?`,
+        )
+      )
         return;
 
       setLoading(true);
       const res = await axios.put(
-        "https://anime-draft-game-1.onrender.com/api/admin/bulk-update",
+        `${API_URL}/api/admin/bulk-update`,
         dataToSync,
       );
       alert(`🔥 SYNC COMPLETE: ${res.data.updated_count} Units Processed.`);
@@ -196,9 +219,7 @@ export default function AdminPanel() {
       return;
     setLoading(true);
     try {
-      await axios.delete(
-        `https://anime-draft-game-1.onrender.com/api/admin/wipe-universe/${universe}`,
-      );
+      await axios.delete(`${API_URL}/api/admin/wipe-universe/${universe}`);
       alert("🚀 UNIVERSE CLEANED! Ready for fresh sync.");
       fetchChars();
     } catch (e) {
@@ -208,20 +229,22 @@ export default function AdminPanel() {
     }
   };
 
-  // 💣 BULK REFRESH WEAPON: Fetches from Anilist for CURRENT UNIVERSE only
+  // 💣 BULK REFRESH WEAPON (ANIME ONLY)
   const handleAutoRefresh = async () => {
+    if (currentCategory !== "anime")
+      return alert("AUTO-REFRESH ONLY SUPPORTS ANIME UNIVERSES.");
     if (
       !window.confirm(
         `⚠️ INITIATE ANILIST IMAGE SYNC FOR [${universe.toUpperCase()}]?`,
       )
     )
       return;
+
     setLoading(true);
     try {
-      const res = await axios.post(
-        "https://anime-draft-game-1.onrender.com/api/admin/auto-refresh-images",
-        { universe },
-      );
+      const res = await axios.post(`${API_URL}/api/admin/auto-refresh-images`, {
+        universe,
+      });
       alert(
         `🔥 ${universe.toUpperCase()} SYNC COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed: ${res.data.failed}`,
       );
@@ -260,19 +283,69 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(255,140,50,0.5)]">
-          <Database /> HYBRID_TUNER_v4.5
+          <Database /> HYBRID_TUNER_v5.0
         </h1>
+
+        {/* 🌐 MULTIVERSE DROPDOWN SELECTION */}
+        <select
+          value={universe}
+          onChange={(e) => setUniverse(e.target.value)}
+          className="mb-8 bg-black/50 backdrop-blur-md border-2 border-[#ff8c32] p-4 rounded-2xl text-sm font-black outline-none text-white cursor-pointer tracking-widest shadow-[0_0_20px_rgba(255,140,50,0.2)]"
+        >
+          <optgroup label="⚔️ ANIME REALM">
+            {[
+              "naruto",
+              "one_piece",
+              "jjk",
+              "dragon_ball",
+              "mha",
+              "hxh",
+              "chainsaw_man",
+              "solo_leveling",
+              "demon_slayer",
+              "bleach",
+              "black_clover",
+            ].map((u) => (
+              <option key={u} value={u}>
+                {u.replace("_", " ")}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="🦸 COMIC MULTIVERSE">
+            <option value="marvel">MARVEL UNIVERSE</option>
+            <option value="dc">DC UNIVERSE</option>
+          </optgroup>
+          <optgroup label="🏆 SPORTS ARENA">
+            <option value="football">FOOTBALL LEGENDS</option>
+            <option value="cricket">CRICKET STARS</option>
+          </optgroup>
+        </select>
 
         <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl p-8 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
           <h2 className="text-sm font-black text-[#ff8c32] mb-4 flex items-center gap-2">
             <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
           </h2>
+
+          <div className="text-[10px] text-gray-500 mb-2 flex justify-between">
+            <span>
+              TARGET DOMAIN:{" "}
+              <span className="text-white">{universe.toUpperCase()}</span>
+            </span>
+            <span>
+              CATEGORY:{" "}
+              <span className="text-[#ff8c32]">
+                {currentCategory.toUpperCase()}
+              </span>
+            </span>
+          </div>
+
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            placeholder="PASTE CLEAN JSON HERE..."
+            placeholder={`PASTE JSON ARRAY HERE. (CATEGORY & UNIVERSE WILL BE AUTO-INJECTED FOR ${universe.toUpperCase()})`}
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-gray-300 outline-none focus:border-[#ff8c32] mb-6"
           />
+
           <div className="flex flex-wrap gap-4">
             <button
               onClick={handleBulkSync}
@@ -286,65 +359,27 @@ export default function AdminPanel() {
             >
               PURGE_DATABASE
             </button>
+
+            {/* Auto Refresh only active for Anime */}
             <button
               onClick={handleAutoRefresh}
-              disabled={loading}
-              className="px-8 py-3 bg-blue-600/80 text-white font-black rounded-xl italic hover:bg-blue-600 active:scale-95 transition-all disabled:opacity-50"
+              disabled={loading || currentCategory !== "anime"}
+              className={`px-8 py-3 font-black rounded-xl italic transition-all ${currentCategory === "anime" ? "bg-blue-600/80 text-white hover:bg-blue-600 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}
             >
               {loading
                 ? "FETCHING..."
                 : `AUTO REFRESH: ${universe.toUpperCase()}`}
             </button>
+
             <button
               onClick={cleanupDuplicates}
               className="group flex items-center gap-2 px-6 py-3 bg-red-600/20 text-red-500 border border-red-500/50 rounded-2xl font-black italic text-sm hover:bg-red-600 hover:text-black transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)]"
             >
-              {/* SVG ya Icon laga sakte hain */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="group-hover:animate-bounce"
-              >
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
+              <Trash2 size={18} className="group-hover:animate-bounce" />{" "}
               DESTROY CLONES
             </button>
           </div>
         </div>
-
-        <select
-          value={universe}
-          onChange={(e) => setUniverse(e.target.value)}
-          className="bg-black/50 backdrop-blur-md border border-[#ff8c32]/30 p-4 rounded-2xl text-xs font-black outline-none text-white cursor-pointer"
-        >
-          {[
-            "naruto",
-            "one_piece",
-            "jjk",
-            "dragon_ball",
-            "mha",
-            "hxh",
-            "chainsaw_man",
-            "solo_leveling",
-            "demon_slayer",
-            "bleach",
-            "black_clover",
-          ].map((u) => (
-            <option key={u} value={u}>
-              {u.replace("_", " ")}
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -363,7 +398,11 @@ export default function AdminPanel() {
                 key={`${char.id}-${index}`}
                 className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/50 transition-all duration-300 group shadow-lg"
               >
-                <div className="relative mb-6">
+                <div className="absolute top-4 left-4 bg-black/50 px-2 py-1 rounded border border-white/10 text-[8px] text-gray-500 font-black">
+                  {char.category?.toUpperCase() || "ANIME"}
+                </div>
+
+                <div className="relative mb-6 mt-4">
                   <img
                     src={char.img}
                     className="w-20 h-20 rounded-full object-cover border-[3px] border-white/20 group-hover:scale-110 group-hover:border-[#ff8c32] transition-all duration-500 shadow-2xl"
@@ -373,14 +412,15 @@ export default function AdminPanel() {
                         e.target.src = "/zoro.svg";
                     }}
                   />
-                  {/* 🚀 JIKAN REFRESH BUTTON */}
-                  <button
-                    onClick={() => refreshSingleImage(char.name, char.id)}
-                    className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
-                    title="Fetch from Jikan"
-                  >
-                    <RefreshCw size={14} />
-                  </button>
+                  {currentCategory === "anime" && (
+                    <button
+                      onClick={() => refreshSingleImage(char.name, char.id)}
+                      className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
+                      title="Fetch from Jikan"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  )}
                 </div>
 
                 <h3 className="text-[12px] font-black italic text-white mb-6 truncate w-full text-center tracking-wide">
@@ -433,15 +473,12 @@ export default function AdminPanel() {
                 </select>
 
                 <div className="flex gap-2 w-full mt-2">
-                  {/* 🚀 INDIVIDUAL SYNC OVERRIDE */}
                   <button
                     onClick={() => syncIndividual(char)}
                     className="flex-1 bg-[#ff8c32] text-black font-black py-4 rounded-xl text-[10px] italic hover:scale-105 active:scale-95 transition-all"
                   >
-                    <Save size={14} className="inline mr-1" /> SYNC OVERRIDE
+                    <Save size={14} className="inline mr-1" /> OVERRIDE
                   </button>
-
-                  {/* 🗑️ INDIVIDUAL DELETE BUTTON */}
                   <button
                     onClick={() => handleDelete(char.id, char.name)}
                     className="p-4 bg-red-600/20 border border-red-500/50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"
