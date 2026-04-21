@@ -21,7 +21,6 @@ export default function AdminPanel() {
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
 
-  // 🔥 MULTIVERSE CATEGORY MAPPING
   const categoryMap = {
     naruto: "anime",
     one_piece: "anime",
@@ -54,7 +53,6 @@ export default function AdminPanel() {
       const res = await axios.get(
         `${API_URL}/api/characters?universe=${universe}`,
       );
-
       const uniqueIds = new Set();
       const cleanList = res.data.filter((char) => {
         const idStr = String(char.id);
@@ -62,7 +60,6 @@ export default function AdminPanel() {
         uniqueIds.add(idStr);
         return true;
       });
-
       setCharacters(cleanList);
     } catch (err) {
       console.error("FETCH_ERROR:", err);
@@ -89,17 +86,25 @@ export default function AdminPanel() {
     );
   };
 
-  // 🎯 SINGLE REFRESH WEAPON (ANIME ONLY)
+  // 🔥 NEW: SINGLE REFRESH NOW SUPPORTS COMICS
   const refreshSingleImage = async (charName, charId) => {
-    if (currentCategory !== "anime")
-      return alert("JIKAN API ONLY SUPPORTS ANIME CHARACTERS.");
-
     try {
       setLoading(true);
-      const res = await axios.get(
-        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
-      );
-      const newImg = res.data.data[0]?.images?.jpg?.image_url;
+      let newImg = null;
+
+      if (currentCategory === "comic") {
+        const res = await axios.get(
+          `${API_URL}/api/admin/search-comic-image?name=${encodeURIComponent(charName)}`,
+        );
+        newImg = res.data.imageUrl;
+      } else if (currentCategory === "anime") {
+        const res = await axios.get(
+          `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
+        );
+        newImg = res.data.data[0]?.images?.jpg?.image_url;
+      } else {
+        return alert("Sports image API not integrated yet.");
+      }
 
       if (newImg) {
         setCharacters((prev) =>
@@ -107,20 +112,17 @@ export default function AdminPanel() {
             String(c.id) === String(charId) ? { ...c, img: newImg } : c,
           ),
         );
-        alert(
-          `🔥 Jikan Image found for ${charName}! Click SYNC OVERRIDE to save to DB.`,
-        );
+        alert(`🔥 Image found for ${charName}! Click OVERRIDE to save to DB.`);
       } else {
-        alert("No image found on Jikan for this specific name.");
+        alert("No image found for this specific name.");
       }
     } catch (e) {
-      alert("JIKAN_API_ERROR: Rate limit hit or network issue.");
+      alert("API_ERROR: Rate limit hit or image not found.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🚀 INDIVIDUAL SYNC OVERRIDE
   const syncIndividual = async (char) => {
     try {
       const { _id, ...updateData } = char;
@@ -128,7 +130,6 @@ export default function AdminPanel() {
         `${API_URL}/api/admin/update-character/${char.id}`,
         updateData,
       );
-
       if (res.status === 200) {
         alert(`✅ ${char.name} FULLY OVERRIDDEN!`);
         setTimeout(() => fetchChars(), 1000);
@@ -138,13 +139,11 @@ export default function AdminPanel() {
     }
   };
 
-  // 🧹 SHADOW CLONE DESTROYER FUNCTION
   const cleanupDuplicates = async () => {
     if (
       !window.confirm("🚨 WARNING: Do you want to delete all duplicate clones?")
     )
       return;
-
     try {
       const res = await axios.delete(`${API_URL}/api/admin/cleanup-duplicates`);
       if (res.status === 200) {
@@ -158,7 +157,6 @@ export default function AdminPanel() {
     }
   };
 
-  // 🗑️ INDIVIDUAL DELETE
   const handleDelete = async (charId, charName) => {
     if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
       return;
@@ -174,16 +172,13 @@ export default function AdminPanel() {
     }
   };
 
-  // 📦 SMART BULK SYNC (Injects Universe & Category automatically)
   const handleBulkSync = async () => {
     try {
       if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
       let dataToSync = JSON.parse(jsonInput);
-
       if (!Array.isArray(dataToSync))
         return alert("INVALID_FORMAT: Array Expected!");
 
-      // 🚀 SMART INJECTION: Force current universe and category into the JSON
       dataToSync = dataToSync.map((char) => ({
         ...char,
         universe: universe,
@@ -229,28 +224,30 @@ export default function AdminPanel() {
     }
   };
 
-  // 💣 BULK REFRESH WEAPON (ANIME ONLY)
+  // 🔥 NEW: UNIVERSE SPECIFIC AUTO REFRESH
   const handleAutoRefresh = async () => {
-    if (currentCategory !== "anime")
-      return alert("AUTO-REFRESH ONLY SUPPORTS ANIME UNIVERSES.");
+    if (currentCategory === "sports")
+      return alert("AUTO-REFRESH NOT YET SUPPORTED FOR SPORTS.");
     if (
       !window.confirm(
-        `⚠️ INITIATE ANILIST IMAGE SYNC FOR [${universe.toUpperCase()}]?`,
+        `⚠️ INITIATE IMAGE SYNC FOR [${universe.toUpperCase()}]? This may take a minute.`,
       )
     )
       return;
 
     setLoading(true);
     try {
+      // Backend automatically maps to Jikan or Superhero based on category!
       const res = await axios.post(`${API_URL}/api/admin/auto-refresh-images`, {
         universe,
+        category: currentCategory,
       });
       alert(
-        `🔥 ${universe.toUpperCase()} SYNC COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed: ${res.data.failed}`,
+        `🔥 ${universe.toUpperCase()} SYNC COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed/Unchanged: ${res.data.failed}`,
       );
       fetchChars();
     } catch (e) {
-      alert("❌ SYNC FAILED! Is the server live?");
+      alert("❌ SYNC FAILED! Check console or API token.");
     } finally {
       setLoading(false);
     }
@@ -286,7 +283,6 @@ export default function AdminPanel() {
           <Database /> HYBRID_TUNER_v5.0
         </h1>
 
-        {/* 🌐 MULTIVERSE DROPDOWN SELECTION */}
         <select
           value={universe}
           onChange={(e) => setUniverse(e.target.value)}
@@ -325,7 +321,6 @@ export default function AdminPanel() {
           <h2 className="text-sm font-black text-[#ff8c32] mb-4 flex items-center gap-2">
             <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
           </h2>
-
           <div className="text-[10px] text-gray-500 mb-2 flex justify-between">
             <span>
               TARGET DOMAIN:{" "}
@@ -338,7 +333,6 @@ export default function AdminPanel() {
               </span>
             </span>
           </div>
-
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
@@ -359,18 +353,15 @@ export default function AdminPanel() {
             >
               PURGE_DATABASE
             </button>
-
-            {/* Auto Refresh only active for Anime */}
             <button
               onClick={handleAutoRefresh}
-              disabled={loading || currentCategory !== "anime"}
-              className={`px-8 py-3 font-black rounded-xl italic transition-all ${currentCategory === "anime" ? "bg-blue-600/80 text-white hover:bg-blue-600 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}
+              disabled={loading || currentCategory === "sports"}
+              className={`px-8 py-3 font-black rounded-xl italic transition-all ${currentCategory !== "sports" ? "bg-blue-600/80 text-white hover:bg-blue-600 active:scale-95" : "bg-gray-800 text-gray-600 cursor-not-allowed"}`}
             >
               {loading
                 ? "FETCHING..."
                 : `AUTO REFRESH: ${universe.toUpperCase()}`}
             </button>
-
             <button
               onClick={cleanupDuplicates}
               className="group flex items-center gap-2 px-6 py-3 bg-red-600/20 text-red-500 border border-red-500/50 rounded-2xl font-black italic text-sm hover:bg-red-600 hover:text-black transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)]"
@@ -412,11 +403,12 @@ export default function AdminPanel() {
                         e.target.src = "/zoro.svg";
                     }}
                   />
-                  {currentCategory === "anime" && (
+                  {/* 🔥 BUTTON NOW SHOWS FOR BOTH ANIME AND COMICS */}
+                  {["anime", "comic"].includes(currentCategory) && (
                     <button
                       onClick={() => refreshSingleImage(char.name, char.id)}
                       className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
-                      title="Fetch from Jikan"
+                      title="Fetch AI Image"
                     >
                       <RefreshCw size={14} />
                     </button>

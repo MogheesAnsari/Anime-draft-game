@@ -1,0 +1,1633 @@
+[{
+  "_id": {
+    "$oid": "69e77720ce61aa1aedebfb40"
+  },
+  "id": "marvel_hulk_01",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:09:51.045Z"
+  },
+  "def": 95,
+  "description": "Unstoppable gamma-powered rage monster.",
+  "img": "https://i.imgur.com/your-hulk-link.jpg",
+  "iq": 80,
+  "name": "HULK",
+  "spd": 65,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T13:09:51.045Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7beb"
+  },
+  "id": "marvel-001",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.408Z"
+  },
+  "def": 100,
+  "description": "Omnipotent ruler of the Marvel Multiverse.",
+  "img": "https://example.com/images/marvel-001.jpg",
+  "iq": 250,
+  "name": "The One Above All",
+  "spd": 100,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.681Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7bec"
+  },
+  "id": "marvel-002",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.481Z"
+  },
+  "def": 100,
+  "description": "Pre-Retcon Beyonder. Nigh-omnipotent cosmic entity.",
+  "img": "https://example.com/images/marvel-002.jpg",
+  "iq": 250,
+  "name": "The Beyonder",
+  "spd": 100,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.746Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7bed"
+  },
+  "id": "marvel-003",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.534Z"
+  },
+  "def": 100,
+  "description": "Embodiment of multiversal balance and judgment.",
+  "img": "https://example.com/images/marvel-003.jpg",
+  "iq": 250,
+  "name": "Living Tribunal",
+  "spd": 100,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.803Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7bee"
+  },
+  "id": "marvel-004",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.584Z"
+  },
+  "def": 100,
+  "description": "Infinity Gauntlet Peak. Absolute cosmic control.",
+  "img": "https://example.com/images/marvel-004.jpg",
+  "iq": 240,
+  "name": "Thanos",
+  "spd": 92,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.854Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7bef"
+  },
+  "id": "marvel-005",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.634Z"
+  },
+  "def": 99,
+  "description": "Adult Mutant Peak. Universal reality warping and creation.",
+  "img": "https://example.com/images/marvel-005.jpg",
+  "iq": 210,
+  "name": "Franklin Richards",
+  "spd": 99,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.903Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78216ce61aa1aedec7bf0"
+  },
+  "id": "marvel-006",
+  "__v": 0,
+  "atk": 99,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.684Z"
+  },
+  "def": 98,
+  "description": "Lifebringer. Cosmic energy output and planetary scale.",
+  "img": "https://example.com/images/marvel-006.jpg",
+  "iq": 245,
+  "name": "Galactus",
+  "spd": 98,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:20.954Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf1"
+  },
+  "id": "marvel-007",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.730Z"
+  },
+  "def": 98,
+  "description": "Multiversal reality manipulation at subatomic level.",
+  "img": "https://example.com/images/marvel-007.jpg",
+  "iq": 220,
+  "name": "Molecule Man",
+  "spd": 95,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.004Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf2"
+  },
+  "id": "marvel-008",
+  "__v": 0,
+  "atk": 98,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.786Z"
+  },
+  "def": 97,
+  "description": "God Emperor Doom. Stolen power of the Beyonders.",
+  "img": "https://example.com/images/marvel-008.jpg",
+  "iq": 250,
+  "name": "Doctor Doom",
+  "spd": 90,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.053Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf3"
+  },
+  "id": "marvel-009",
+  "__v": 0,
+  "atk": 100,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.844Z"
+  },
+  "def": 98,
+  "description": "White Phoenix. Ultimate expression of life and destruction.",
+  "img": "https://example.com/images/marvel-009.jpg",
+  "iq": 200,
+  "name": "Phoenix Force",
+  "spd": 99,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.101Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf4"
+  },
+  "id": "marvel-010",
+  "__v": 0,
+  "atk": 97,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.916Z"
+  },
+  "def": 96,
+  "description": "Odinforce Prime. Galaxy-shattering magical combat output.",
+  "img": "https://example.com/images/marvel-010.jpg",
+  "iq": 230,
+  "name": "Odin",
+  "spd": 92,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.161Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf5"
+  },
+  "id": "marvel-011",
+  "__v": 0,
+  "atk": 98,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:37.974Z"
+  },
+  "def": 95,
+  "description": "Rune King Thor. Mastery of Odinforce and ancient runes.",
+  "img": "https://example.com/images/marvel-011.jpg",
+  "iq": 180,
+  "name": "Thor",
+  "spd": 94,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.214Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf6"
+  },
+  "id": "marvel-012",
+  "__v": 0,
+  "atk": 95,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.032Z"
+  },
+  "def": 93,
+  "description": "Power Cosmic Mastery. Matter manipulation and FTL travel.",
+  "img": "https://example.com/images/marvel-012.jpg",
+  "iq": 215,
+  "name": "Silver Surfer",
+  "spd": 100,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.263Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf7"
+  },
+  "id": "marvel-013",
+  "__v": 0,
+  "atk": 98,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.103Z"
+  },
+  "def": 97,
+  "description": "World Breaker Hulk. Infinite rage and planetary destruction.",
+  "img": "https://example.com/images/marvel-013.jpg",
+  "iq": 160,
+  "name": "Hulk",
+  "spd": 88,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.314Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf8"
+  },
+  "id": "marvel-014",
+  "__v": 0,
+  "atk": 96,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.152Z"
+  },
+  "def": 92,
+  "description": "House of M. Multiversal probability and reality alteration.",
+  "img": "https://example.com/images/marvel-014.jpg",
+  "iq": 195,
+  "name": "Scarlet Witch",
+  "spd": 90,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.363Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bf9"
+  },
+  "id": "marvel-015",
+  "__v": 0,
+  "atk": 94,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.204Z"
+  },
+  "def": 95,
+  "description": "Sorcerer Supreme Peak. Mastery of mystic arts and magic.",
+  "img": "https://example.com/images/marvel-015.jpg",
+  "iq": 250,
+  "name": "Doctor Strange",
+  "spd": 88,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.410Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bfa"
+  },
+  "id": "marvel-016",
+  "__v": 0,
+  "atk": 96,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.254Z"
+  },
+  "def": 95,
+  "description": "Power of a million exploding suns. Molecular manipulation.",
+  "img": "https://example.com/images/marvel-016.jpg",
+  "iq": 175,
+  "name": "Sentry",
+  "spd": 96,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.464Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bfb"
+  },
+  "id": "marvel-017",
+  "__v": 0,
+  "atk": 95,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.306Z"
+  },
+  "def": 94,
+  "description": "Zarathos Unleashed. Absolute hellfire and penance stare.",
+  "img": "https://example.com/images/marvel-017.jpg",
+  "iq": 185,
+  "name": "Ghost Rider",
+  "spd": 90,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.514Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bfc"
+  },
+  "id": "marvel-018",
+  "__v": 0,
+  "atk": 94,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.365Z"
+  },
+  "def": 93,
+  "description": "Magus/Cosmic mastery. Soul gem connection and quantum magic.",
+  "img": "https://example.com/images/marvel-018.jpg",
+  "iq": 220,
+  "name": "Adam Warlock",
+  "spd": 94,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.570Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bfd"
+  },
+  "id": "marvel-019",
+  "__v": 0,
+  "atk": 93,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.417Z"
+  },
+  "def": 91,
+  "description": "Master of Magnetism. Planetary magnetic field control.",
+  "img": "https://example.com/images/marvel-019.jpg",
+  "iq": 225,
+  "name": "Magneto",
+  "spd": 88,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.624Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bfe"
+  },
+  "id": "marvel-020",
+  "__v": 0,
+  "atk": 92,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.465Z"
+  },
+  "def": 94,
+  "description": "Godbuster Armor. Absolute technological preparation peak.",
+  "img": "https://example.com/images/marvel-020.jpg",
+  "iq": 250,
+  "name": "Iron Man",
+  "spd": 92,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.673Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7bff"
+  },
+  "id": "marvel-021",
+  "__v": 0,
+  "atk": 94,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.514Z"
+  },
+  "def": 90,
+  "description": "Quasi-Sonic Scream. Planetary destruction via vocal power.",
+  "img": "https://example.com/images/marvel-021.jpg",
+  "iq": 200,
+  "name": "Black Bolt",
+  "spd": 88,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.724Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7c00"
+  },
+  "id": "marvel-022",
+  "__v": 0,
+  "atk": 90,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.566Z"
+  },
+  "def": 85,
+  "description": "Alpha-level Telepath. Global mind-control and astral magic.",
+  "img": "https://example.com/images/marvel-022.jpg",
+  "iq": 250,
+  "name": "Professor X",
+  "spd": 75,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.774Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7c01"
+  },
+  "id": "marvel-023",
+  "__v": 0,
+  "atk": 95,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.629Z"
+  },
+  "def": 98,
+  "description": "Trion Juggernaut. Unstoppable momentum and invulnerability.",
+  "img": "https://example.com/images/marvel-023.jpg",
+  "iq": 160,
+  "name": "Juggernaut",
+  "spd": 85,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.835Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78217ce61aa1aedec7c02"
+  },
+  "id": "marvel-024",
+  "__v": 0,
+  "atk": 93,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.673Z"
+  },
+  "def": 90,
+  "description": "Binary Form. Energy absorption and stellar projection.",
+  "img": "https://example.com/images/marvel-024.jpg",
+  "iq": 185,
+  "name": "Captain Marvel",
+  "spd": 96,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.900Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c03"
+  },
+  "id": "marvel-025",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.722Z"
+  },
+  "def": 90,
+  "description": "King of Atlantis. Hydrokinesis and elite aquatic physicals.",
+  "img": "https://example.com/images/marvel-025.jpg",
+  "iq": 190,
+  "name": "Namor",
+  "spd": 92,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:21.952Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c04"
+  },
+  "id": "marvel-026",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.774Z"
+  },
+  "def": 84,
+  "description": "Cosmic Spider-Man. Enigma force amplification.",
+  "img": "https://example.com/images/marvel-026.jpg",
+  "iq": 240,
+  "name": "Spider-Man",
+  "spd": 95,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.001Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c05"
+  },
+  "id": "marvel-027",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.824Z"
+  },
+  "def": 96,
+  "description": "Absolute regeneration and unpredictable tactical combat.",
+  "img": "https://example.com/images/marvel-027.jpg",
+  "iq": 210,
+  "name": "Deadpool",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.053Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c06"
+  },
+  "id": "marvel-028",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.878Z"
+  },
+  "def": 95,
+  "description": "Adamantium skeleton and feral rage. Indestructible mutant.",
+  "img": "https://example.com/images/marvel-028.jpg",
+  "iq": 195,
+  "name": "Wolverine",
+  "spd": 85,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.103Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c07"
+  },
+  "id": "marvel-029",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.935Z"
+  },
+  "def": 92,
+  "description": "King of the Dead. Vibranium suit and supreme intellect.",
+  "img": "https://example.com/images/marvel-029.jpg",
+  "iq": 245,
+  "name": "Black Panther",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.155Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c08"
+  },
+  "id": "marvel-030",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:38.982Z"
+  },
+  "def": 90,
+  "description": "Super Soldier Peak. Mjolnir worthy and absolute leadership.",
+  "img": "https://example.com/images/marvel-030.jpg",
+  "iq": 220,
+  "name": "Captain America",
+  "spd": 85,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.207Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c09"
+  },
+  "id": "marvel-031",
+  "__v": 0,
+  "atk": 89,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.035Z"
+  },
+  "def": 94,
+  "description": "Vibranium synthesis. Density manipulation and solar output.",
+  "img": "https://example.com/images/marvel-031.jpg",
+  "iq": 240,
+  "name": "Vision",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.275Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0a"
+  },
+  "id": "marvel-032",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.085Z"
+  },
+  "def": 85,
+  "description": "Pym Particle Master. Macro/Micro scale physical shift.",
+  "img": "https://example.com/images/marvel-032.jpg",
+  "iq": 245,
+  "name": "Ant-Man",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.336Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0b"
+  },
+  "id": "marvel-033",
+  "__v": 0,
+  "atk": 87,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.137Z"
+  },
+  "def": 82,
+  "description": "Optic Blast Peak. Master tactician and field commander.",
+  "img": "https://example.com/images/marvel-033.jpg",
+  "iq": 225,
+  "name": "Cyclops",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.383Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0c"
+  },
+  "id": "marvel-034",
+  "__v": 0,
+  "atk": 89,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.188Z"
+  },
+  "def": 85,
+  "description": "Omega-level weather manipulation and atmospheric control.",
+  "img": "https://example.com/images/marvel-034.jpg",
+  "iq": 195,
+  "name": "Storm",
+  "spd": 92,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.434Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0d"
+  },
+  "id": "marvel-035",
+  "__v": 0,
+  "atk": 87,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.235Z"
+  },
+  "def": 84,
+  "description": "Power Absorption. Capacity to mimic Omega-level abilities.",
+  "img": "https://example.com/images/marvel-035.jpg",
+  "iq": 185,
+  "name": "Rogue",
+  "spd": 86,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.499Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0e"
+  },
+  "id": "marvel-036",
+  "__v": 0,
+  "atk": 82,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.282Z"
+  },
+  "def": 80,
+  "description": "Radar Sense. Absolute physical martial arts and evasion.",
+  "img": "https://example.com/images/marvel-036.jpg",
+  "iq": 210,
+  "name": "Daredevil",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.558Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c0f"
+  },
+  "id": "marvel-037",
+  "__v": 0,
+  "atk": 87,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.334Z"
+  },
+  "def": 92,
+  "description": "King in Black. Symbiote deity control and dark magic.",
+  "img": "https://example.com/images/marvel-037.jpg",
+  "iq": 170,
+  "name": "Venom",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.604Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c10"
+  },
+  "id": "marvel-038",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.386Z"
+  },
+  "def": 86,
+  "description": "Darkhold Carnage. Lethal bladed constructs and rage.",
+  "img": "https://example.com/images/marvel-038.jpg",
+  "iq": 180,
+  "name": "Carnage",
+  "spd": 90,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.654Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c11"
+  },
+  "id": "marvel-039",
+  "__v": 0,
+  "atk": 92,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.434Z"
+  },
+  "def": 90,
+  "description": "Nova Prime. Full access to the Nova Force and FTL flight.",
+  "img": "https://example.com/images/marvel-039.jpg",
+  "iq": 200,
+  "name": "Nova",
+  "spd": 98,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.703Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c12"
+  },
+  "id": "marvel-040",
+  "__v": 0,
+  "atk": 89,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.488Z"
+  },
+  "def": 85,
+  "description": "T-O Virus suppressed. Peak telekinetic and telepathy.",
+  "img": "https://example.com/images/marvel-040.jpg",
+  "iq": 230,
+  "name": "Cable",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.760Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c13"
+  },
+  "id": "marvel-041",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.533Z"
+  },
+  "def": 86,
+  "description": "Omega-level thermokinesis. Absolute zero projection.",
+  "img": "https://example.com/images/marvel-041.jpg",
+  "iq": 190,
+  "name": "Iceman",
+  "spd": 85,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.803Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c14"
+  },
+  "id": "marvel-042",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.580Z"
+  },
+  "def": 95,
+  "description": "Organic Steel form. Impervious to extreme physical trauma.",
+  "img": "https://example.com/images/marvel-042.jpg",
+  "iq": 180,
+  "name": "Colossus",
+  "spd": 75,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.853Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c15"
+  },
+  "id": "marvel-043",
+  "__v": 0,
+  "atk": 84,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.634Z"
+  },
+  "def": 82,
+  "description": "Brimstone teleportation. High-speed spatial displacement.",
+  "img": "https://example.com/images/marvel-043.jpg",
+  "iq": 195,
+  "name": "Nightcrawler",
+  "spd": 96,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.910Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78218ce61aa1aedec7c16"
+  },
+  "id": "marvel-044",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.684Z"
+  },
+  "def": 82,
+  "description": "New Sun form. Kinetic energy mastery at molecular level.",
+  "img": "https://example.com/images/marvel-044.jpg",
+  "iq": 185,
+  "name": "Gambit",
+  "spd": 85,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:22.960Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c17"
+  },
+  "id": "marvel-045",
+  "__v": 0,
+  "atk": 82,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.730Z"
+  },
+  "def": 80,
+  "description": "Avatar of Khonshu. Pain tolerance and elite martial arts.",
+  "img": "https://example.com/images/marvel-045.jpg",
+  "iq": 205,
+  "name": "Moon Knight",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.003Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c18"
+  },
+  "id": "marvel-046",
+  "__v": 0,
+  "atk": 80,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.785Z"
+  },
+  "def": 78,
+  "description": "Ultimate tactical arsenal and lethal combat efficiency.",
+  "img": "https://example.com/images/marvel-046.jpg",
+  "iq": 215,
+  "name": "Punisher",
+  "spd": 80,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.053Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c19"
+  },
+  "id": "marvel-047",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.834Z"
+  },
+  "def": 92,
+  "description": "Flora colossus peak regeneration and physical density.",
+  "img": "https://example.com/images/marvel-047.jpg",
+  "iq": 185,
+  "name": "Groot",
+  "spd": 75,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.103Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1a"
+  },
+  "id": "marvel-048",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.885Z"
+  },
+  "def": 80,
+  "description": "Tactical weapons expert. Heavy artillery modification.",
+  "img": "https://example.com/images/marvel-048.jpg",
+  "iq": 240,
+  "name": "Rocket Raccoon",
+  "spd": 86,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.160Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1b"
+  },
+  "id": "marvel-049",
+  "__v": 0,
+  "atk": 84,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.943Z"
+  },
+  "def": 90,
+  "description": "Unbreakable skin and enhanced urban combat brawler.",
+  "img": "https://example.com/images/marvel-049.jpg",
+  "iq": 185,
+  "name": "Luke Cage",
+  "spd": 78,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.214Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1c"
+  },
+  "id": "marvel-050",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:39.992Z"
+  },
+  "def": 84,
+  "description": "Chi Mastery. Absolute focused kinetic punch force.",
+  "img": "https://example.com/images/marvel-050.jpg",
+  "iq": 200,
+  "name": "Iron Fist",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.263Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1d"
+  },
+  "id": "marvel-051",
+  "__v": 0,
+  "atk": 92,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.046Z"
+  },
+  "def": 88,
+  "description": "God of Mischief. Master of magic, illusions, and trickery.",
+  "img": "https://example.com/images/marvel-051.jpg",
+  "iq": 230,
+  "name": "Loki",
+  "spd": 86,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.313Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1e"
+  },
+  "id": "marvel-052",
+  "__v": 0,
+  "atk": 96,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.105Z"
+  },
+  "def": 95,
+  "description": "Goddess of Death. Draws infinite power from Asgard.",
+  "img": "https://example.com/images/marvel-052.jpg",
+  "iq": 190,
+  "name": "Hela",
+  "spd": 90,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.361Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c1f"
+  },
+  "id": "marvel-053",
+  "__v": 0,
+  "atk": 95,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.159Z"
+  },
+  "def": 96,
+  "description": "Extra-dimensional demon. Master of souls and reality.",
+  "img": "https://example.com/images/marvel-053.jpg",
+  "iq": 245,
+  "name": "Mephisto",
+  "spd": 90,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.419Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c20"
+  },
+  "id": "marvel-054",
+  "__v": 0,
+  "atk": 99,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.204Z"
+  },
+  "def": 98,
+  "description": "Ruler of the Dark Dimension. Absolute magical entity.",
+  "img": "https://example.com/images/marvel-054.jpg",
+  "iq": 240,
+  "name": "Dormammu",
+  "spd": 92,
+  "tier": "S+",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.464Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c21"
+  },
+  "id": "marvel-055",
+  "__v": 0,
+  "atk": 92,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.255Z"
+  },
+  "def": 94,
+  "description": "Time-traveling despot with 31st-century tech mastery.",
+  "img": "https://example.com/images/marvel-055.jpg",
+  "iq": 250,
+  "name": "Kang the Conqueror",
+  "spd": 88,
+  "tier": "S",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.513Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c22"
+  },
+  "id": "marvel-056",
+  "__v": 0,
+  "atk": 94,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.304Z"
+  },
+  "def": 96,
+  "description": "Adamantium-clad AI. Networked intelligence and weaponry.",
+  "img": "https://example.com/images/marvel-056.jpg",
+  "iq": 245,
+  "name": "Ultron",
+  "spd": 88,
+  "tier": "A",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.565Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c23"
+  },
+  "id": "marvel-057",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.355Z"
+  },
+  "def": 90,
+  "description": "Gamma-irradiated powerhouse and brilliant attorney.",
+  "img": "https://example.com/images/marvel-057.jpg",
+  "iq": 180,
+  "name": "She-Hulk",
+  "spd": 82,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.614Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c24"
+  },
+  "id": "marvel-058",
+  "__v": 0,
+  "atk": 87,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.405Z"
+  },
+  "def": 89,
+  "description": "Heavily armed tactical combat suit piloted by Rhodey.",
+  "img": "https://example.com/images/marvel-058.jpg",
+  "iq": 185,
+  "name": "War Machine",
+  "spd": 86,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.663Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c25"
+  },
+  "id": "marvel-059",
+  "__v": 0,
+  "atk": 82,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.450Z"
+  },
+  "def": 80,
+  "description": "Expert aerial combatant and tactical strike leader.",
+  "img": "https://example.com/images/marvel-059.jpg",
+  "iq": 175,
+  "name": "Falcon",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.711Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c26"
+  },
+  "id": "marvel-060",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.505Z"
+  },
+  "def": 84,
+  "description": "Enhanced assassin with a cybernetic arm and combat logic.",
+  "img": "https://example.com/images/marvel-060.jpg",
+  "iq": 180,
+  "name": "Winter Soldier",
+  "spd": 83,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.764Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c27"
+  },
+  "id": "marvel-061",
+  "__v": 0,
+  "atk": 82,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.565Z"
+  },
+  "def": 78,
+  "description": "Master marksman with specialized trick arrow arsenal.",
+  "img": "https://example.com/images/marvel-061.jpg",
+  "iq": 180,
+  "name": "Hawkeye",
+  "spd": 80,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.819Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c28"
+  },
+  "id": "marvel-062",
+  "__v": 0,
+  "atk": 82,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.614Z"
+  },
+  "def": 78,
+  "description": "World-class spy, elite martial artist and tactician.",
+  "img": "https://example.com/images/marvel-062.jpg",
+  "iq": 195,
+  "name": "Black Widow",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.863Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e78219ce61aa1aedec7c29"
+  },
+  "id": "marvel-063",
+  "__v": 0,
+  "atk": 83,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.665Z"
+  },
+  "def": 80,
+  "description": "Master tactician and leader of the Guardians.",
+  "img": "https://example.com/images/marvel-063.jpg",
+  "iq": 185,
+  "name": "Star-Lord",
+  "spd": 84,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.915Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2a"
+  },
+  "id": "marvel-064",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.722Z"
+  },
+  "def": 88,
+  "description": "Fierce warrior engineered for physical destruction.",
+  "img": "https://example.com/images/marvel-064.jpg",
+  "iq": 140,
+  "name": "Drax the Destroyer",
+  "spd": 78,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:23.965Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2b"
+  },
+  "id": "marvel-065",
+  "__v": 0,
+  "atk": 86,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.774Z"
+  },
+  "def": 84,
+  "description": "The deadliest woman in the galaxy. Peerless blade mastery.",
+  "img": "https://example.com/images/marvel-065.jpg",
+  "iq": 190,
+  "name": "Gamora",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.036Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2c"
+  },
+  "id": "marvel-066",
+  "__v": 0,
+  "atk": 80,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.828Z"
+  },
+  "def": 78,
+  "description": "Powerful empath capable of subduing cosmic entities.",
+  "img": "https://example.com/images/marvel-066.jpg",
+  "iq": 170,
+  "name": "Mantis",
+  "spd": 80,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.083Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2d"
+  },
+  "id": "marvel-067",
+  "__v": 0,
+  "atk": 84,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.883Z"
+  },
+  "def": 86,
+  "description": "Ruthless cyborg assassin with advanced weaponry.",
+  "img": "https://example.com/images/marvel-067.jpg",
+  "iq": 185,
+  "name": "Nebula",
+  "spd": 82,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.133Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2e"
+  },
+  "id": "marvel-068",
+  "__v": 0,
+  "atk": 88,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.934Z"
+  },
+  "def": 84,
+  "description": "Master of Kung Fu. Absolute physical control and Chi output.",
+  "img": "https://example.com/images/marvel-068.jpg",
+  "iq": 180,
+  "name": "Shang-Chi",
+  "spd": 88,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.180Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c2f"
+  },
+  "id": "marvel-069",
+  "__v": 0,
+  "atk": 85,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:40.985Z"
+  },
+  "def": 82,
+  "description": "Spider-Man with bio-electrokinesis and camouflage logic.",
+  "img": "https://example.com/images/marvel-069.jpg",
+  "iq": 190,
+  "name": "Miles Morales",
+  "spd": 92,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.234Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "69e7821ace61aa1aedec7c30"
+  },
+  "id": "marvel-070",
+  "__v": 0,
+  "atk": 84,
+  "category": "comic",
+  "createdAt": {
+    "$date": "2026-04-21T13:56:41.033Z"
+  },
+  "def": 82,
+  "description": "Agile web-slinger from Earth-65 with peak combat rhythm.",
+  "img": "https://example.com/images/marvel-070.jpg",
+  "iq": 190,
+  "name": "Spider-Gwen",
+  "spd": 93,
+  "tier": "B",
+  "universe": "marvel",
+  "updatedAt": {
+    "$date": "2026-04-21T14:00:24.284Z"
+  }
+}]

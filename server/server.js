@@ -15,15 +15,11 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
-// ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("📡 KERNEL_ONLINE: Multiverse Connected"))
   .catch((err) => console.error("🔥 KERNEL_CRASH", err));
 
-/* ==========================================
-   📝 DATABASE SCHEMAS
-   ========================================== */
 const CharacterSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
@@ -53,9 +49,6 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", UserSchema);
 
-/* ==========================================
-   🦸 SUPERHERO API LOGIC
-   ========================================== */
 const SUPERHERO_TOKEN = process.env.SUPERHERO_TOKEN;
 
 const calculateTier = (atk, def, spd, iq) => {
@@ -67,6 +60,7 @@ const calculateTier = (atk, def, spd, iq) => {
   return "B";
 };
 
+// 🔥 FIX 1: Wrap mapped image URL in Proxy
 const parseAndMapStats = (data) => {
   const parseStat = (val) =>
     val === "null" || isNaN(val) ? 60 : parseInt(val);
@@ -86,10 +80,13 @@ const parseAndMapStats = (data) => {
   if (pub.includes("marvel")) universe = "marvel";
   else if (pub.includes("dc")) universe = "dc";
 
+  // Bypass Hotlink Protection using wsrv.nl proxy
+  const proxyImgUrl = `https://wsrv.nl/?url=${encodeURIComponent(data.image.url)}`;
+
   return {
     id: `sh-${data.id}`,
     name: data.name.toUpperCase(),
-    img: data.image.url,
+    img: proxyImgUrl, // Saved with Proxy
     description: `${data.biography["full-name"] || data.name} - ${data.work.occupation || "Multiverse Hero"}.`,
     universe,
     category: "comic",
@@ -102,10 +99,8 @@ const parseAndMapStats = (data) => {
 };
 
 /* ==========================================
-   🚀 API ROUTES
+   🚀 USER & COMBAT API
    ========================================== */
-
-// ✅ USER LOGIN / ACCESS
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
@@ -129,7 +124,6 @@ app.post("/api/user/access", async (req, res) => {
   }
 });
 
-// 🔄 LIVE SYNC & SESSION CHECK (Fixes 401 Error)
 app.post("/api/user/sync", async (req, res) => {
   try {
     const { username, sessionId } = req.body;
@@ -142,7 +136,6 @@ app.post("/api/user/sync", async (req, res) => {
   }
 });
 
-// 🌟 RECORD MATCH
 app.post("/api/user/record-match", async (req, res) => {
   try {
     const { username, sessionId, isWin, coinsWon, gemsWon } = req.body;
@@ -160,40 +153,9 @@ app.post("/api/user/record-match", async (req, res) => {
   }
 });
 
-// 🛡️ ADMIN: BULK SUPERHERO FETCH
-app.post("/api/admin/bulk-fetch-superhero", async (req, res) => {
-  if (!SUPERHERO_TOKEN)
-    return res.status(400).json({ error: "TOKEN_MISSING_IN_SERVER" });
-  try {
-    const { heroIds } = req.body;
-    const results = { saved: [], failed: [] };
-    for (const id of heroIds) {
-      try {
-        const response = await axios.get(
-          `https://superheroapi.com/api/${SUPERHERO_TOKEN}/${id}`,
-        );
-        if (response.data.response === "error") {
-          results.failed.push(id);
-          continue;
-        }
-        const mapped = parseAndMapStats(response.data);
-        await Character.findOneAndUpdate(
-          { id: mapped.id },
-          { $set: mapped },
-          { upsert: true },
-        );
-        results.saved.push(mapped.name);
-      } catch (e) {
-        results.failed.push(id);
-      }
-    }
-    res.status(200).json({ message: "Sync Complete", results });
-  } catch (err) {
-    res.status(500).json({ error: "BULK_FETCH_FAILED" });
-  }
-});
-
-// 🛡️ ADMIN: BULK JSON SYNC (Fixes 404 Error)
+/* ==========================================
+   🛡️ ADMIN PANEL ROUTES
+   ========================================== */
 app.put("/api/admin/bulk-update", async (req, res) => {
   try {
     const data = req.body;
@@ -212,7 +174,6 @@ app.put("/api/admin/bulk-update", async (req, res) => {
   }
 });
 
-// 🛡️ ADMIN: SINGLE CHARACTER UPDATE
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
     const updatedChar = await Character.findOneAndUpdate(
@@ -226,7 +187,6 @@ app.put("/api/admin/update-character/:id", async (req, res) => {
   }
 });
 
-// 🛡️ ADMIN: INDIVIDUAL DELETE
 app.delete("/api/admin/delete-character/:id", async (req, res) => {
   try {
     await Character.findOneAndDelete({ id: req.params.id });
@@ -236,7 +196,6 @@ app.delete("/api/admin/delete-character/:id", async (req, res) => {
   }
 });
 
-// 🛡️ ADMIN: WIPE UNIVERSE
 app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
   try {
     await Character.deleteMany({ universe: req.params.universe });
@@ -246,7 +205,6 @@ app.delete("/api/admin/wipe-universe/:universe", async (req, res) => {
   }
 });
 
-// 🛡️ ADMIN: CLEANUP DUPLICATES
 app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
   try {
     const result = await Character.aggregate([
@@ -267,7 +225,6 @@ app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
   }
 });
 
-// 🚀 CHARACTER FETCH
 app.get("/api/characters", async (req, res) => {
   try {
     const { universe, category } = req.query;
@@ -281,13 +238,84 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 📊 LEADERBOARD
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const leaders = await User.find({}).sort({ wins: -1 }).limit(50);
     res.status(200).json(leaders);
   } catch (err) {
     res.status(500).json({ error: "LEADERBOARD_FAILED" });
+  }
+});
+
+// 🔥 FIX 2: Wrap Single Image Search in Proxy
+app.get("/api/admin/search-comic-image", async (req, res) => {
+  if (!SUPERHERO_TOKEN) return res.status(400).json({ error: "NO_TOKEN" });
+  try {
+    const { name } = req.query;
+    const searchRes = await axios.get(
+      `https://superheroapi.com/api/${SUPERHERO_TOKEN}/search/${encodeURIComponent(name)}`,
+    );
+    if (
+      searchRes.data.response === "success" &&
+      searchRes.data.results.length > 0
+    ) {
+      const rawUrl = searchRes.data.results[0].image.url;
+      const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}`;
+      res.json({ imageUrl: proxyUrl });
+    } else {
+      res.status(404).json({ error: "NOT_FOUND" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "SEARCH_FAILED" });
+  }
+});
+
+// 🔥 FIX 3: Wrap Auto-Refresh Images in Proxy
+app.post("/api/admin/auto-refresh-images", async (req, res) => {
+  const { universe, category } = req.body;
+  try {
+    const chars = await Character.find({ universe });
+    let updated = 0;
+    let failed = 0;
+
+    for (const char of chars) {
+      try {
+        let newImg = null;
+        if (category === "comic" && SUPERHERO_TOKEN) {
+          const searchRes = await axios.get(
+            `https://superheroapi.com/api/${SUPERHERO_TOKEN}/search/${encodeURIComponent(char.name)}`,
+          );
+          if (
+            searchRes.data.response === "success" &&
+            searchRes.data.results.length > 0
+          ) {
+            const rawUrl = searchRes.data.results[0].image.url;
+            newImg = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}`; // Proxy added
+          }
+        } else if (category === "anime") {
+          const searchRes = await axios.get(
+            `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(char.name)}&limit=1`,
+          );
+          if (searchRes.data.data && searchRes.data.data.length > 0) {
+            newImg = searchRes.data.data[0].images.jpg.image_url;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        if (newImg && newImg !== char.img && !newImg.includes("example.com")) {
+          char.img = newImg;
+          await char.save();
+          updated++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+    res.status(200).json({ updated, failed });
+  } catch (err) {
+    res.status(500).json({ error: "AUTO_REFRESH_FAILED" });
   }
 });
 
