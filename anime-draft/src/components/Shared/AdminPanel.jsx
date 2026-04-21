@@ -224,35 +224,28 @@ export default function AdminPanel() {
     }
   };
 
-  // 🔥 NEW: UNIVERSE SPECIFIC AUTO REFRESH
   const handleAutoRefresh = async () => {
-    if (currentCategory === "sports")
-      return alert("AUTO-REFRESH NOT YET SUPPORTED FOR SPORTS.");
-    if (
-      !window.confirm(
-        `⚠️ INITIATE IMAGE SYNC FOR [${universe.toUpperCase()}]? This may take a minute.`,
-      )
-    )
+    if (currentCategory === "sports") return alert("Not for sports yet.");
+    if (!window.confirm(`FORCE REFRESH ${universe.toUpperCase()} IMAGES?`))
       return;
 
     setLoading(true);
     try {
-      // Backend automatically maps to Jikan or Superhero based on category!
+      // ✅ category zaroor bhejein backend ko
       const res = await axios.post(`${API_URL}/api/admin/auto-refresh-images`, {
-        universe,
+        universe: universe,
         category: currentCategory,
       });
       alert(
-        `🔥 ${universe.toUpperCase()} SYNC COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed/Unchanged: ${res.data.failed}`,
+        `PROCESS COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed: ${res.data.failed}`,
       );
       fetchChars();
     } catch (e) {
-      alert("❌ SYNC FAILED! Check console or API token.");
+      alert("SERVER_ERROR");
     } finally {
       setLoading(false);
     }
   };
-
   if (!isLoggedIn)
     return (
       <div className="h-screen bg-[#050505] flex items-center justify-center p-4">

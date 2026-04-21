@@ -59,8 +59,7 @@ const calculateTier = (atk, def, spd, iq) => {
   if (avg >= 70) return "A";
   return "B";
 };
-
-// 🔥 FIX 1: Wrap mapped image URL in Proxy
+// 🔥 SERVER.JS MEIN YE WALA FUNCTION DHUND KE UPDATE KAREIN
 const parseAndMapStats = (data) => {
   const parseStat = (val) =>
     val === "null" || isNaN(val) ? 60 : parseInt(val);
@@ -80,13 +79,15 @@ const parseAndMapStats = (data) => {
   if (pub.includes("marvel")) universe = "marvel";
   else if (pub.includes("dc")) universe = "dc";
 
-  // Bypass Hotlink Protection using wsrv.nl proxy
-  const proxyImgUrl = `https://wsrv.nl/?url=${encodeURIComponent(data.image.url)}`;
+  // 🔥 CORE FIX: Image Proxy using wsrv.nl (Bypasses 403 Forbidden)
+  // Hum image URL ke aage proxy laga rahe hain taaki zoro.svg na dikhe
+  const rawUrl = data.image.url;
+  const proxyImgUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&default=https://i.imgur.com/your-default-comic-image.jpg`;
 
   return {
     id: `sh-${data.id}`,
     name: data.name.toUpperCase(),
-    img: proxyImgUrl, // Saved with Proxy
+    img: proxyImgUrl, // Database mein proxy ke sath save hoga
     description: `${data.biography["full-name"] || data.name} - ${data.work.occupation || "Multiverse Hero"}.`,
     universe,
     category: "comic",
@@ -270,27 +271,43 @@ app.get("/api/admin/search-comic-image", async (req, res) => {
   }
 });
 
-// 🔥 FIX 3: Wrap Auto-Refresh Images in Proxy
 app.post("/api/admin/auto-refresh-images", async (req, res) => {
   const { universe, category } = req.body;
+  if (!SUPERHERO_TOKEN && category === "comic")
+    return res.status(400).json({ error: "TOKEN_MISSING" });
+
   try {
     const chars = await Character.find({ universe });
+    console.log(
+      `📡 Starting Refresh for ${universe}... Found ${chars.length} units.`,
+    );
+
     let updated = 0;
     let failed = 0;
 
     for (const char of chars) {
       try {
         let newImg = null;
-        if (category === "comic" && SUPERHERO_TOKEN) {
+
+        if (category === "comic") {
+          // 🔥 POWER SEARCH: Naam se "The", "Squad", etc hata kar search karein
+          const cleanName = char.name
+            .replace(/\(.*\)/g, "") // Brackets hatao
+            .replace(/Team|Squad|The /gi, "") // Extra words hatao
+            .trim();
+
           const searchRes = await axios.get(
-            `https://superheroapi.com/api/${SUPERHERO_TOKEN}/search/${encodeURIComponent(char.name)}`,
+            `https://superheroapi.com/api/${SUPERHERO_TOKEN}/search/${encodeURIComponent(cleanName)}`,
           );
+
           if (
             searchRes.data.response === "success" &&
             searchRes.data.results.length > 0
           ) {
-            const rawUrl = searchRes.data.results[0].image.url;
-            newImg = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}`; // Proxy added
+            // Sabse pehla aur best match uthao
+            const rawImg = searchRes.data.results[0].image.url;
+            // 🔥 PROXY LAGAO taaki Zoro.svg na dikhe
+            newImg = `https://wsrv.nl/?url=${encodeURIComponent(rawImg)}`;
           }
         } else if (category === "anime") {
           const searchRes = await axios.get(
@@ -299,23 +316,26 @@ app.post("/api/admin/auto-refresh-images", async (req, res) => {
           if (searchRes.data.data && searchRes.data.data.length > 0) {
             newImg = searchRes.data.data[0].images.jpg.image_url;
           }
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Delay for Rate Limit
         }
 
-        if (newImg && newImg !== char.img && !newImg.includes("example.com")) {
+        if (newImg) {
           char.img = newImg;
           await char.save();
           updated++;
+          console.log(`✅ Success: ${char.name}`);
         } else {
           failed++;
+          console.log(`❌ Failed match: ${char.name}`);
         }
       } catch (err) {
         failed++;
+        console.log(`⚠️ Error on ${char.name}: ${err.message}`);
       }
     }
     res.status(200).json({ updated, failed });
   } catch (err) {
-    res.status(500).json({ error: "AUTO_REFRESH_FAILED" });
+    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
   }
 });
 
