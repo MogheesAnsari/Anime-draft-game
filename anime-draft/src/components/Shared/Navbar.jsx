@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import {
   LogOut,
   Swords,
@@ -12,20 +13,39 @@ import {
 } from "lucide-react";
 
 export default function Navbar({ user, setUser }) {
+  // 🔥 SMART URL: Local pe localhost, Deploy hone pe Vercel/Render URL
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [coins, setCoins] = useState(0);
 
-  // 🔥 Navbar mein hamesha live coins dikhane ke liye
   useEffect(() => {
-    const updateCoins = () => {
-      setCoins(parseInt(localStorage.getItem("user_coins") || "0"));
+    if (!user) return;
+    const syncData = async () => {
+      try {
+        const cmd = JSON.parse(localStorage.getItem("commander") || "{}");
+        if (!cmd.username || !cmd.sessionId) return;
+
+        const res = await axios.post(`${API_URL}/api/user/sync`, {
+          username: cmd.username,
+          sessionId: cmd.sessionId,
+        });
+
+        setUser(res.data);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          localStorage.removeItem("commander");
+          setUser(null);
+          navigate("/");
+        }
+      }
     };
-    updateCoins();
-    window.addEventListener("storage", updateCoins); // Dusre tabs/pages se update handle karne ke liye
-    return () => window.removeEventListener("storage", updateCoins);
-  }, []);
+
+    syncData();
+    const interval = setInterval(syncData, 5000);
+    return () => clearInterval(interval);
+  }, [user, navigate, setUser, API_URL]);
 
   if (location.pathname === "/" && !user) return null;
 
@@ -53,7 +73,6 @@ export default function Navbar({ user, setUser }) {
 
       {user && (
         <div className="flex items-center gap-4 md:gap-8">
-          {/* 💰 LIVE COIN INDICATOR (Quick Access to Shop) */}
           <button
             onClick={() => navigate("/shop")}
             className="hidden sm:flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 px-4 py-1.5 rounded-full hover:bg-yellow-500/20 transition-all group"
@@ -63,7 +82,7 @@ export default function Navbar({ user, setUser }) {
               className="text-yellow-500 group-hover:scale-110 transition-transform"
             />
             <span className="text-[10px] font-black text-yellow-500 tracking-widest">
-              {coins}
+              {user?.coins || 0}
             </span>
           </button>
 
@@ -93,7 +112,6 @@ export default function Navbar({ user, setUser }) {
 
             {isOpen && (
               <div className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e] border border-white/10 rounded-[24px] shadow-2xl p-2 animate-in fade-in slide-in-from-top-4">
-                {/* 🛒 BLACK MARKET (SHOP) LINK */}
                 <button
                   onClick={() => {
                     navigate("/shop");
@@ -104,8 +122,6 @@ export default function Navbar({ user, setUser }) {
                   <ShoppingCart size={16} className="text-yellow-500" />{" "}
                   BLACK_MARKET
                 </button>
-
-                {/* 📊 LEADERBOARD LINK */}
                 <button
                   onClick={() => {
                     navigate("/leaderboard");
@@ -115,8 +131,6 @@ export default function Navbar({ user, setUser }) {
                 >
                   <Trophy size={16} className="text-[#ff8c32]" /> HALL_OF_FAME
                 </button>
-
-                {/* 🛠️ ADMIN PANEL LINK */}
                 <button
                   onClick={() => {
                     navigate("/admin");
@@ -127,7 +141,6 @@ export default function Navbar({ user, setUser }) {
                   <Database size={16} className="text-orange-500" />{" "}
                   KERNEL_ADMIN
                 </button>
-
                 <button
                   onClick={() => {
                     navigate("/dashboard");
@@ -137,9 +150,7 @@ export default function Navbar({ user, setUser }) {
                 >
                   <Settings size={16} className="text-blue-500" /> PROFILE_STATS
                 </button>
-
                 <div className="h-[1px] bg-white/5 my-2 mx-2"></div>
-
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black"

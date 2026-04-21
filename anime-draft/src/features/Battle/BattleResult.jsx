@@ -12,6 +12,7 @@ import {
   Gem,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import { calculateEffectiveScore } from "../Draft/utils/draftUtils";
 
 export default function BattleResult() {
@@ -20,10 +21,11 @@ export default function BattleResult() {
   const [showStats, setShowStats] = useState(false);
   const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
 
-  // 🔥 THE GATEKEEPER: Stops infinite loops and duplicate rewards
-  const hasDistributedRewards = useRef(false);
+  // 🔥 THE GATEKEEPER (Fixes the infinite loop / 20 Lakh coin bug)
+  const isRecorded = useRef(false);
 
   const teams = state?.teams || [];
+  const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
   const SLOTS = [
     "captain",
@@ -34,20 +36,17 @@ export default function BattleResult() {
     "raw_power",
   ];
 
-  // 🧠 Safe Data Extraction
-  const processedTeams = useMemo(() => {
-    if (!teams || teams.length === 0) return [];
-
-    const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
-    const parsedData = savedDataRaw ? JSON.parse(savedDataRaw) : {};
-    const battleData =
-      parsedData.finalScores || state?.result?.finalScores || [];
-
-    return teams.map((team, idx) => {
+  const { displayCards, headerText, winnerCard } = useMemo(() => {
+    let players = teams.map((team, idx) => {
       let charList = [];
       let bestChar = { name: "N/A", score: 0, slot: "N/A", scoreData: null };
       let teamTotalScore = 0;
 
+      // Ensure we extract data properly, handle the state fallback
+      const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
+      const parsedData = savedDataRaw ? JSON.parse(savedDataRaw) : {};
+      const battleData =
+        parsedData.finalScores || state?.result?.finalScores || [];
       const teamScores = battleData[idx] || {};
 
       SLOTS.forEach((slot) => {
@@ -55,111 +54,48 @@ export default function BattleResult() {
         if (!char) return;
 
         const slotData = teamScores[slot];
-        const finalScore = slotData
+        const cScore = slotData
           ? slotData.final
           : calculateEffectiveScore(char, slot);
 
-        teamTotalScore += finalScore;
+        teamTotalScore += cScore;
         charList.push({
           ...char,
-          finalScore: finalScore,
+          finalScore: cScore,
           slot: slot,
           scoreData: slotData,
         });
 
-        if (finalScore > bestChar.score) {
+        if (cScore > bestChar.score)
           bestChar = {
             ...char,
-            score: finalScore,
+            score: cScore,
             slot: slot,
             scoreData: slotData,
           };
-        }
       });
-
       charList.sort((a, b) => b.finalScore - a.finalScore);
 
       return {
         id: idx + 1,
         name: `COMMANDER 0${idx + 1}`,
-        score: teamTotalScore,
+        score: rawScores[idx] || teamTotalScore, // Fallback to teamTotal if rawScores is missing
         mvp: bestChar,
         characters: charList,
       };
     });
-  }, [teams, state]);
 
-  // 🔥 100% BUG-FREE LEADERBOARD & REWARD SYSTEM
-  useEffect(() => {
-    // Return immediately if rewards are already given OR if teams aren't loaded
-    if (hasDistributedRewards.current || processedTeams.length === 0) return;
-
-    // Lock the gate! This ensures the code below runs EXACTLY ONCE per match.
-    hasDistributedRewards.current = true;
-
-    const winner = [...processedTeams].sort((a, b) => b.score - a.score)[0];
-    const isPlayer1InMatch = processedTeams.some(
-      (p) => p.name === "COMMANDER 01",
-    );
-
-    if (isPlayer1InMatch) {
-      const isWin = winner && winner.name === "COMMANDER 01";
-      let coinsWon = 25; // Base loss reward
-      let gemsWon = 0;
-
-      // 1. Track Total Matches Played (For Win Rate)
-      const totalMatches =
-        parseInt(localStorage.getItem("user_total_matches") || "0") + 1;
-      localStorage.setItem("user_total_matches", totalMatches.toString());
-
-      // 2. Track Wins and Set Big Rewards
-      if (isWin) {
-        coinsWon = 100;
-        gemsWon = 1;
-        const currentWins =
-          parseInt(localStorage.getItem("user_wins") || "0") + 1;
-        localStorage.setItem("user_wins", currentWins.toString());
-      }
-
-      // 3. Track Highest Score
-      const player1Score =
-        processedTeams.find((p) => p.name === "COMMANDER 01")?.score || 0;
-      const currentHighestScore = parseInt(
-        localStorage.getItem("user_highest_score") || "0",
-      );
-      if (player1Score > currentHighestScore) {
-        localStorage.setItem("user_highest_score", player1Score.toString());
-      }
-
-      // 4. Update Currency Safely
-      const currentCoins = parseInt(localStorage.getItem("user_coins") || "0");
-      const currentGems = parseInt(localStorage.getItem("user_gems") || "0");
-      localStorage.setItem("user_coins", (currentCoins + coinsWon).toString());
-      localStorage.setItem("user_gems", (currentGems + gemsWon).toString());
-
-      setEarnedLoot({ coins: coinsWon, gems: gemsWon });
-
-      // Fire event so Navbar updates instantly
-      window.dispatchEvent(new Event("storage"));
-    }
-  }, [processedTeams]);
-
-  // UI Build Logic
-  const { displayCards, headerText } = useMemo(() => {
     let builtCards = [];
     let status = "MATCH OVER";
-    if (processedTeams.length === 0)
-      return { displayCards: [], headerText: status };
-
     const isTeamMode = mode.includes("2v2") || mode.includes("team");
     const isRoyaleMode =
       mode.includes("royale") ||
       mode.includes("ffa") ||
-      (processedTeams.length > 2 && !isTeamMode);
+      (players.length > 2 && !isTeamMode);
 
-    if (isTeamMode && processedTeams.length >= 4) {
-      const alphaScore = processedTeams[0].score + processedTeams[1].score;
-      const betaScore = processedTeams[2].score + processedTeams[3].score;
+    if (isTeamMode && players.length >= 4) {
+      const alphaScore = players[0].score + players[1].score;
+      const betaScore = players[2].score + players[3].score;
       const isDraw = alphaScore === betaScore;
       status = isDraw
         ? "STALEMATE"
@@ -172,20 +108,18 @@ export default function BattleResult() {
           score: alphaScore,
           rank: alphaScore >= betaScore ? 1 : 2,
           isWinner: !isDraw && alphaScore > betaScore,
-          members: [processedTeams[0], processedTeams[1]],
+          members: [players[0], players[1]],
         },
         {
           title: "TEAM BETA",
           score: betaScore,
           rank: betaScore >= alphaScore ? 1 : 2,
           isWinner: !isDraw && betaScore > alphaScore,
-          members: [processedTeams[2], processedTeams[3]],
+          members: [players[2], players[3]],
         },
       ];
     } else if (isRoyaleMode) {
-      const sortedPlayers = [...processedTeams].sort(
-        (a, b) => b.score - a.score,
-      );
+      const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
       status = `${sortedPlayers[0].name} SURVIVES`;
       builtCards = sortedPlayers.map((p, index) => ({
         title: p.name,
@@ -195,8 +129,8 @@ export default function BattleResult() {
         members: [p],
       }));
     } else {
-      const p1Score = processedTeams[0]?.score || 0;
-      const p2Score = processedTeams[1]?.score || 0;
+      const p1Score = players[0]?.score || 0;
+      const p2Score = players[1]?.score || 0;
       const isDraw = p1Score === p2Score;
       status = isDraw
         ? "STALEMATE"
@@ -209,24 +143,73 @@ export default function BattleResult() {
           score: p1Score,
           rank: p1Score >= p2Score ? 1 : 2,
           isWinner: !isDraw && p1Score > p2Score,
-          members: [processedTeams[0]].filter(Boolean),
+          members: [players[0]].filter(Boolean),
         },
         {
           title: "ENEMY SQUAD",
           score: p2Score,
           rank: p2Score >= p1Score ? 1 : 2,
           isWinner: !isDraw && p2Score > p1Score,
-          members: [processedTeams[1]].filter(Boolean),
+          members: [players[1]].filter(Boolean),
         },
       ];
     }
-    return { displayCards: builtCards, headerText: status };
-  }, [processedTeams, mode]);
+
+    return {
+      displayCards: builtCards,
+      headerText: status,
+      winnerCard: builtCards.find((c) => c.rank === 1),
+    };
+  }, [teams, rawScores, mode, state]);
+
+  // 🔥 SECURE DATABASE SAVE LOGIC (Runs exactly ONCE)
+  useEffect(() => {
+    if (isRecorded.current || displayCards.length === 0) return;
+    isRecorded.current = true; // Lock the gate immediately!
+
+    const syncResultToDatabase = async () => {
+      try {
+        const commanderInfo = JSON.parse(
+          localStorage.getItem("commander") || "{}",
+        );
+        if (!commanderInfo.username) return;
+
+        // Check if User won
+        const isWin =
+          winnerCard?.members?.some((m) => m.name === "COMMANDER 01") || false;
+        const coinsWon = isWin ? 100 : 25;
+        const gemsWon = isWin ? 1 : 0;
+
+        await axios.post("http://localhost:5000/api/user/record-match", {
+          username: commanderInfo.username,
+          sessionId: commanderInfo.sessionId,
+          isWin: isWin,
+          coinsWon: coinsWon,
+          gemsWon: gemsWon,
+        });
+
+        setEarnedLoot({ coins: coinsWon, gems: gemsWon });
+        window.dispatchEvent(new Event("storage"));
+      } catch (error) {
+        console.error("Match saving failed:", error);
+      }
+    };
+
+    syncResultToDatabase();
+  }, [displayCards, winnerCard]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowStats(true), 500);
+    const timer = setTimeout(() => setShowStats(true), 600);
     return () => clearTimeout(timer);
   }, []);
+
+  if (displayCards.length === 0) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center font-black italic text-white">
+        BATTLE DATA LOST. RETURN TO HQ.
+      </div>
+    );
+  }
 
   const isVictory =
     headerText.includes("VICTORY") ||
@@ -241,21 +224,6 @@ export default function BattleResult() {
       return "border-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.15)]";
     return "border-gray-600";
   };
-
-  // If page is refreshed and state is lost
-  if (processedTeams.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center flex-col text-white font-black italic">
-        <h1 className="text-4xl text-gray-500 mb-8">BATTLE DATA PURGED</h1>
-        <button
-          onClick={() => navigate("/modes")}
-          className="bg-[#ff8c32] text-black px-10 py-4 rounded-2xl text-xl"
-        >
-          RETURN TO HQ
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 md:p-8 uppercase font-sans selection:bg-[#ff8c32] relative overflow-y-auto overflow-x-hidden custom-scrollbar">
@@ -293,19 +261,19 @@ export default function BattleResult() {
           </h1>
         </motion.div>
 
-        {/* 🔥 THE LOOT DISPLAY */}
+        {/* LOOT REVEAL ANIMATION */}
         <AnimatePresence>
           {showStats && earnedLoot.coins > 0 && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="flex gap-4 mb-10"
+              className="flex gap-4 mb-10 z-30"
             >
-              <div className="bg-yellow-500/10 border border-yellow-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-yellow-400 font-black">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_20px_rgba(234,179,8,0.2)]">
                 <Coins size={18} /> +{earnedLoot.coins} COINS
               </div>
               {earnedLoot.gems > 0 && (
-                <div className="bg-purple-500/10 border border-purple-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-purple-400 font-black">
+                <div className="bg-purple-500/10 border border-purple-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-purple-400 font-black shadow-[0_0_20px_rgba(168,85,247,0.2)]">
                   <Gem size={18} /> +{earnedLoot.gems} GEM
                 </div>
               )}
@@ -319,7 +287,7 @@ export default function BattleResult() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ staggerChildren: 0.2 }}
-              className="w-full grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2 max-w-7xl"
+              className={`w-full grid gap-6 md:gap-8 ${displayCards.length > 2 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-2 max-w-7xl"}`}
             >
               {displayCards.map((card, cIdx) => {
                 const borderStyles = getRankColor(card.rank);
@@ -369,6 +337,7 @@ export default function BattleResult() {
                           key={pIdx}
                           className="flex-1 flex flex-col gap-4 md:gap-6 p-2"
                         >
+                          {/* SQUAD MVP */}
                           <div
                             className={`flex flex-col bg-black/40 p-4 md:p-5 rounded-2xl md:rounded-3xl border ${isFirst ? "border-[#ff8c32]/30" : "border-blue-500/30"}`}
                           >
@@ -393,6 +362,7 @@ export default function BattleResult() {
                                   {player.mvp?.slot?.replace("_", " ")}
                                 </div>
 
+                                {/* THE MATH RECEIPT */}
                                 {player.mvp?.scoreData?.breakdown && (
                                   <div className="bg-black/60 rounded-xl p-2 md:p-3 border border-white/5 w-full">
                                     <div className="text-[8px] text-gray-500 border-b border-white/10 pb-1 mb-1.5 md:mb-2 tracking-widest">

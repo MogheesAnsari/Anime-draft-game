@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +10,7 @@ import {
   Flame,
   Shield,
   Target,
+  FastForward,
 } from "lucide-react";
 import {
   calculateFinalBattleScore,
@@ -36,6 +37,14 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [currentActions, setCurrentActions] = useState([]);
   const [clashText, setClashText] = useState("");
 
+  const [isFastForward, setIsFastForward] = useState(false);
+  const speedRef = useRef(false);
+
+  const toggleSpeed = () => {
+    setIsFastForward(!isFastForward);
+    speedRef.current = !isFastForward;
+  };
+
   const SLOTS = [
     "captain",
     "vice_cap",
@@ -47,19 +56,18 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   useEffect(() => {
     let timer;
-
-    // Check if artifacts exist to show popup, else skip it
+    const getDelay = (ms) => (speedRef.current ? ms * 0.25 : ms);
     const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
 
     if (phase === "INTRO")
-      timer = setTimeout(() => setPhase("DOMAIN_REVEAL"), 2500);
+      timer = setTimeout(() => setPhase("DOMAIN_REVEAL"), getDelay(2500));
     if (phase === "DOMAIN_REVEAL")
       timer = setTimeout(
         () => setPhase(hasAnyArtifact ? "ARTIFACT_REVEAL" : "SKILL_FLASH"),
-        3500,
+        getDelay(3500),
       );
     if (phase === "ARTIFACT_REVEAL")
-      timer = setTimeout(() => setPhase("SKILL_FLASH"), 4000);
+      timer = setTimeout(() => setPhase("SKILL_FLASH"), getDelay(4000));
 
     if (phase === "SKILL_FLASH") {
       const winChar = allTeams[0]?.[SLOTS[currentSlot]];
@@ -70,7 +78,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
           getUniverseSynergy(allTeams[0] || {}),
         ),
       );
-      timer = setTimeout(() => setPhase("CLASH"), 2000);
+      timer = setTimeout(() => setPhase("CLASH"), getDelay(2000));
     }
 
     if (phase === "CLASH") {
@@ -103,12 +111,10 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
       timer = setTimeout(() => {
         const scores = roundResults.map((r) => r.final);
-
-        // 🔥 TRUE AURA MATH: Mana generated is strictly proportional to the raw damage/score output!
         setGauges((prev) =>
           prev.map((g, idx) => {
-            const performanceRatio = Math.min(1, scores[idx] / 800); // 800 score = max mana gain
-            const earnedMana = 10 + Math.round(performanceRatio * 25); // Minimum 10, Maximum 35 per clash
+            const performanceRatio = Math.min(1, scores[idx] / 800);
+            const earnedMana = 10 + Math.round(performanceRatio * 25);
             return Math.min(100, g + earnedMana);
           }),
         );
@@ -119,7 +125,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         } else {
           setPhase("FINISHER");
         }
-      }, 4000);
+      }, getDelay(4000));
     }
 
     if (phase === "FINISHER") {
@@ -133,21 +139,36 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
           }),
         );
         onComplete({ finalScores: capturedScores });
-      }, 1500);
+      }, getDelay(1500));
     }
 
     return () => clearTimeout(timer);
   }, [phase, currentSlot, allTeams, battleDomain, teamArtifacts]);
 
-  const currentScores = allTeams.map((team, idx) => {
-    const res = capturedScores[idx]?.[SLOTS[currentSlot]];
-    return res ? res.final : 0;
-  });
+  const currentScores = allTeams.map(
+    (team, idx) => capturedScores[idx]?.[SLOTS[currentSlot]]?.final || 0,
+  );
   const maxScoreRender = Math.max(...currentScores);
   const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
+      <button
+        onClick={toggleSpeed}
+        className={`fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${isFastForward ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110" : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"}`}
+        title="Toggle 2x Speed"
+      >
+        <FastForward
+          size={24}
+          className={isFastForward ? "animate-pulse" : ""}
+        />
+        <span
+          className={`text-xs md:text-sm ${isFastForward ? "block" : "hidden md:block"}`}
+        >
+          {isFastForward ? "SPEED: 2X" : "SKIP"}
+        </span>
+      </button>
+
       {phase === "INTRO" && (
         <motion.h1
           initial={{ scale: 2, opacity: 0 }}
@@ -279,7 +300,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         <motion.div
           className="h-full bg-gradient-to-r from-orange-600 to-[#ff8c32]"
           animate={{ width: `${(currentSlot / SLOTS.length) * 100}%` }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: isFastForward ? 0.1 : 0.3 }}
         />
       </div>
     </div>
@@ -287,7 +308,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 };
 
 const BattleSide = ({
-  teamIdx,
   char,
   slot,
   scoreData,
@@ -317,7 +337,6 @@ const BattleSide = ({
       >
         {isAwakened ? "AWAKENED" : "ENGAGED"}
       </div>
-
       <div className="absolute -top-6 md:-top-10 flex flex-col gap-1 items-center w-full z-50">
         {scoreData?.domainMatched && (
           <span className="bg-purple-600 text-white text-[8px] md:text-[10px] px-2 py-1 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.8)]">
@@ -337,30 +356,25 @@ const BattleSide = ({
           </span>
         )}
       </div>
-
       {artifact && (
         <div className="absolute top-2 left-2 bg-yellow-500/20 text-yellow-400 text-[8px] md:text-[10px] px-2 py-1 rounded-lg flex items-center gap-1 border border-yellow-500/30">
           <Gem size={8} />{" "}
           <span className="hidden sm:inline">{artifact.name}</span>
         </div>
       )}
-
       <div
         className={`text-4xl md:text-7xl mb-3 md:mb-6 font-black italic ${rng ? "text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]" : isAwakened ? "text-white drop-shadow-[0_0_30px_#fff]" : isWinner ? "text-[#ff8c32]" : "text-gray-500"}`}
       >
         {score || "---"}
       </div>
-
       <img
         src={char?.img || "/zoro.svg"}
         className={`w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48 object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}
         alt=""
       />
-
       <div className="text-sm md:text-2xl text-white mb-2 md:mb-4 text-center truncate w-full px-2">
         {char?.name}
       </div>
-
       <div className="hidden sm:flex gap-2 md:gap-4 mb-4 bg-black/50 px-3 py-1.5 rounded-full border border-white/5">
         <div
           className={`flex items-center gap-1 text-[10px] md:text-xs ${isAtk && isWinner ? "text-orange-500" : "text-orange-500/50"}`}
@@ -378,7 +392,6 @@ const BattleSide = ({
           <Target size={12} /> {char?.spd || 0}
         </div>
       </div>
-
       <div className="w-full bg-black/40 p-2 md:p-3 rounded-xl md:rounded-2xl border border-white/5 mt-auto">
         <div className="flex justify-between w-full text-[8px] md:text-[10px] mb-1 text-gray-400">
           <span>AURA GAUGE</span>

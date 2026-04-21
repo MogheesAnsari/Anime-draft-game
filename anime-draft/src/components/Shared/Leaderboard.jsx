@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ArrowLeft, Trophy, Crown, Medal, Activity } from "lucide-react";
+import { ArrowLeft, Trophy, Crown, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 // ✅ Make sure this path points to your draftUtils correctly
 import { getRankTier } from "../../features/Draft/utils/draftUtils";
@@ -9,19 +9,12 @@ export default function Leaderboard() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const wins = parseInt(localStorage.getItem("user_wins") || "0");
-  const totalMatches = parseInt(
-    localStorage.getItem("user_total_matches") || "0",
-  );
-  const winRate =
-    totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-  // Use {wins} for Victories, {totalMatches} for Total Missions, and {winRate}% for Win Rate
+
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await axios.get(
-          "https://anime-draft-game-1.onrender.com/api/leaderboard",
-        );
+        // 🔥 Pointed to the correct Backend API Server
+        const res = await axios.get("http://localhost:5000/api/leaderboard");
         setLeaders(res.data);
       } catch (error) {
         console.error("Failed to fetch leaderboard", error);
@@ -79,7 +72,6 @@ export default function Leaderboard() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 pb-10">
               {leaders.map((player, idx) => {
                 const rankInfo = getRankTier(player.wins);
-                const isTop3 = idx < 3;
 
                 return (
                   <div

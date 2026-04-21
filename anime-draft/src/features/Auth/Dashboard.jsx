@@ -20,27 +20,30 @@ export default function Dashboard({ user, setUser }) {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  // 🏅 Calculate Player's Rank based on Wins
-  const rank = getRankTier(user?.wins || 0);
-  const wins = parseInt(localStorage.getItem("user_wins") || "0");
-  const totalMatches = parseInt(
-    localStorage.getItem("user_total_matches") || "0",
-  );
+  // 🔥 REAL DATABASE STATS (No more localStorage fake 0s!)
+  const wins = user?.wins || 0;
+  const totalMatches = user?.totalGames || 0;
   const winRate =
     totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-  // Use {wins} for Victories, {totalMatches} for Total Missions, and {winRate}% for Win Rate
+
+  // 🏅 Calculate Player's Rank based on Real Wins
+  const rank = getRankTier(wins);
+
   const handleUpdate = async () => {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const res = await axios.post(
-        "https://anime-draft-game-1.onrender.com/api/user/access",
-        {
-          username: newName.toLowerCase().trim(),
-          avatar: newAvatar,
-        },
+      const res = await axios.post("http://localhost:5000/api/user/access", {
+        username: newName.toLowerCase().trim(),
+        avatar: newAvatar,
+      });
+      localStorage.setItem(
+        "commander",
+        JSON.stringify({
+          username: res.data.username,
+          sessionId: res.data.sessionId,
+        }),
       );
-      localStorage.setItem("commander", JSON.stringify(res.data));
       setUser(res.data);
       setEditing(false);
     } catch (err) {
@@ -74,7 +77,6 @@ export default function Dashboard({ user, setUser }) {
         <div
           className={`lg:col-span-4 bg-[#0a0a0c] border-2 ${rank.color.replace("text-", "border-")}/30 rounded-[40px] p-8 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden`}
         >
-          {/* Dynamic Glow based on Rank */}
           <div
             className={`absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 ${rank.color.replace("text-", "bg-")}/20 blur-[60px] rounded-full pointer-events-none`}
           />
@@ -95,8 +97,7 @@ export default function Dashboard({ user, setUser }) {
               </span>
             </div>
 
-            {/* Rank Crown Icon */}
-            {(user?.wins || 0) >= 25 && (
+            {wins >= 25 && (
               <div
                 className={`absolute -top-4 left-1/2 -translate-x-1/2 bg-black px-3 py-1 rounded-full border border-white/10 z-30 ${rank.color}`}
               >
@@ -134,7 +135,6 @@ export default function Dashboard({ user, setUser }) {
               <h3 className="text-3xl font-black italic tracking-tighter mb-1 truncate text-white">
                 {user?.username}
               </h3>
-              {/* Dynamic Rank Title */}
               <div
                 className={`text-[10px] font-black tracking-[0.4em] mb-6 px-4 py-1 rounded-full border border-white/10 inline-block bg-black/50 ${rank.color}`}
               >
@@ -155,22 +155,22 @@ export default function Dashboard({ user, setUser }) {
           {[
             {
               label: "TOTAL MISSIONS",
-              val: user?.totalGames || 0,
+              val: totalMatches,
               icon: <Target size={24} className="text-gray-500" />,
             },
             {
               label: "VICTORIES",
-              val: user?.wins || 0,
+              val: wins,
               icon: <Zap size={24} className="text-[#ff8c32]" />,
             },
             {
               label: "WIN_RATE",
-              val: `${user?.totalGames > 0 ? Math.round((user.wins / user.totalGames) * 100) : 0}%`,
+              val: `${winRate}%`,
               icon: <ShieldCheck size={24} className="text-blue-500" />,
             },
             {
               label: "COMMANDER_XP",
-              val: (user?.wins || 0) * 150,
+              val: wins * 150,
               icon: <Trophy size={24} className={rank.color} />,
             },
           ].map((s, i) => (
