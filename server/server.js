@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import "dotenv/config";
+import axios from "axios";
 
 const app = express();
 
@@ -14,14 +15,11 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
+// ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("📡 KERNEL_ONLINE: MongoDB Connected Successfully"))
-  .catch((err) => console.error("🔥 KERNEL_CRASH: DB Connection Failed", err));
-
-app.get("/api/health", (req, res) =>
-  res.status(200).send({ status: "ACTIVE", version: "2.0.0-MULTIVERSE" }),
-);
+  .then(() => console.log("📡 KERNEL_ONLINE: Multiverse Connected"))
+  .catch((err) => console.error("🔥 KERNEL_CRASH", err));
 
 /* ==========================================
    📝 DATABASE SCHEMAS
@@ -31,8 +29,9 @@ const CharacterSchema = new mongoose.Schema(
     id: { type: String, required: true, unique: true },
     name: String,
     img: String,
+    description: String,
     universe: String,
-    category: { type: String, default: "anime" }, // 🔥 NEW: "anime", "comic", or "sports"
+    category: { type: String, default: "anime" },
     atk: { type: Number, default: 60 },
     def: { type: Number, default: 60 },
     spd: { type: Number, default: 60 },
@@ -43,57 +42,78 @@ const CharacterSchema = new mongoose.Schema(
 );
 const Character = mongoose.model("Character", CharacterSchema);
 
-const UserSchema = new mongoose.Schema(
-  {
-    username: { type: String, required: true, unique: true },
-    avatar: { type: String, default: "" },
-    role: { type: String, default: "player" },
-    totalGames: { type: Number, default: 0 },
-    wins: { type: Number, default: 0 },
-    bossKills: { type: Number, default: 0 },
-    highestScore: { type: Number, default: 0 },
-    coins: { type: Number, default: 0 },
-    gems: { type: Number, default: 0 },
-    inventory: { type: Array, default: [] },
-    sessionId: { type: String, default: "" },
-  },
-  { timestamps: true },
-);
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  avatar: { type: String, default: "" },
+  totalGames: { type: Number, default: 0 },
+  wins: { type: Number, default: 0 },
+  coins: { type: Number, default: 0 },
+  gems: { type: Number, default: 0 },
+  sessionId: { type: String, default: "" },
+});
 const User = mongoose.model("User", UserSchema);
+
+/* ==========================================
+   🦸 SUPERHERO API LOGIC
+   ========================================== */
+const SUPERHERO_TOKEN = process.env.SUPERHERO_TOKEN;
+
+const calculateTier = (atk, def, spd, iq) => {
+  const normalizedIq = iq > 100 ? 100 : iq;
+  const avg = (atk + def + spd + normalizedIq) / 4;
+  if (avg >= 90) return "S+";
+  if (avg >= 80) return "S";
+  if (avg >= 70) return "A";
+  return "B";
+};
+
+const parseAndMapStats = (data) => {
+  const parseStat = (val) =>
+    val === "null" || isNaN(val) ? 60 : parseInt(val);
+  const atk = Math.round(
+    (parseStat(data.powerstats.strength) +
+      parseStat(data.powerstats.power) +
+      parseStat(data.powerstats.combat)) /
+      3,
+  );
+  const def = parseStat(data.powerstats.durability);
+  const spd = parseStat(data.powerstats.speed);
+  const baseIq = parseStat(data.powerstats.intelligence);
+  const iq = baseIq >= 95 ? 250 : baseIq >= 85 ? 200 : baseIq >= 70 ? 150 : 100;
+
+  let universe = "other";
+  const pub = data.biography.publisher?.toLowerCase() || "";
+  if (pub.includes("marvel")) universe = "marvel";
+  else if (pub.includes("dc")) universe = "dc";
+
+  return {
+    id: `sh-${data.id}`,
+    name: data.name.toUpperCase(),
+    img: data.image.url,
+    description: `${data.biography["full-name"] || data.name} - ${data.work.occupation || "Multiverse Hero"}.`,
+    universe,
+    category: "comic",
+    atk,
+    def,
+    spd,
+    iq,
+    tier: calculateTier(atk, def, spd, iq),
+  };
+};
 
 /* ==========================================
    🚀 API ROUTES
    ========================================== */
-// 🟢 1. FETCH CHARACTERS (Now supports filtering by category & universe)
-app.get("/api/characters", async (req, res) => {
-  try {
-    const { universe, category } = req.query;
-    let dbQuery = {};
-    if (universe)
-      dbQuery.universe = universe.includes(",")
-        ? { $in: universe.split(",") }
-        : universe;
-    if (category) dbQuery.category = category; // Fetch only comics or only anime
 
-    const chars = await Character.find(dbQuery).select(
-      "id name img universe category atk def spd iq tier",
-    );
-    res.json(chars);
-  } catch (err) {
-    res.status(500).json({ error: "DATABASE_FETCH_FAILED" });
-  }
-});
-
-// 🟢 2. USER ACCESS (LOGIN)
+// ✅ USER LOGIN / ACCESS
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
-    if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
     const newSessionId = Math.random().toString(36).substring(2, 15);
     let user = await User.findOne({ username: username.toLowerCase() });
     if (user) {
-      if (avatar && user.avatar !== avatar) user.avatar = avatar;
       user.sessionId = newSessionId;
+      if (avatar) user.avatar = avatar;
       await user.save();
     } else {
       user = new User({
@@ -105,90 +125,97 @@ app.post("/api/user/access", async (req, res) => {
     }
     res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+    res.status(500).json({ error: "AUTH_FAILED" });
   }
 });
 
-// 🟢 3. LIVE SYNC
+// 🔄 LIVE SYNC & SESSION CHECK (Fixes 401 Error)
 app.post("/api/user/sync", async (req, res) => {
   try {
     const { username, sessionId } = req.body;
-    if (!username || !sessionId)
-      return res.status(401).json({ error: "MISSING_CREDENTIALS" });
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user || user.sessionId !== sessionId)
-      return res.status(401).json({ error: "SESSION_EXPIRED" });
+      return res.status(401).json({ error: "UNAUTHORIZED" });
     res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ error: "SYNC_FAILED" });
   }
 });
 
-// 🟢 4. RECORD MATCH
+// 🌟 RECORD MATCH (Saves Wins/Coins)
 app.post("/api/user/record-match", async (req, res) => {
   try {
-    const { username, sessionId, isWin, coinsWon, gemsWon, matchScore } =
-      req.body;
+    const { username, sessionId, isWin, coinsWon, gemsWon } = req.body;
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user || user.sessionId !== sessionId)
       return res.status(401).json({ error: "UNAUTHORIZED" });
-
     user.totalGames += 1;
     if (isWin) user.wins += 1;
-    if (matchScore && matchScore > user.highestScore)
-      user.highestScore = matchScore;
     user.coins += coinsWon || 0;
     user.gems += gemsWon || 0;
-
     await user.save();
     res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ error: "FAILED_TO_RECORD_MATCH" });
+    res.status(500).json({ error: "SAVE_FAILED" });
   }
 });
 
-// 🟢 5. BUY ITEM
-app.post("/api/user/buy-item", async (req, res) => {
+// 🛡️ ADMIN: BULK SUPERHERO FETCH
+app.post("/api/admin/bulk-fetch-superhero", async (req, res) => {
+  if (!SUPERHERO_TOKEN)
+    return res.status(400).json({ error: "TOKEN_MISSING_IN_SERVER" });
   try {
-    const { username, sessionId, item, price, currencyType } = req.body;
-    const user = await User.findOne({ username: username.toLowerCase() });
-    if (!user || user.sessionId !== sessionId)
-      return res.status(401).json({ error: "UNAUTHORIZED" });
-
-    if (user.inventory.some((i) => i.name === item.name))
-      return res.status(400).json({ error: "ALREADY_OWNED" });
-    if (currencyType === "gems") {
-      if (user.gems < price)
-        return res.status(400).json({ error: "INSUFFICIENT_GEMS" });
-      user.gems -= price;
-    } else {
-      if (user.coins < price)
-        return res.status(400).json({ error: "INSUFFICIENT_COINS" });
-      user.coins -= price;
+    const { heroIds } = req.body;
+    const results = { saved: [], failed: [] };
+    for (const id of heroIds) {
+      try {
+        const response = await axios.get(
+          `https://superheroapi.com/api/${SUPERHERO_TOKEN}/${id}`,
+        );
+        if (response.data.response === "error") {
+          results.failed.push(id);
+          continue;
+        }
+        const mapped = parseAndMapStats(response.data);
+        await Character.findOneAndUpdate(
+          { id: mapped.id },
+          { $set: mapped },
+          { upsert: true },
+        );
+        results.saved.push(mapped.name);
+      } catch (e) {
+        results.failed.push(id);
+      }
     }
-
-    user.inventory.push(item);
-    await user.save();
-    res.status(200).json({ message: "PURCHASE_SUCCESSFUL", user });
+    res.status(200).json({ message: "Sync Complete", results });
   } catch (err) {
-    res.status(500).json({ error: "PURCHASE_FAILED" });
+    res.status(500).json({ error: "BULK_FETCH_FAILED" });
   }
 });
 
-// 🟢 6. LEADERBOARD
+// 🚀 CHARACTER FETCH
+app.get("/api/characters", async (req, res) => {
+  try {
+    const { universe, category } = req.query;
+    let dbQuery = {};
+    if (universe) dbQuery.universe = universe;
+    if (category) dbQuery.category = category;
+    const chars = await Character.find(dbQuery);
+    res.json(chars);
+  } catch (err) {
+    res.status(500).json({ error: "FETCH_FAILED" });
+  }
+});
+
+// 📊 LEADERBOARD
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    const leaders = await User.find({ role: { $ne: "admin" } })
-      .sort({ wins: -1, highestScore: -1 })
-      .limit(50)
-      .select("username avatar wins totalGames highestScore");
+    const leaders = await User.find({}).sort({ wins: -1 }).limit(50);
     res.status(200).json(leaders);
   } catch (err) {
-    res.status(500).json({ error: "FAILED_TO_FETCH_LEADERBOARD" });
+    res.status(500).json({ error: "LEADERBOARD_FAILED" });
   }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 MULTIVERSE ENGINE RUNNING ON PORT ${PORT}`),
-);
+app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));
