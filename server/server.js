@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import axios from "axios";
 import "dotenv/config";
 
 const app = express();
@@ -22,7 +23,7 @@ mongoose
 
 app.get("/api/health", (req, res) => res.status(200).send("ACTIVE"));
 
-// 📝 SCHEMAS
+// 📝 SCHEMAS & MODELS
 const CharacterSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: String,
@@ -42,22 +43,19 @@ const UserSchema = new mongoose.Schema({
   totalGames: { type: Number, default: 0 },
   wins: { type: Number, default: 0 },
   scoreHistory: { type: Array, default: [] },
-  coins: { type: Number, default: 0 },
-  gems: { type: Number, default: 0 },
-  inventory: { type: Array, default: [] },
-  sessionId: { type: String, default: "" }, // Protection against multiple logins
 });
 const User = mongoose.model("User", UserSchema);
 
-// 🚀 CHARACTER FETCH
+// 🚀 HYBRID FETCH: Pure stats from DB
 app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
     let dbQuery = {};
-    if (universe)
+    if (universe) {
       dbQuery.universe = universe.includes(",")
         ? { $in: universe.split(",") }
         : universe;
+    }
     const chars = await Character.find(dbQuery).select(
       "id name img universe atk def spd iq tier",
     );
@@ -67,93 +65,141 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// ✅ USER ACCESS (LOGIN)
+// 🚀 ELITE BULK UPDATE PROTOCOL
+app.put("/api/admin/bulk-update", async (req, res) => {
+  try {
+    const updates = req.body;
+    if (!Array.isArray(updates))
+      return res.status(400).json({ error: "ARRAY_REQUIRED" });
+    const results = [];
+    for (const char of updates) {
+      const updated = await Character.findOneAndUpdate(
+        { id: String(char.id) },
+        { $set: char },
+        { new: true, upsert: true },
+      );
+      if (updated) results.push(updated.name);
+    }
+    res.json({
+      message: "MULTIVERSE_SYNC_COMPLETE",
+      updated_count: results.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "BULK_SYNC_FAILED", details: err.message });
+  }
+});
+
+// ⚔️ STRICT OVERRIDE: Prevent Doubling Issue
+app.put("/api/admin/update-character/:id", async (req, res) => {
+  try {
+    const charId = req.params.id;
+    const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.__v;
+
+    const updated = await Character.findOneAndUpdate(
+      { id: { $in: [Number(charId), String(charId)] } },
+      {
+        $set: {
+          name: updateData.name,
+          img: updateData.img,
+          atk: Number(updateData.atk),
+          def: Number(updateData.def),
+          spd: Number(updateData.spd),
+          iq: Number(updateData.iq),
+          tier: updateData.tier,
+          universe: updateData.universe,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updated) return res.status(404).json({ error: "CHARACTER_NOT_FOUND" });
+    res.json({ message: "SUCCESS", character: updated });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+  }
+});
+
+// 🧹 CLONE CLEANUP ROUTE
+app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
+  try {
+    const duplicates = await Character.aggregate([
+      {
+        $group: {
+          _id: { name: "$name", universe: "$universe" },
+          uniqueIds: { $addToSet: "$_id" },
+          count: { $sum: 1 },
+        },
+      },
+      { $match: { count: { $gt: 1 } } },
+    ]);
+    let deletedCount = 0;
+    for (const doc of duplicates) {
+      const idsToDelete = doc.uniqueIds.slice(1);
+      const result = await Character.deleteMany({ _id: { $in: idsToDelete } });
+      deletedCount += result.deletedCount;
+    }
+    res.json({ message: "CLEANUP_SUCCESS", deletedCount });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "DATABASE_CLEANUP_ERROR", details: err.message });
+  }
+});
+
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Character.deleteOne({ id: String(id) });
+    if (result.deletedCount === 0)
+      return res.status(404).json({ message: "Not found" });
+    res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
+  } catch (err) {
+    res.status(500).json({ error: "DELETE_FAILED" });
+  }
+});
+
+// ✅ THE MISSING PIECE: User Access/Creation (Fixes the Pending Issue)
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
 
-    const newSessionId = Math.random().toString(36).substring(2, 15);
-
+    // Find if user exists
     let user = await User.findOne({ username });
+
     if (user) {
-      if (avatar && user.avatar !== avatar) user.avatar = avatar;
-      user.sessionId = newSessionId;
-      await user.save();
+      // If user exists and avatar is new, update it
+      if (avatar && user.avatar !== avatar) {
+        user.avatar = avatar;
+        await user.save();
+      }
+      console.log(`👤 COMMANDER_LOGIN: ${username}`);
     } else {
-      user = new User({
-        username,
-        avatar,
-        wins: 0,
-        totalGames: 0,
-        coins: 0,
-        gems: 0,
-        sessionId: newSessionId,
-      });
+      // If user does not exist, create new
+      user = new User({ username, avatar, wins: 0, totalGames: 0 });
       await user.save();
+      console.log(`👤 NEW_COMMANDER_REGISTERED: ${username}`);
     }
-    res.status(200).json(user);
+
+    res.status(200).json(user); // Send response back to stop 'Pending'
   } catch (err) {
-    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+    console.error("🔥 USER_ACCESS_ERROR:", err.message);
+    res
+      .status(500)
+      .json({ error: "INTERNAL_SERVER_ERROR", details: err.message });
   }
 });
 
-// 🔄 LIVE SYNC & SESSION CHECK ROUTE
-app.post("/api/user/sync", async (req, res) => {
-  try {
-    const { username, sessionId } = req.body;
-
-    // 🔥 THE FIX: Prevent crash if frontend sends empty data
-    if (!username || !sessionId) {
-      return res.status(401).json({ error: "MISSING_CREDENTIALS" });
-    }
-
-    const user = await User.findOne({ username });
-
-    // If session doesn't match or user deleted, force logout!
-    if (!user || user.sessionId !== sessionId) {
-      return res
-        .status(401)
-        .json({ error: "SESSION_EXPIRED_OR_DUPLICATE_LOGIN" });
-    }
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ error: "SYNC_FAILED" });
-  }
-});
-
-// 🌟 RECORD MATCH RESULT
-app.post("/api/user/record-match", async (req, res) => {
-  try {
-    const { username, sessionId, isWin, coinsWon, gemsWon } = req.body;
-    const user = await User.findOne({ username });
-
-    if (!user || user.sessionId !== sessionId)
-      return res.status(401).json({ error: "UNAUTHORIZED" });
-
-    user.totalGames += 1;
-    if (isWin) user.wins += 1;
-    user.coins += coinsWon || 0;
-    user.gems += gemsWon || 0;
-
-    await user.save();
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ error: "FAILED_TO_RECORD_MATCH" });
-  }
-});
-
-// 🌟 GLOBAL LEADERBOARD
+// Ignored routes for now
 app.get("/api/leaderboard", async (req, res) => {
-  try {
-    const leaders = await User.find({})
-      .sort({ wins: -1 })
-      .limit(50)
-      .select("username avatar wins totalGames");
-    res.status(200).json(leaders);
-  } catch (err) {
-    res.status(500).json({ error: "FAILED_TO_FETCH_LEADERBOARD" });
-  }
+  res.json([]);
+});
+app.post("/api/fight", async (req, res) => {
+  res.json({ message: "FIGHT_INIT" });
 });
 
 const PORT = process.env.PORT || 5000;
