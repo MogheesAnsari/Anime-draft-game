@@ -256,28 +256,23 @@ app.post("/api/fight", async (req, res) => {
   res.json({ message: "FIGHT_INIT" });
 });
 // 🎯 UNIVERSAL IMAGE FETCHER (Jikan for Anime, Wikipedia for Sports)
+// 🎯 UNIVERSAL IMAGE FETCHER (Works for Anime & Sports via Wikipedia)
 const refreshSingleImage = async (charName, charId) => {
   try {
     setLoading(true);
+
+    // Wikipedia API Query: Searches for the name and gets a 500px thumbnail
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(charName)}&prop=pageimages&format=json&pithumbsize=500&origin=*`;
+
+    const res = await axios.get(wikiUrl);
+    const pages = res.data.query.pages;
+    const pageId = Object.keys(pages)[0];
+
     let newImg = null;
 
-    if (domain === "anime") {
-      // Fetch Anime from Jikan
-      const res = await axios.get(
-        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
-      );
-      newImg = res.data.data[0]?.images?.jpg?.image_url;
-    } else {
-      // Fetch Sports from Wikipedia
-      const res = await axios.get(
-        `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(charName)}&prop=pageimages&format=json&pithumbsize=500&origin=*`,
-      );
-      const pages = res.data.query.pages;
-      const pageId = Object.keys(pages)[0];
-
-      if (pageId !== "-1" && pages[pageId].thumbnail) {
-        newImg = pages[pageId].thumbnail.source;
-      }
+    if (pageId !== "-1" && pages[pageId].thumbnail) {
+      // Use the Wikipedia thumbnail directly
+      newImg = pages[pageId].thumbnail.source;
     }
 
     if (newImg) {
@@ -288,12 +283,11 @@ const refreshSingleImage = async (charName, charId) => {
       );
       alert(`🔥 Image found for ${charName}! Click SYNC OVERRIDE to save.`);
     } else {
-      alert(
-        `No image found automatically for ${charName}. Try pasting a manual URL.`,
-      );
+      alert(`No high-quality image found for "${charName}" on Wikipedia.`);
     }
   } catch (e) {
-    alert("API_FETCH_ERROR: Could not contact image server.");
+    console.error("WIKI_FETCH_ERROR:", e);
+    alert("IMAGE_SERVER_ERROR: Check your connection.");
   } finally {
     setLoading(false);
   }
