@@ -1,338 +1,239 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useDraftLogic } from "./hooks/useDraftLogic";
+import { calculateTeamScore, generateCpuTeam } from "./utils/draftUtils";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Shield,
-  Zap,
-  Target,
-  Brain,
-  Crown,
-  ChevronRight,
-  Flame,
-  Swords,
-} from "lucide-react";
-import axios from "axios";
+import { Gem, ShieldAlert, Flame } from "lucide-react";
 
-// 🔥 FIXED IMPORT: Using calculateEffectiveScore instead of calculateTeamScore
-import {
-  calculateEffectiveScore,
-  getUniverseSynergy,
-  generateCpuTeam,
-} from "./utils/draftUtils";
+import TacticalHUD from "./components/TacticalHUD";
+import CardDisplay from "./components/CardDisplay";
+import TeamDock from "./components/TeamDock";
+import RulesModal from "./components/RulesModal";
+import BattleArena from "../Battle/BattleArena";
 
-export default function DraftManager() {
-  const navigate = useNavigate();
+export default function DraftManager({ user }) {
   const { state } = useLocation();
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-  const mode = state?.mode || "pvp";
+  const navigate = useNavigate();
+  const mode = state?.mode || "Player vs CPU";
   const universe = state?.universe || "all";
-  const category = state?.category || "anime"; // For future Multiverse/Sports
+  const isRetry = state?.isRetry || false;
 
-  const [pool, setPool] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    playerTurn,
+    team,
+    currentCard,
+    skips,
+    dbLoading,
+    completedTeams,
+    pull,
+    handleSkip,
+    assign,
+    nextTurn,
+    characterPool,
+  } = useDraftLogic(universe, mode, isRetry);
 
-  // Team State
-  const [team, setTeam] = useState({
-    captain: null,
-    vice_cap: null,
-    speedster: null,
-    tank: null,
-    support: null,
-    raw_power: null,
-  });
+  const [loading, setLoading] = useState(false);
+  const [isFighting, setIsFighting] = useState(false);
+  const [battleData, setBattleData] = useState(null);
+  const [showRules, setShowRules] = useState(!isRetry);
 
-  const SLOTS = [
-    { id: "captain", label: "CAPTAIN", icon: <Crown size={16} /> },
-    { id: "vice_cap", label: "VICE CAPTAIN", icon: <Shield size={16} /> },
-    { id: "speedster", label: "SPEEDSTER", icon: <Zap size={16} /> },
-    { id: "tank", label: "TANK", icon: <Shield size={16} /> },
-    { id: "support", label: "STRATEGIST", icon: <Brain size={16} /> },
-    { id: "raw_power", label: "RAW POWER", icon: <Flame size={16} /> },
-  ];
+  // 🔥 ARTIFACT STATE & DYNAMIC INVENTORY
+  const [showArtifactPopup, setShowArtifactPopup] = useState(false);
+  const [selectedArtifact, setSelectedArtifact] = useState(null);
+  const [myInventory, setMyInventory] = useState([]);
 
-  const [currentSlotIndex, setCurrentSlotIndex] = useState(0);
-
-  // Fetch Characters based on Universe/Category
+  // Component load hote hi localStorage se player ki inventory check karega
   useEffect(() => {
-    const fetchChars = async () => {
-      try {
-        let url = `${API_URL}/api/characters?`;
-        if (universe !== "all") url += `universe=${universe}&`;
-        if (category) url += `category=${category}`;
-
-        const res = await axios.get(url);
-        setPool(res.data);
-      } catch (err) {
-        console.error("Failed to fetch pool:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchChars();
-  }, [universe, category, API_URL]);
-
-  // 🔥 NEW TEAM SCORE CALCULATOR (Fixes your error)
-  const currentTeamScore = useMemo(() => {
-    let total = 0;
-    Object.keys(team).forEach((slot) => {
-      if (team[slot]) {
-        total += calculateEffectiveScore(team[slot], slot);
-      }
-    });
-    return total;
-  }, [team]);
-
-  const activeSynergy = getUniverseSynergy(team);
-
-  const handleSelect = (char) => {
-    const slotId = SLOTS[currentSlotIndex].id;
-
-    // Prevent duplicate selection
-    const isAlreadyDrafted = Object.values(team).some((c) => c?.id === char.id);
-    if (isAlreadyDrafted) return alert("CHARACTER ALREADY IN SQUAD!");
-
-    setTeam((prev) => ({ ...prev, [slotId]: char }));
-
-    if (currentSlotIndex < SLOTS.length - 1) {
-      setCurrentSlotIndex((prev) => prev + 1);
+    const savedInventory = localStorage.getItem("animeDraft_inventory");
+    if (savedInventory) {
+      setMyInventory(JSON.parse(savedInventory));
     }
+    // Agar kuch nahi kharida hai, toh myInventory [] (khali) rahegi.
+  }, []);
+
+  // Elite Tech Theme Colors
+  const themeColors = {
+    1: { from: "from-orange-500", to: "to-red-600", name: "PLAYER_01" },
+    2: { from: "from-blue-500", to: "to-cyan-600", name: "PLAYER_02" },
+    3: { from: "from-green-500", to: "to-emerald-600", name: "PLAYER_03" },
+    4: { from: "from-purple-500", to: "to-pink-600", name: "PLAYER_04" },
   };
 
-  const handleUndo = (index) => {
-    if (index >= currentSlotIndex) return;
-    const slotId = SLOTS[index].id;
-    setTeam((prev) => ({ ...prev, [slotId]: null }));
-    setCurrentSlotIndex(index);
-  };
+  const currentTheme = themeColors[playerTurn] || themeColors[1];
+  const safeMode = String(mode).toLowerCase();
 
-  const isDraftComplete =
-    currentSlotIndex === SLOTS.length - 1 &&
-    team[SLOTS[currentSlotIndex].id] !== null;
+  let maxTurns = 1;
+  if (safeMode.includes("1v1v1v1") || safeMode.includes("royale")) maxTurns = 4;
+  else if (safeMode.includes("2v2") || safeMode.includes("team")) maxTurns = 4;
+  else if (safeMode.includes("pvp") || safeMode.includes("1v1")) maxTurns = 2;
 
-  const initiateBattle = () => {
-    if (!isDraftComplete) return;
+  const handleFight = async () => {
+    if (Object.keys(team).length < 6)
+      return alert("SQUAD INCOMPLETE! (6/6 REQUIRED)");
 
-    let finalTeams = [team];
+    setLoading(true);
+    let finalTeams = [];
 
-    if (mode === "cpu") {
-      // Generate CPU Team from the remaining pool
-      const remainingPool = pool.filter(
-        (c) => !Object.values(team).some((tc) => tc?.id === c.id),
-      );
-      const cpuTeam = generateCpuTeam(remainingPool);
-      finalTeams.push(cpuTeam);
+    if (safeMode.includes("cpu") || safeMode.includes("pve")) {
+      finalTeams = [{ ...team }, generateCpuTeam(characterPool)];
     } else {
-      // For PvP or other modes, you might redirect to a waiting room or pass multiple teams
-      // Assuming 1v1 Local for now, you can extend this to Draft Player 2
-      const remainingPool = pool.filter(
-        (c) => !Object.values(team).some((tc) => tc?.id === c.id),
-      );
-      const p2Team = generateCpuTeam(remainingPool); // Placeholder for P2
-      finalTeams.push(p2Team);
+      finalTeams = [...completedTeams, { ...team }];
     }
 
-    navigate("/arena", { state: { teams: finalTeams, mode, universe } });
+    if (finalTeams.length >= 2) {
+      const scores = finalTeams.map((t) => calculateTeamScore(t));
+      const newBattleData = {
+        teams: finalTeams,
+        result: { scores },
+        mode,
+        universe,
+      };
+
+      // 🔥 SMART LOGIC: Check Inventory before showing popup
+      if (myInventory.length > 0) {
+        // Agar inventory mein items hain, tabhi popup dikhao
+        setBattleData(newBattleData);
+        setShowArtifactPopup(true);
+      } else {
+        // Agar inventory khali hai, toh seedha battle shuru karo (without artifacts)
+        const emptyArtifacts = newBattleData.teams.map(() => null);
+        setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
+        setIsFighting(true);
+      }
+    } else {
+      alert("CRITICAL ERROR: SQUAD GENERATION FAILED");
+    }
+    setLoading(false);
   };
+
+  // 🔥 Jab player popup se item select karke aage badhe
+  const confirmAndEngage = () => {
+    // Player 1 (Aap) ko selected artifact milega, baakiyo ko null
+    const assignedArtifacts = battleData.teams.map((t, i) =>
+      i === 0 ? selectedArtifact : null,
+    );
+    setBattleData((prev) => ({ ...prev, artifacts: assignedArtifacts }));
+    setShowArtifactPopup(false);
+    setIsFighting(true);
+  };
+
+  if (dbLoading)
+    return (
+      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center text-[#ff8c32] font-black animate-pulse">
+        <div className="text-[10px] tracking-widest text-gray-500 mb-2">
+          ACCESSING_MAINFRAME
+        </div>
+        BOOTING KERNEL...
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col p-4 md:p-8 uppercase font-sans selection:bg-[#ff8c32] relative overflow-hidden">
-      {/* Background FX */}
-      <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-900/10 via-[#050505] to-[#050505]" />
+    <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase">
+      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
-      <div className="w-full max-w-[1600px] mx-auto relative z-10 flex flex-col h-full">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-600">
-              TACTICAL <span className="text-[#ff8c32]">DRAFT</span>
-            </h1>
-            <p className="text-[10px] text-gray-500 tracking-[0.3em] mt-1">
-              {universe.replace("_", " ")} OPERATION
-            </p>
-          </div>
+      {/* 🔥 ARTIFACT SELECTION POPUP (Sirf tab dikhega jab Inventory mein items honge) */}
+      <AnimatePresence>
+        {showArtifactPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-[6000] flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-[#0a0a0c] border-2 border-[#ff8c32]/50 rounded-[40px] p-8 max-w-4xl w-full text-center shadow-[0_0_50px_rgba(255,140,50,0.15)]"
+            >
+              <Gem
+                size={40}
+                className="mx-auto text-[#ff8c32] mb-4 animate-pulse"
+              />
+              <h2 className="text-3xl md:text-5xl font-black italic text-white mb-2">
+                EQUIP <span className="text-[#ff8c32]">ARTIFACT</span>
+              </h2>
+              <p className="text-gray-400 text-xs md:text-sm tracking-widest mb-8">
+                SELECT AN ITEM FROM YOUR INVENTORY TO BOOST YOUR SQUAD
+              </p>
 
-          <div className="flex items-center gap-6 bg-white/5 border border-white/10 px-6 py-3 rounded-2xl backdrop-blur-md">
-            <div className="text-center">
-              <div className="text-[8px] text-gray-500 tracking-widest mb-1">
-                SQUAD POWER
-              </div>
-              <div className="text-2xl font-black italic text-[#ff8c32]">
-                {currentTeamScore}
-              </div>
-            </div>
-            <div className="w-[1px] h-8 bg-white/10" />
-            <div className="text-center">
-              <div className="text-[8px] text-gray-500 tracking-widest mb-1">
-                SYNERGY
-              </div>
-              <div
-                className={`text-xs font-black ${activeSynergy ? "text-green-400" : "text-gray-600"}`}
-              >
-                {activeSynergy ? activeSynergy.toUpperCase() : "NONE"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* DRAFT SLOTS */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-          {SLOTS.map((slot, idx) => {
-            const isCurrent = idx === currentSlotIndex;
-            const isFilled = team[slot.id] !== null;
-            const char = team[slot.id];
-
-            return (
-              <div
-                key={slot.id}
-                onClick={() => isFilled && handleUndo(idx)}
-                className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                  isCurrent
-                    ? "border-[#ff8c32] bg-[#ff8c32]/10 shadow-[0_0_20px_rgba(255,140,50,0.2)] animate-pulse"
-                    : isFilled
-                      ? "border-white/20 bg-black/50 hover:border-red-500/50"
-                      : "border-white/5 bg-black/20 opacity-50"
-                } h-32 md:h-48`}
-              >
-                <div
-                  className={`absolute top-3 left-3 flex items-center gap-1 text-[8px] font-black tracking-widest ${isCurrent ? "text-[#ff8c32]" : "text-gray-500"}`}
-                >
-                  {slot.icon}{" "}
-                  <span className="hidden sm:inline">{slot.label}</span>
-                </div>
-
-                {isFilled ? (
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex flex-col items-center w-full h-full justify-end"
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {myInventory.map((item, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedArtifact(item)}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${selectedArtifact?.name === item.name ? "border-[#ff8c32] bg-[#ff8c32]/10 shadow-[0_0_20px_rgba(255,140,50,0.3)] scale-105" : "border-white/10 bg-black hover:border-white/30"}`}
                   >
-                    <img
-                      src={char.img}
-                      className="absolute inset-0 w-full h-full object-cover rounded-xl opacity-40 mix-blend-luminosity"
-                      alt=""
-                    />
-                    <img
-                      src={char.img}
-                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-full border-2 border-white/20 mb-2 z-10 shadow-lg"
-                      alt=""
-                    />
-                    <div className="text-[10px] md:text-xs font-black text-white z-10 text-center truncate w-full px-2">
-                      {char.name}
+                    <div className="text-lg md:text-xl font-black text-white">
+                      {item.name}
                     </div>
-                    <div className="text-[8px] text-[#ff8c32] font-black z-10 italic">
-                      {calculateEffectiveScore(char, slot.id)} PTS
+                    <div className="text-[10px] text-gray-400 leading-tight">
+                      {item.desc}
                     </div>
-                  </motion.div>
-                ) : (
-                  <div className="text-gray-600 font-black text-xs md:text-sm italic">
-                    EMPTY
                   </div>
-                )}
-
-                {isFilled && !isCurrent && (
-                  <div className="absolute inset-0 bg-red-600/20 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center z-20">
-                    <span className="text-xs font-black text-red-500 tracking-widest bg-black/80 px-3 py-1 rounded-full">
-                      UNDO
-                    </span>
-                  </div>
-                )}
+                ))}
               </div>
-            );
-          })}
-        </div>
 
-        {/* CHARACTER POOL */}
-        <div className="flex-1 bg-[#0a0a0c] border border-white/5 rounded-[32px] p-6 relative overflow-hidden flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-sm font-black text-gray-400 tracking-widest flex items-center gap-2">
-              <Target size={16} className="text-[#ff8c32]" /> AVAILABLE ROSTER
-            </h2>
-            {!isDraftComplete && (
-              <div className="text-[10px] text-[#ff8c32] font-black tracking-widest bg-[#ff8c32]/10 px-4 py-1.5 rounded-full border border-[#ff8c32]/20 animate-pulse">
-                SELECTING: {SLOTS[currentSlotIndex].label}
-              </div>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center text-[#ff8c32] font-black italic tracking-widest text-sm animate-pulse">
-              DECRYPTING DATABASE...
-            </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {pool.map((char) => {
-                  const isDrafted = Object.values(team).some(
-                    (c) => c?.id === char.id,
-                  );
-                  const effectiveScore = calculateEffectiveScore(
-                    char,
-                    SLOTS[currentSlotIndex]?.id,
-                  );
-
-                  return (
-                    <div
-                      key={char.id}
-                      onClick={() =>
-                        !isDrafted && !isDraftComplete && handleSelect(char)
-                      }
-                      className={`relative group bg-black border rounded-2xl overflow-hidden transition-all ${
-                        isDrafted
-                          ? "border-white/5 opacity-30 cursor-not-allowed grayscale"
-                          : "border-white/10 cursor-pointer hover:border-[#ff8c32] hover:scale-[1.02] shadow-lg"
-                      }`}
-                    >
-                      <div className="aspect-square w-full relative">
-                        <img
-                          src={char.img}
-                          className="w-full h-full object-cover"
-                          alt={char.name}
-                          onError={(e) => (e.target.src = "/zoro.svg")}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                        {!isDrafted && (
-                          <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded border border-white/10 text-[8px] font-black text-[#ff8c32]">
-                            {effectiveScore} PTS
-                          </div>
-                        )}
-
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <div className="text-[8px] text-gray-400 font-black tracking-widest mb-0.5">
-                            {char.universe.toUpperCase()}
-                          </div>
-                          <div className="text-xs font-black text-white truncate w-full">
-                            {char.name}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* DEPLOY BUTTON */}
-          <AnimatePresence>
-            {isDraftComplete && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-12 pb-6 px-6 flex justify-center z-30"
-              >
+              <div className="flex flex-col md:flex-row gap-4 justify-center mt-4">
                 <button
-                  onClick={initiateBattle}
-                  className="bg-[#ff8c32] text-black px-12 py-4 rounded-2xl text-lg font-black italic hover:scale-105 active:scale-95 transition-transform flex items-center gap-3 shadow-[0_0_40px_rgba(255,140,50,0.4)]"
+                  onClick={() => setShowArtifactPopup(false)}
+                  className="px-8 py-4 border border-white/20 rounded-2xl text-white font-black hover:bg-white/5 transition-colors"
                 >
-                  <Swords size={24} /> ENGAGE BATTLE PROTOCOL
+                  CANCEL
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <button
+                  onClick={confirmAndEngage}
+                  disabled={!selectedArtifact}
+                  className={`px-10 py-4 rounded-2xl font-black italic transition-transform flex items-center justify-center gap-2 ${selectedArtifact ? "bg-[#ff8c32] text-black hover:scale-105 shadow-[0_0_20px_rgba(255,140,50,0.4)]" : "bg-gray-800 text-gray-500 cursor-not-allowed"}`}
+                >
+                  CONFIRM & BATTLE <Flame size={18} />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isFighting && battleData && (
+        <BattleArena
+          allTeams={battleData.teams}
+          artifacts={battleData.artifacts} // Pass correct artifacts (selected or null)
+          onComplete={(res) =>
+            navigate("/result", { state: { ...battleData, result: res } })
+          }
+        />
+      )}
+
+      {/* Glassmorphism background effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+      <TacticalHUD
+        playerTurn={playerTurn}
+        maxTurns={maxTurns}
+        skips={skips}
+        theme={currentTheme}
+        onAbort={() => navigate("/modes")}
+        onShowRules={() => setShowRules(true)}
+      />
+
+      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
+        <CardDisplay
+          currentCard={currentCard}
+          skips={skips}
+          onSkip={handleSkip}
+          onPull={pull}
+          universe={universe}
+        />
       </div>
+
+      <TeamDock
+        team={team}
+        onAssign={assign}
+        playerTurn={playerTurn}
+        maxTurns={maxTurns}
+        loading={loading}
+        theme={currentTheme}
+        onAction={playerTurn < maxTurns ? nextTurn : handleFight}
+      />
     </div>
   );
 }

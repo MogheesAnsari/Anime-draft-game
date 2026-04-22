@@ -1,4 +1,3 @@
-// 🔥 SYNERGY CHECK (Now supports Comics)
 export const getUniverseSynergy = (team) => {
   const chars = Object.values(team).filter(Boolean);
   if (chars.length < 6) return false;
@@ -9,88 +8,43 @@ export const getUniverseSynergy = (team) => {
     : false;
 };
 
-// 🌌 DOMAINS (Anime + Comics)
 export const DOMAINS = [
-  // Anime Domains
   {
     name: "VALLEY OF THE END",
     universe: "naruto",
-    category: "anime",
     buffText: "+15% CHAKRA BOOST",
   },
-  {
-    name: "MARINEFORD",
-    universe: "onepiece",
-    category: "anime",
-    buffText: "+15% HAKI RESONANCE",
-  },
-  {
-    name: "SOUL SOCIETY",
-    universe: "bleach",
-    category: "anime",
-    buffText: "+15% REIATSU SPIKE",
-  },
+  { name: "MARINEFORD", universe: "onepiece", buffText: "+15% HAKI RESONANCE" },
+  { name: "SOUL SOCIETY", universe: "bleach", buffText: "+15% REIATSU SPIKE" },
   {
     name: "SHIBUYA INCIDENT",
     universe: "jujutsu",
-    category: "anime",
     buffText: "+15% CURSED ENERGY",
   },
   {
     name: "TOURNAMENT OF POWER",
     universe: "dragonball",
-    category: "anime",
     buffText: "+15% GODLY KI",
   },
-  // Comic Domains (NEW)
   {
-    name: "GOTHAM CITY",
-    universe: "dc",
-    category: "comic",
-    buffText: "+15% TACTICAL ADVANTAGE",
+    name: "INFINITY CASTLE",
+    universe: "demon",
+    buffText: "+15% BREATHING MASTERY",
   },
   {
-    name: "METROPOLIS",
-    universe: "dc",
-    category: "comic",
-    buffText: "+15% HEROIC INSPIRATION",
+    name: "U.A. HIGH ARENA",
+    universe: "heroacademia",
+    buffText: "+15% QUIRK AWAKENING",
   },
-  {
-    name: "WAKANDA",
-    universe: "marvel",
-    category: "comic",
-    buffText: "+15% VIBRANIUM TECH BOOST",
-  },
-  {
-    name: "AVENGERS TOWER",
-    universe: "marvel",
-    category: "comic",
-    buffText: "+15% ASSEMBLE SYNERGY",
-  },
-  {
-    name: "X-MANSION",
-    universe: "marvel",
-    category: "comic",
-    buffText: "+15% MUTANT GENE BOOST",
-  },
-
+  { name: "DARK CONTINENT", universe: "hunter", buffText: "+15% NEN OVERFLOW" },
   {
     name: "FINAL DESTINATION",
     universe: "all",
-    category: "all",
     buffText: "PURE SKILL (NO BUFFS)",
   },
 ];
-
-export const getRandomDomain = (categoryFilter = null) => {
-  let pool = DOMAINS;
-  if (categoryFilter && categoryFilter !== "all") {
-    pool = DOMAINS.filter(
-      (d) => d.category === categoryFilter || d.category === "all",
-    );
-  }
-  return pool[Math.floor(Math.random() * pool.length)];
-};
+export const getRandomDomain = () =>
+  DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
 
 export const ARTIFACTS = [
   {
@@ -106,17 +60,41 @@ export const ARTIFACTS = [
     desc: "Absolute Strategy: +30% IQ boost",
   },
   {
-    name: "INFINITY GAUNTLET",
-    effect: "all",
-    boost: 1.4,
-    desc: "Reality Bending: +40% ALL STATS",
-  }, // Comic Artifact
+    name: "ZANPAKUTO",
+    effect: "atk",
+    boost: 1.2,
+    desc: "Soul Cutter: +20% Physical ATK",
+  },
   {
-    name: "BATARANG",
+    name: "STRAW HAT",
+    effect: "all",
+    boost: 1.1,
+    desc: "Captain's Will: +10% to ALL stats",
+  },
+  {
+    name: "NINJA SCROLL",
+    effect: "spd",
+    boost: 1.2,
+    desc: "Hidden Arts: +20% Speed increase",
+  },
+  {
+    name: "CURSED FINGER",
+    effect: "berserk",
+    boost: 1.25,
+    desc: "Cursed Might: +25% ATK (Risky)",
+  },
+  {
+    name: "HUNTER LICENSE",
     effect: "tactical",
     boost: 1.15,
-    desc: "Stealth Tech: +15% IQ & SPD",
-  }, // Comic Artifact
+    desc: "Pro Hunter: +15% IQ & SPD",
+  },
+  {
+    name: "AEGIS SHIELD",
+    effect: "tank",
+    boost: 1.3,
+    desc: "Absolute Defense: +30% DEF",
+  },
 ];
 export const getRandomArtifact = () =>
   ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
@@ -150,7 +128,7 @@ export const getRoleAction = (char, slot) => {
     };
   if (slot === "vice_cap" && rng < 0.2)
     return {
-      text: "POWER BURST",
+      text: "AURA BURST",
       boost: 1.15,
       color: "text-yellow-400 border-yellow-400",
     };
@@ -160,7 +138,6 @@ export const getRoleAction = (char, slot) => {
 export const getCharacterPassive = (char) => {
   if (!char) return null;
   const name = char.name?.toLowerCase() || "";
-  // Anime Passives
   if (name.includes("goku") || name.includes("vegeta"))
     return { name: "SAIYAN BLOOD", boost: 1.15 };
   if (
@@ -169,13 +146,7 @@ export const getCharacterPassive = (char) => {
     name.includes("sasuke")
   )
     return { name: "UCHIHA PRIDE", boost: 1.2 };
-  // Comic Passives
-  if (name.includes("superman") || name.includes("supergirl"))
-    return { name: "KRYPTONIAN", boost: 1.2 };
-  if (name.includes("batman") || name.includes("iron man"))
-    return { name: "BILLIONAIRE GENIUS", boost: 1.25 };
-  if (name.includes("hulk") || name.includes("wolverine"))
-    return { name: "REGENERATION", boost: 1.15 };
+  if (name.includes("gojo")) return { name: "LIMITLESS", boost: 1.25 };
   return null;
 };
 
@@ -201,7 +172,9 @@ export const calculateFinalBattleScore = (
   if (slot === "raw_power") multiplier = 1.4;
 
   let total = base * multiplier;
-  let breakdown = [{ label: "Base Stats", value: Math.round(total) }];
+  let breakdown = [
+    { label: "Base Stats (with Slot Bonus)", value: Math.round(total) },
+  ];
 
   const passive = getCharacterPassive(char);
   if (passive) {
@@ -211,6 +184,7 @@ export const calculateFinalBattleScore = (
       value: `x${passive.boost}`,
     });
   }
+
   if (artifact) {
     total *= artifact.boost;
     breakdown.push({
@@ -233,9 +207,10 @@ export const calculateFinalBattleScore = (
     total *= rngBoost;
     breakdown.push({ label: `RNG: ${rngText}`, value: `x${rngBoost}` });
   }
+
   if (isAwakened) {
     total *= 1.2;
-    breakdown.push({ label: `Ultimate Power`, value: `x1.2` });
+    breakdown.push({ label: `Awakened Power`, value: `x1.2` });
   }
 
   return {
@@ -261,47 +236,54 @@ export const calculateEffectiveScore = (char, slotId) => {
   return Math.round(base * multiplier);
 };
 
-// 🌟 DYNAMIC SKILLS (Adjusts based on Universe/Category)
+export const calculateTeamScore = (team) => {
+  return Object.keys(team).reduce(
+    (acc, slot) => acc + calculateEffectiveScore(team[slot], slot),
+    0,
+  );
+};
+
 export const getSlotSkill = (char, slot, synergy) => {
   if (!char) return "STRIKE";
   const prefix = synergy ? "AWAKENED " : "";
-  const uni = char.universe?.toLowerCase() || "";
-  const isComic = uni.includes("marvel") || uni.includes("dc");
-
   if (slot === "captain") {
-    if (isComic) return prefix + "LEADERSHIP AURA";
+    const uni = char.universe?.toLowerCase() || "";
     if (uni.includes("naruto")) return prefix + "WILL OF FIRE";
-    if (uni.includes("onepiece")) return prefix + "SUPREME CONQUEROR";
+    if (uni.includes("onepiece") || uni.includes("one piece"))
+      return prefix + "SUPREME CONQUEROR";
+    if (uni.includes("bleach")) return prefix + "SPIRITUAL PRESSURE";
+    if (uni.includes("jujutsu")) return prefix + "BLACK FLASH SYNC";
     return prefix + "COMMANDER'S WRATH";
   }
   if (slot === "raw_power") {
-    if (uni.includes("dc")) return prefix + "OMEGA LEVEL THREAT";
-    if (uni.includes("marvel")) return prefix + "COSMIC OVERLOAD";
+    const uni = char.universe?.toLowerCase() || "";
     if (uni.includes("naruto")) return prefix + "SECRET NINJUTSU";
+    if (uni.includes("onepiece") || uni.includes("one piece"))
+      return prefix + "FRUIT AWAKENING";
+    if (uni.includes("bleach")) return prefix + "BANKAI RELEASE";
+    if (uni.includes("jujutsu")) return prefix + "DOMAIN EXPANSION";
     return prefix + "CATASTROPHIC END";
   }
-
-  const slotSkills = isComic
-    ? {
-        vice_cap: "TACTICAL ASSIST",
-        speedster: "LIGHTSPEED DASH",
-        tank: "INVULNERABILITY",
-        support: "MASTER PLAN",
-      }
-    : {
-        vice_cap: "AURA BURST",
-        speedster: "FLASH STEP",
-        tank: "ABSOLUTE DEFENSE",
-        support: "STRATEGIC OVERLAY",
-      };
-
+  const slotSkills = {
+    vice_cap: "AURA BURST",
+    speedster: "FLASH STEP",
+    tank: "ABSOLUTE DEFENSE",
+    support: "STRATEGIC OVERLAY",
+  };
   return prefix + (slotSkills[slot] || "COMBAT STRIKE");
 };
 
 export const getRankTier = (wins) => ({
-  title: wins >= 50 ? "LEGEND" : "ROOKIE",
+  title: wins >= 50 ? "HOKAGE" : "GENIN",
   color: wins >= 50 ? "text-orange-500" : "text-gray-400",
 });
+
+export const getCombatTier = (totalScore) => {
+  if (totalScore >= 5000) return { tier: "S-CLASS", color: "text-red-500" };
+  if (totalScore >= 4000) return { tier: "A-CLASS", color: "text-[#ff8c32]" };
+  if (totalScore >= 3000) return { tier: "B-CLASS", color: "text-purple-500" };
+  return { tier: "C-CLASS", color: "text-blue-500" };
+};
 
 export const generateCpuTeam = (pool) => {
   const SLOTS = [
@@ -324,4 +306,53 @@ export const generateCpuTeam = (pool) => {
     cpuTeam[id] = shuffled[i];
   });
   return cpuTeam;
+};
+// 👹 PHASE 6: RAID BOSS DATA & MATH
+export const RAID_BOSSES = [
+  {
+    id: "boss_aizen",
+    name: "AIZEN (HOGYOKU)",
+    universe: "bleach",
+    img: "/boss_aizen.jpg", // Add a cool image in public folder
+    title: "THE TRANSCENDENT",
+    atk: 220,
+    def: 240,
+    spd: 210,
+    iq: 250, // Peak Intelligence
+    maxHp: 12000,
+    skill: "KYOKA SUIGETSU: COMPLETE HYPNOSIS",
+    passive: { name: "EVOLUTION", effect: "all", boost: 1.2 },
+  },
+  {
+    id: "boss_madara",
+    name: "MADARA (TEN-TAILS)",
+    universe: "naruto",
+    img: "/boss_madara.jpg", // Add image
+    title: "GHOST OF THE UCHIHA",
+    atk: 250,
+    def: 250,
+    spd: 220,
+    iq: 200,
+    maxHp: 15000, // Massive Tank
+    skill: "INFINITE TSUKUYOMI",
+    passive: { name: "SIX PATHS CHAKRA", effect: "atk", boost: 1.25 },
+  },
+  {
+    id: "boss_sukuna",
+    name: "SUKUNA (TRUE FORM)",
+    universe: "jujutsu kaisen",
+    img: "/boss_sukuna.jpg", // Add image
+    title: "KING OF CURSES",
+    atk: 280,
+    def: 180,
+    spd: 240,
+    iq: 180, // Pure Aggression
+    maxHp: 10000,
+    skill: "MALEVOLENT SHRINE",
+    passive: { name: "CURSED REGENERATION", effect: "def", boost: 1.15 },
+  },
+];
+
+export const getRandomRaidBoss = () => {
+  return RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
 };
