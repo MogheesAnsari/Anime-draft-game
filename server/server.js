@@ -231,6 +231,23 @@ app.post("/api/user/access", async (req, res) => {
   }
 });
 
+// 🔄 USER DATA SYNC ROUTE
+app.post("/api/user/sync", async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
+
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+    // In a real app, you would also verify the sessionId here for security
+    res.json(user);
+  } catch (err) {
+    console.error("🔥 SYNC_ERROR:", err.message);
+    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+  }
+});
+
 // Ignored routes for now
 app.get("/api/leaderboard", async (req, res) => {
   res.json([]);

@@ -316,7 +316,8 @@ export default function AdminPanel() {
               >
                 <div className="relative mb-6">
                   <img
-                    src={char.img}
+                    src={`https://images.weserv.nl/?url=${encodeURIComponent(char.img)}`}
+                    referrerPolicy="no-referrer"
                     className="w-20 h-20 rounded-full object-cover border-[3px] border-white/20 group-hover:scale-110 group-hover:border-[#ff8c32] transition-all duration-500 shadow-2xl"
                     alt={char.name}
                     onError={(e) => {
