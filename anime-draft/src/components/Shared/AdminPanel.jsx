@@ -325,15 +325,14 @@ export default function AdminPanel() {
                         e.target.src = "/zoro.svg";
                     }}
                   />
-                  {domain === "anime" && (
-                    <button
-                      onClick={() => refreshSingleImage(char.name, char.id)}
-                      className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
-                      title="Fetch from Jikan"
-                    >
-                      <RefreshCw size={14} />
-                    </button>
-                  )}
+
+                  <button
+                    onClick={() => refreshSingleImage(char.name, char.id)}
+                    className={`absolute -top-2 -right-2 p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
+                    title="Auto-Fetch Image"
+                  >
+                    <RefreshCw size={14} />
+                  </button>
                 </div>
 
                 <h3 className="text-[12px] font-black italic text-white mb-6 truncate w-full text-center tracking-wide">

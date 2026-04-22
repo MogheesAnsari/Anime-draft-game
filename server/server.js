@@ -255,6 +255,48 @@ app.get("/api/leaderboard", async (req, res) => {
 app.post("/api/fight", async (req, res) => {
   res.json({ message: "FIGHT_INIT" });
 });
+// 🎯 UNIVERSAL IMAGE FETCHER (Jikan for Anime, Wikipedia for Sports)
+const refreshSingleImage = async (charName, charId) => {
+  try {
+    setLoading(true);
+    let newImg = null;
 
+    if (domain === "anime") {
+      // Fetch Anime from Jikan
+      const res = await axios.get(
+        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
+      );
+      newImg = res.data.data[0]?.images?.jpg?.image_url;
+    } else {
+      // Fetch Sports from Wikipedia
+      const res = await axios.get(
+        `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(charName)}&prop=pageimages&format=json&pithumbsize=500&origin=*`,
+      );
+      const pages = res.data.query.pages;
+      const pageId = Object.keys(pages)[0];
+
+      if (pageId !== "-1" && pages[pageId].thumbnail) {
+        newImg = pages[pageId].thumbnail.source;
+      }
+    }
+
+    if (newImg) {
+      setCharacters((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(charId) ? { ...c, img: newImg } : c,
+        ),
+      );
+      alert(`🔥 Image found for ${charName}! Click SYNC OVERRIDE to save.`);
+    } else {
+      alert(
+        `No image found automatically for ${charName}. Try pasting a manual URL.`,
+      );
+    }
+  } catch (e) {
+    alert("API_FETCH_ERROR: Could not contact image server.");
+  } finally {
+    setLoading(false);
+  }
+};
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));
