@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-// ✅ FIXED: Added Trash2 to the imports here!
 import {
   Save,
   Database,
@@ -8,17 +7,38 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
+  Globe,
+  Trophy,
 } from "lucide-react";
 
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
-  const [universe, setUniverse] = useState("naruto");
+
+  // 🌍 MULTIVERSE STATE
+  const [domain, setDomain] = useState("anime"); // "anime" or "sports"
+  const [subSelection, setSubSelection] = useState("naruto"); // specific universe or sport
+
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
+
+  const animeUniverses = [
+    "naruto",
+    "one_piece",
+    "jjk",
+    "dragon_ball",
+    "mha",
+    "hxh",
+    "chainsaw_man",
+    "solo_leveling",
+    "demon_slayer",
+    "bleach",
+    "black_clover",
+  ];
+  const sportsList = ["football", "cricket"];
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -26,11 +46,22 @@ export default function AdminPanel() {
     else alert("UNAUTHORIZED_ACCESS_DENIED!");
   };
 
+  const handleDomainChange = (newDomain) => {
+    setDomain(newDomain);
+    setSubSelection(newDomain === "sports" ? "football" : "naruto");
+    setCharacters([]);
+  };
+
   const fetchChars = async () => {
     setLoading(true);
     try {
+      const endpoint =
+        domain === "sports"
+          ? `/api/players?sport=${subSelection}`
+          : `/api/characters?universe=${subSelection}`;
+
       const res = await axios.get(
-        `https://anime-draft-game-1.onrender.com/api/characters?universe=${universe}`,
+        `https://anime-draft-game-1.onrender.com${endpoint}`,
       );
 
       const uniqueIds = new Set();
@@ -50,82 +81,36 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (isLoggedIn) fetchChars();
-  }, [universe, isLoggedIn]);
+  }, [subSelection, domain, isLoggedIn]);
 
+  // 📝 DYNAMIC UPDATE HANDLER
   const handleUpdate = (id, field, val) => {
     setCharacters((prev) =>
       prev.map((c) => {
         if (String(c.id) === String(id)) {
-          let final = val;
-          if (field === "iq") final = Math.max(0, Math.min(250, Number(val)));
-          else if (["atk", "def", "spd"].includes(field))
-            final = Math.max(0, Math.min(100, Number(val)));
-          return { ...c, [field]: final };
+          if (domain === "sports") {
+            // Handle Sports Stats (Nested Map)
+            if (field === "img" || field === "tier")
+              return { ...c, [field]: val };
+            return {
+              ...c,
+              stats: { ...(c.stats || {}), [field]: Math.max(0, Number(val)) },
+            };
+          } else {
+            // Handle Anime Stats (Flat)
+            let final = val;
+            if (field === "iq") final = Math.max(0, Math.min(250, Number(val)));
+            else if (["atk", "def", "spd"].includes(field))
+              final = Math.max(0, Math.min(100, Number(val)));
+            return { ...c, [field]: final };
+          }
         }
         return c;
       }),
     );
   };
 
-  // 🎯 SINGLE REFRESH WEAPON: Fetches from Jikan (MyAnimeList) via Name
-  const refreshSingleImage = async (charName, charId) => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
-      );
-      const newImg = res.data.data[0]?.images?.jpg?.image_url;
-
-      if (newImg) {
-        setCharacters((prev) =>
-          prev.map((c) =>
-            String(c.id) === String(charId) ? { ...c, img: newImg } : c,
-          ),
-        );
-        alert(
-          `🔥 Jikan Image found for ${charName}! Click SYNC OVERRIDE to save to DB.`,
-        );
-      } else {
-        alert("No image found on Jikan for this specific name.");
-      }
-    } catch (e) {
-      alert("JIKAN_API_ERROR: Rate limit hit or network issue.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🚀 INDIVIDUAL SYNC/OVERRIDE
-  const syncIndividual = async (char) => {
-    try {
-      const res = await axios.put(
-        `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-        char,
-      );
-      if (res.status === 200) alert(`✅ ${char.name} SECURED IN KERNEL!`);
-    } catch (e) {
-      alert("❌ UPLOAD FAILED! Check Backend Logs.");
-    }
-  };
-
-  // 🗑️ INDIVIDUAL DELETE
-  const handleDelete = async (charId, charName) => {
-    if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
-      return;
-    setLoading(true);
-    try {
-      await axios.delete(
-        `https://anime-draft-game-1.onrender.com/api/admin/delete-character/${charId}`,
-      );
-      alert("🚀 REMOVED FROM KERNEL!");
-      fetchChars();
-    } catch (e) {
-      alert("❌ DELETE_FAILED!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 🚀 BULK SYNC
   const handleBulkSync = async () => {
     try {
       if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
@@ -137,8 +122,13 @@ export default function AdminPanel() {
         return;
 
       setLoading(true);
+      const endpoint =
+        domain === "sports"
+          ? "/api/admin/bulk-update-players"
+          : "/api/admin/bulk-update";
+
       const res = await axios.put(
-        "https://anime-draft-game-1.onrender.com/api/admin/bulk-update",
+        `https://anime-draft-game-1.onrender.com${endpoint}`,
         dataToSync,
       );
       alert(`🔥 SYNC COMPLETE: ${res.data.updated_count} Units Processed.`);
@@ -151,48 +141,77 @@ export default function AdminPanel() {
     }
   };
 
-  const handlePurge = async () => {
-    if (
-      !window.confirm(`⚠️ WARNING: DELETE ALL ${universe.toUpperCase()} DATA?`)
-    )
+  // 🚀 INDIVIDUAL SYNC
+  const syncIndividual = async (char) => {
+    try {
+      if (domain === "sports") {
+        // Use bulk update array for a single sports player since we didn't make a standalone sports update route
+        await axios.put(
+          "https://anime-draft-game-1.onrender.com/api/admin/bulk-update-players",
+          [char],
+        );
+      } else {
+        await axios.put(
+          `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
+          char,
+        );
+      }
+      alert(`✅ ${char.name} SECURED IN KERNEL!`);
+    } catch (e) {
+      alert("❌ UPLOAD FAILED! Check Backend Logs.");
+    }
+  };
+
+  // 🗑️ INDIVIDUAL DELETE
+  const handleDelete = async (charId, charName) => {
+    if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
       return;
     setLoading(true);
     try {
-      await axios.delete(
-        `https://anime-draft-game-1.onrender.com/api/admin/wipe-universe/${universe}`,
-      );
-      alert("🚀 UNIVERSE CLEANED! Ready for fresh sync.");
+      const endpoint =
+        domain === "sports"
+          ? `/api/admin/delete-player/${charId}`
+          : `/api/admin/delete-character/${charId}`;
+      await axios.delete(`https://anime-draft-game-1.onrender.com${endpoint}`);
+      alert("🚀 REMOVED FROM KERNEL!");
       fetchChars();
     } catch (e) {
-      alert("❌ PURGE FAILED!");
+      alert("❌ DELETE_FAILED! Ensure the backend delete route exists.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 💣 BULK REFRESH WEAPON: Fetches from Anilist for CURRENT UNIVERSE only
-  const handleAutoRefresh = async () => {
-    if (
-      !window.confirm(
-        `⚠️ INITIATE ANILIST IMAGE SYNC FOR [${universe.toUpperCase()}]?`,
-      )
-    )
-      return;
-    setLoading(true);
+  // 🎯 ANIME ONLY: Jikan Image Refresh
+  const refreshSingleImage = async (charName, charId) => {
+    if (domain !== "anime") return alert("Jikan API is for Anime only!");
     try {
-      const res = await axios.post(
-        "https://anime-draft-game-1.onrender.com/api/admin/auto-refresh-images",
-        { universe },
+      setLoading(true);
+      const res = await axios.get(
+        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
       );
-      alert(
-        `🔥 ${universe.toUpperCase()} SYNC COMPLETE!\n✅ Updated: ${res.data.updated}\n❌ Failed: ${res.data.failed}`,
-      );
-      fetchChars();
+      const newImg = res.data.data[0]?.images?.jpg?.image_url;
+      if (newImg) {
+        setCharacters((prev) =>
+          prev.map((c) =>
+            String(c.id) === String(charId) ? { ...c, img: newImg } : c,
+          ),
+        );
+        alert(`🔥 Image found for ${charName}! Click SYNC OVERRIDE to save.`);
+      } else alert("No image found on Jikan.");
     } catch (e) {
-      alert("❌ SYNC FAILED! Is the server live?");
+      alert("JIKAN_API_ERROR");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Determine which stats to show based on selection
+  const getStatLabels = () => {
+    if (domain === "anime") return ["atk", "def", "spd", "iq"];
+    if (subSelection === "football") return ["PAC", "SHO", "PAS", "DEF"];
+    if (subSelection === "cricket") return ["BAT", "BWL", "FLD", "STR"];
+    return [];
   };
 
   if (!isLoggedIn)
@@ -218,71 +237,65 @@ export default function AdminPanel() {
       </div>
     );
 
+  const statLabels = getStatLabels();
+
   return (
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(255,140,50,0.5)]">
-          <Database /> HYBRID_TUNER_v4.5
+          <Database /> HYBRID_TUNER_v5.0
         </h1>
 
+        {/* DOMAIN SWITCHER */}
+        <div className="flex gap-4 mb-8 bg-black/50 p-2 rounded-full border border-white/10">
+          <button
+            onClick={() => handleDomainChange("anime")}
+            className={`px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 transition-all ${domain === "anime" ? "bg-[#ff8c32] text-black shadow-[0_0_20px_rgba(255,140,50,0.4)]" : "text-gray-500 hover:text-white"}`}
+          >
+            <Globe size={16} /> ANIME REALM
+          </button>
+          <button
+            onClick={() => handleDomainChange("sports")}
+            className={`px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 transition-all ${domain === "sports" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "text-gray-500 hover:text-white"}`}
+          >
+            <Trophy size={16} /> SPORTS ARENA
+          </button>
+        </div>
+
+        {/* INJECTOR TERMINAL */}
         <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl p-8 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
-          <h2 className="text-sm font-black text-[#ff8c32] mb-4 flex items-center gap-2">
-            <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-sm font-black text-[#ff8c32] flex items-center gap-2">
+              <UploadCloud size={16} /> MULTIVERSE_DATA_INJECTOR
+            </h2>
+            <select
+              value={subSelection}
+              onChange={(e) => setSubSelection(e.target.value)}
+              className="bg-black/50 border border-[#ff8c32]/30 px-4 py-2 rounded-xl text-xs font-black outline-none text-white cursor-pointer"
+            >
+              {(domain === "anime" ? animeUniverses : sportsList).map((u) => (
+                <option key={u} value={u}>
+                  {u.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            placeholder="PASTE CLEAN JSON HERE..."
+            placeholder={`PASTE CLEAN JSON FOR ${subSelection.toUpperCase()} HERE...`}
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-gray-300 outline-none focus:border-[#ff8c32] mb-6"
           />
           <div className="flex flex-wrap gap-4">
             <button
               onClick={handleBulkSync}
-              className="px-8 py-3 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,140,50,0.3)]"
+              className="px-8 py-3 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
             >
               EXECUTE_BULK_SYNC
             </button>
-            <button
-              onClick={handlePurge}
-              className="px-8 py-3 bg-red-600/80 text-white font-black rounded-xl italic hover:bg-red-600 transition-all"
-            >
-              PURGE_DATABASE
-            </button>
-            <button
-              onClick={handleAutoRefresh}
-              disabled={loading}
-              className="px-8 py-3 bg-blue-600/80 text-white font-black rounded-xl italic hover:bg-blue-600 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {loading
-                ? "FETCHING..."
-                : `AUTO REFRESH: ${universe.toUpperCase()}`}
-            </button>
           </div>
         </div>
-
-        <select
-          value={universe}
-          onChange={(e) => setUniverse(e.target.value)}
-          className="bg-black/50 backdrop-blur-md border border-[#ff8c32]/30 p-4 rounded-2xl text-xs font-black outline-none text-white cursor-pointer"
-        >
-          {[
-            "naruto",
-            "one_piece",
-            "jjk",
-            "dragon_ball",
-            "mha",
-            "hxh",
-            "chainsaw_man",
-            "solo_leveling",
-            "demon_slayer",
-            "bleach",
-            "black_clover",
-          ].map((u) => (
-            <option key={u} value={u}>
-              {u.replace("_", " ")}
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -311,14 +324,15 @@ export default function AdminPanel() {
                         e.target.src = "/zoro.svg";
                     }}
                   />
-                  {/* 🚀 JIKAN REFRESH BUTTON */}
-                  <button
-                    onClick={() => refreshSingleImage(char.name, char.id)}
-                    className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
-                    title="Fetch from Jikan"
-                  >
-                    <RefreshCw size={14} />
-                  </button>
+                  {domain === "anime" && (
+                    <button
+                      onClick={() => refreshSingleImage(char.name, char.id)}
+                      className="absolute -top-2 -right-2 bg-[#ff8c32] p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl"
+                      title="Fetch from Jikan"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  )}
                 </div>
 
                 <h3 className="text-[12px] font-black italic text-white mb-6 truncate w-full text-center tracking-wide">
@@ -328,32 +342,39 @@ export default function AdminPanel() {
                 <input
                   type="text"
                   value={char.img || ""}
-                  onChange={(e) =>
-                    handleUpdate(char.id || char._id, "img", e.target.value)
-                  }
+                  onChange={(e) => handleUpdate(char.id, "img", e.target.value)}
                   placeholder="PASTE MANUAL URL..."
                   className="w-full bg-black/60 border border-white/10 p-2.5 rounded-xl text-[9px] text-gray-400 outline-none focus:border-[#ff8c32] mb-5 font-mono truncate"
                 />
 
+                {/* DYNAMIC STATS GRID */}
                 <div className="grid grid-cols-2 gap-4 w-full mb-6">
-                  {["atk", "def", "spd", "iq"].map((s) => (
-                    <div
-                      key={s}
-                      className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
-                    >
-                      <span className="text-[8px] font-black text-gray-500 mb-1 tracking-widest">
-                        {s.toUpperCase()}
-                      </span>
-                      <input
-                        type="number"
-                        value={char[s] || 0}
-                        onChange={(e) =>
-                          handleUpdate(char.id, s, e.target.value)
-                        }
-                        className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
-                      />
-                    </div>
-                  ))}
+                  {statLabels.map((s) => {
+                    // Determine value based on domain
+                    const val =
+                      domain === "sports" ? char.stats?.[s] || 0 : char[s] || 0;
+
+                    return (
+                      <div
+                        key={s}
+                        className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
+                      >
+                        <span
+                          className={`text-[8px] font-black mb-1 tracking-widest ${domain === "sports" ? "text-green-500" : "text-gray-500"}`}
+                        >
+                          {s.toUpperCase()}
+                        </span>
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) =>
+                            handleUpdate(char.id, s, e.target.value)
+                          }
+                          className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <select
@@ -371,15 +392,12 @@ export default function AdminPanel() {
                 </select>
 
                 <div className="flex gap-2 w-full mt-2">
-                  {/* 🚀 INDIVIDUAL SYNC OVERRIDE */}
                   <button
                     onClick={() => syncIndividual(char)}
-                    className="flex-1 bg-[#ff8c32] text-black font-black py-4 rounded-xl text-[10px] italic hover:scale-105 active:scale-95 transition-all"
+                    className={`flex-1 text-black font-black py-4 rounded-xl text-[10px] italic hover:scale-105 active:scale-95 transition-all ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
                   >
                     <Save size={14} className="inline mr-1" /> SYNC OVERRIDE
                   </button>
-
-                  {/* 🗑️ INDIVIDUAL DELETE BUTTON */}
                   <button
                     onClick={() => handleDelete(char.id, char.name)}
                     className="p-4 bg-red-600/20 border border-red-500/50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"

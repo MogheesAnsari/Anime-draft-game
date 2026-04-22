@@ -65,23 +65,60 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🚀 ELITE BULK UPDATE PROTOCOL
-app.put("/api/admin/bulk-update", async (req, res) => {
+// ==========================================
+// 🏆 SPORTS MULTIVERSE SCHEMAS & ROUTES
+// ==========================================
+
+const PlayerSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: String,
+  img: String,
+  sport: String, // 'football' or 'cricket'
+  league: String,
+  tier: { type: String, default: "B" },
+  // 💡 The Map type allows flexible keys like { PAC: 90, SHO: 85 } or { BAT: 95, BWL: 20 }
+  stats: { type: Map, of: Number, default: {} },
+});
+
+const Player = mongoose.model("Player", PlayerSchema);
+
+// 🚀 FETCH PLAYERS BY SPORT
+app.get("/api/players", async (req, res) => {
+  try {
+    const { sport } = req.query; // 'football' or 'cricket'
+    let dbQuery = {};
+
+    if (sport && sport !== "all") {
+      dbQuery.sport = sport;
+    }
+
+    const players = await Player.find(dbQuery).select(
+      "id name img sport league tier stats",
+    );
+    res.json(players);
+  } catch (err) {
+    res.status(500).json({ error: "PLAYER_DATABASE_FETCH_FAILED" });
+  }
+});
+
+// 🛠️ ADMIN ROUTE: BULK ADD/UPDATE SPORTS PLAYERS
+app.put("/api/admin/bulk-update-players", async (req, res) => {
   try {
     const updates = req.body;
     if (!Array.isArray(updates))
       return res.status(400).json({ error: "ARRAY_REQUIRED" });
+
     const results = [];
-    for (const char of updates) {
-      const updated = await Character.findOneAndUpdate(
-        { id: String(char.id) },
-        { $set: char },
+    for (const player of updates) {
+      const updated = await Player.findOneAndUpdate(
+        { id: String(player.id) },
+        { $set: player },
         { new: true, upsert: true },
       );
       if (updated) results.push(updated.name);
     }
     res.json({
-      message: "MULTIVERSE_SYNC_COMPLETE",
+      message: "SPORTS_ROSTER_SYNC_COMPLETE",
       updated_count: results.length,
     });
   } catch (err) {

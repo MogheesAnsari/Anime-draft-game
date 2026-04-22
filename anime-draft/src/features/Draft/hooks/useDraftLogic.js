@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-export const useDraftLogic = (universe, mode, isRetry) => {
+export const useDraftLogic = (domain, universe, mode, isRetry) => {
   const [playerTurn, setPlayerTurn] = useState(1);
   const [completedTeams, setCompletedTeams] = useState([]);
   const [team, setTeam] = useState({});
@@ -10,17 +10,25 @@ export const useDraftLogic = (universe, mode, isRetry) => {
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
 
-  // 🛰️ Mission Data Fetching
+  // 🛰️ Dynamic Mission Data Fetching
   useEffect(() => {
     const fetchFromDB = async () => {
       setDbLoading(true);
       try {
-        const baseUrl =
-          "https://anime-draft-game-1.onrender.com/api/characters";
-        const allUniverses =
-          "naruto,one_piece,jjk,dragon_ball,mha,hxh,chainsaw_man,solo_leveling,demon_slayer,bleach,black_clover";
-        const universeQuery = universe === "all" ? allUniverses : universe;
-        const finalUrl = `${baseUrl}?universe=${universeQuery}&t=${Date.now()}`;
+        const isSports = domain === "sports";
+        const endpoint = isSports ? "players" : "characters";
+        const queryParam = isSports ? "sport" : "universe";
+
+        const baseUrl = `https://anime-draft-game-1.onrender.com/api/${endpoint}`;
+
+        let queryValue = universe;
+        // Keep your specific anime list intact if they choose "all" in Anime mode
+        if (!isSports && universe === "all") {
+          queryValue =
+            "naruto,one_piece,jjk,dragon_ball,mha,hxh,chainsaw_man,solo_leveling,demon_slayer,bleach,black_clover";
+        }
+
+        const finalUrl = `${baseUrl}?${queryParam}=${queryValue}&t=${Date.now()}`;
 
         const res = await axios.get(finalUrl);
         if (res.data?.length > 0) {
@@ -36,7 +44,7 @@ export const useDraftLogic = (universe, mode, isRetry) => {
       }
     };
     if (universe) fetchFromDB();
-  }, [universe, isRetry]);
+  }, [domain, universe, isRetry]); // Added domain to dependency array
 
   const pull = () => {
     if (Object.keys(team).length >= 6) return alert("SQUAD FULL!");
@@ -52,7 +60,6 @@ export const useDraftLogic = (universe, mode, isRetry) => {
     setCurrentCard(null);
   };
 
-  // ✅ FIXED: Functional update to prevent race conditions during multiplayer drafts
   const nextTurn = () => {
     setCompletedTeams((prev) => [...prev, { ...team }]);
     setTeam({});

@@ -1,15 +1,16 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Globe, Swords } from "lucide-react";
+import { Globe, Swords, Trophy } from "lucide-react";
 
 export default function UniverseSelection({ user }) {
   const navigate = useNavigate();
   const { state } = useLocation();
-  // Get the mode selected from the previous screen
-  const selectedMode = state?.mode || "Player vs CPU";
 
-  // 🌌 THE COMPLETE MULTIVERSE DATABASE
-  const universes = [
+  const selectedMode = state?.mode || "Player vs CPU";
+  const domain = state?.domain || "anime"; // Detect if we are in anime or sports
+
+  // 🌌 ANIME MULTIVERSE
+  const animeUniverses = [
     {
       id: "all",
       name: "ALL UNIVERSES",
@@ -84,47 +85,73 @@ export default function UniverseSelection({ user }) {
     },
   ];
 
+  // 🏆 SPORTS MULTIVERSE
+  const sportsLeagues = [
+    {
+      id: "all",
+      name: "ALL SPORTS",
+      desc: "Global Elite",
+      color: "from-green-500 to-emerald-700",
+    },
+    {
+      id: "football",
+      name: "FOOTBALL",
+      desc: "The Beautiful Game",
+      color: "from-blue-600 to-indigo-900",
+    },
+    {
+      id: "cricket",
+      name: "CRICKET",
+      desc: "Gentleman's Game",
+      color: "from-orange-500 to-red-600",
+    },
+  ];
+
+  const currentList = domain === "sports" ? sportsLeagues : animeUniverses;
+
   const handleSelect = (universeId) => {
-    // Navigate to Draft Manager with both Mode and Universe
     navigate("/draft", {
       state: {
         mode: selectedMode,
-        universe: universeId,
+        domain: domain, // We must pass the domain forward to the draft!
+        universe: universeId, // This is now either an anime name OR a sport name
       },
     });
   };
 
   return (
     <div className="min-h-[100dvh] bg-[#050505] text-white flex flex-col items-center py-10 px-4 uppercase font-sans overflow-y-auto custom-scrollbar">
-      {/* Header */}
       <div className="text-center mb-10 mt-10">
         <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter">
-          SELECT <span className="text-orange-500">UNIVERSE</span>
+          SELECT{" "}
+          <span className="text-orange-500">
+            {domain === "sports" ? "SPORT" : "UNIVERSE"}
+          </span>
         </h1>
         <p className="text-gray-500 font-black tracking-[0.4em] text-[10px] md:text-xs mt-2">
           CHOOSE YOUR BATTLEGROUND
         </p>
       </div>
 
-      {/* Grid Layout for 12 Options (11 Anime + 1 All) */}
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 pb-20">
-        {universes.map((u) => (
+        {currentList.map((u) => (
           <button
             key={u.id}
             onClick={() => handleSelect(u.id)}
             className="relative p-6 rounded-[32px] border border-white/5 bg-white/5 hover:bg-white/10 overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-95 text-left flex flex-col justify-end min-h-[140px] md:min-h-[160px]"
           >
-            {/* Hover Background Gradient */}
             <div
               className={`absolute inset-0 bg-gradient-to-br ${u.color} opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
             ></div>
-
-            {/* Icon */}
             <div className="absolute top-6 right-6 text-white/5 group-hover:text-white/20 transition-colors">
-              {u.id === "all" ? <Globe size={48} /> : <Swords size={48} />}
+              {domain === "sports" ? (
+                <Trophy size={48} />
+              ) : u.id === "all" ? (
+                <Globe size={48} />
+              ) : (
+                <Swords size={48} />
+              )}
             </div>
-
-            {/* Text Content */}
             <div className="relative z-10">
               <h2 className="text-xl md:text-2xl font-black italic tracking-tight">
                 {u.name}
@@ -137,7 +164,6 @@ export default function UniverseSelection({ user }) {
         ))}
       </div>
 
-      {/* Back Button */}
       <div className="fixed bottom-6 w-full flex justify-center pointer-events-none">
         <button
           onClick={() => navigate("/modes")}

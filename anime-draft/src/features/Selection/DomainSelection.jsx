@@ -14,13 +14,7 @@ const DomainSelection = () => {
       path: "/universe",
       color: "from-orange-500 to-red-600",
     },
-    {
-      id: "comics",
-      label: "COMIC MULTIVERSE",
-      icon: <Ghost size={32} />,
-      path: "/universe",
-      color: "from-blue-600 to-indigo-700",
-    },
+
     {
       id: "sports",
       label: "SPORTS ARENA",

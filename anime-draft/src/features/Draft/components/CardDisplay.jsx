@@ -1,43 +1,38 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
+import { getSportConfig } from "../utils/sportsConfig"; // 👈 Import the config
 
-/**
- * 🃏 CARD DISPLAY (The Hero)
- * Handles Card Visuals, S+ Animations, and Manual Reveal Logic.
- * 🛡️ FIX: Added absolute safety checks to prevent crashes with 0% UI change.
- */
 const CardDisplay = ({
   currentCard,
   universe,
+  domain, // 👈 Add domain as a prop
   skips,
   onSkip,
   onPull,
   isSPlus,
 }) => {
-  // Helper for Tier Styles (Original Logic from DraftManager)
   const getTierStyles = (tier) => {
+    /* Keep your existing tier styles exactly as they are */
     switch (tier) {
       case "S+":
         return {
           wrapper:
-            "border-yellow-400 animate-s-plus-entry animate-float-intense shadow-[0_0_80px_rgba(250,204,21,0.5)] z-50",
-          badge:
-            "bg-gradient-to-br from-yellow-300 to-yellow-600 text-black border-yellow-200 shadow-[0_0_30px_rgba(250,204,21,1)]",
+            "border-yellow-400 animate-s-plus-entry shadow-[0_0_80px_rgba(250,204,21,0.5)] z-50",
+          badge: "bg-gradient-to-br from-yellow-300 to-yellow-600 text-black",
           glow: "bg-gradient-to-t from-[#020202] via-[#020202]/40 to-yellow-500/30",
           hasShine: true,
         };
       case "S":
         return {
-          wrapper: "border-purple-500 animate-float-mild z-40",
-          badge:
-            "bg-gradient-to-br from-purple-400 to-purple-700 text-white border-purple-300",
+          wrapper: "border-purple-500 z-40",
+          badge: "bg-gradient-to-br from-purple-400 to-purple-700 text-white",
           glow: "bg-gradient-to-t from-[#020202] via-[#020202]/60 to-purple-500/10",
         };
       case "A":
         return {
           wrapper:
             "border-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.3)] z-30",
-          badge: "bg-blue-600 text-white border-blue-400",
+          badge: "bg-blue-600 text-white",
           glow: "bg-gradient-to-t from-[#020202] via-[#020202]/70 to-transparent",
         };
       default:
@@ -49,8 +44,6 @@ const CardDisplay = ({
     }
   };
 
-  // If no card is active, show the "INITIATE" button (Manual Reveal Rule)
-  // ✅ FIX: Strict check for null or undefined before reading properties
   if (!currentCard || typeof currentCard !== "object") {
     return (
       <button
@@ -66,12 +59,16 @@ const CardDisplay = ({
     );
   }
 
-  // ✅ FIX: Use optional chaining to ensure style doesn't crash
   const style = getTierStyles(currentCard?.tier);
+
+  // 🎯 DYNAMIC STAT RESOLUTION
+  const isSports = domain === "sports";
+  const statLabels = isSports
+    ? getSportConfig(universe).statLabels // e.g., ["PAC", "SHO", "PAS", "DEF"]
+    : ["atk", "def", "spd", "iq"]; // Default anime stats
 
   return (
     <div className="relative h-full flex items-center justify-center w-full">
-      {/* Impact Flash for S+ Tier */}
       {isSPlus && (
         <div className="absolute inset-0 w-full h-full animate-flash-impact pointer-events-none rounded-full blur-[100px] z-0"></div>
       )}
@@ -85,11 +82,9 @@ const CardDisplay = ({
           alt={currentCard?.name || "UNIT"}
           onError={(e) => {
             e.target.src = "/zoro.svg";
-          }} // Fallback check
+          }}
         />
         <div className={`absolute inset-0 ${style.glow}`}></div>
-
-        {/* Shine Animation Logic */}
         {style.hasShine && (
           <div className="absolute top-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/60 to-transparent -skew-x-[35deg] animate-card-shine pointer-events-none"></div>
         )}
@@ -97,7 +92,6 @@ const CardDisplay = ({
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black tracking-[0.2em] border border-white/10 text-gray-300 z-10 uppercase">
           {universe?.replace("_", " ") || "ALL"}
         </div>
-
         <div
           className={`absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-xl font-black italic text-2xl backdrop-blur-md border z-10 ${style.badge}`}
         >
@@ -112,24 +106,33 @@ const CardDisplay = ({
           </h2>
 
           <div className="flex gap-2">
-            {["atk", "def", "spd", "iq"].map((s) => (
-              <div
-                key={s}
-                className="flex-1 bg-black/60 backdrop-blur-md p-2 rounded-xl text-center border border-white/10"
-              >
+            {statLabels.map((s, index) => {
+              // Get value: Sports use currentCard.stats[s], Anime uses currentCard[s]
+              const statValue =
+                isSports && currentCard.stats
+                  ? currentCard.stats[s]
+                  : currentCard[s.toLowerCase()];
+              const colors = [
+                "text-red-400",
+                "text-blue-400",
+                "text-green-400",
+                "text-purple-400",
+              ];
+
+              return (
                 <div
-                  className={`text-[9px] font-black ${s === "atk" ? "text-red-400" : s === "def" ? "text-blue-400" : s === "spd" ? "text-green-400" : "text-purple-400"}`}
+                  key={s}
+                  className="flex-1 bg-black/60 backdrop-blur-md p-2 rounded-xl text-center border border-white/10"
                 >
-                  {s.toUpperCase()}
+                  <div className={`text-[9px] font-black ${colors[index]}`}>
+                    {s.toUpperCase()}
+                  </div>
+                  <div className="text-lg font-black">{statValue || 0}</div>
                 </div>
-                <div className="text-lg font-black">
-                  {currentCard ? currentCard[s] || 0 : 0}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Skip Action Rule: Reset on turn */}
           {skips > 0 && (
             <button
               onClick={onSkip}

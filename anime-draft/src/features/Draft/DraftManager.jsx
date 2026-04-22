@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDraftLogic } from "./hooks/useDraftLogic";
 import { calculateTeamScore, generateCpuTeam } from "./utils/draftUtils";
+import { getSportConfig } from "./utils/sportsConfig"; // 👈 Import config
 import { motion, AnimatePresence } from "framer-motion";
 import { Gem, ShieldAlert, Flame } from "lucide-react";
 
@@ -10,13 +11,18 @@ import CardDisplay from "./components/CardDisplay";
 import TeamDock from "./components/TeamDock";
 import RulesModal from "./components/RulesModal";
 import BattleArena from "../Battle/BattleArena";
+import SportsArena from "../Battle/SportsArena"; // 👈 Ensure you create this file next!
 
 export default function DraftManager({ user }) {
   const { state } = useLocation();
   const navigate = useNavigate();
+
   const mode = state?.mode || "Player vs CPU";
+  const domain = state?.domain || "anime"; // Grab the domain!
   const universe = state?.universe || "all";
   const isRetry = state?.isRetry || false;
+
+  const isSports = domain === "sports";
 
   const {
     playerTurn,
@@ -30,25 +36,23 @@ export default function DraftManager({ user }) {
     assign,
     nextTurn,
     characterPool,
-  } = useDraftLogic(universe, mode, isRetry);
+  } = useDraftLogic(domain, universe, mode, isRetry); // 👈 Pass domain to hook
 
   const [loading, setLoading] = useState(false);
   const [isFighting, setIsFighting] = useState(false);
   const [battleData, setBattleData] = useState(null);
   const [showRules, setShowRules] = useState(!isRetry);
 
-  // 🔥 ARTIFACT STATE & DYNAMIC INVENTORY
+  // 🎒 ARTIFACT STATE & DYNAMIC INVENTORY
   const [showArtifactPopup, setShowArtifactPopup] = useState(false);
   const [selectedArtifact, setSelectedArtifact] = useState(null);
   const [myInventory, setMyInventory] = useState([]);
 
-  // Component load hote hi localStorage se player ki inventory check karega
   useEffect(() => {
     const savedInventory = localStorage.getItem("animeDraft_inventory");
     if (savedInventory) {
       setMyInventory(JSON.parse(savedInventory));
     }
-    // Agar kuch nahi kharida hai, toh myInventory [] (khali) rahegi.
   }, []);
 
   // Elite Tech Theme Colors
@@ -67,20 +71,36 @@ export default function DraftManager({ user }) {
   else if (safeMode.includes("2v2") || safeMode.includes("team")) maxTurns = 4;
   else if (safeMode.includes("pvp") || safeMode.includes("1v1")) maxTurns = 2;
 
+  // 🎯 DETERMINE DYNAMIC SLOTS
+  const currentSlots = isSports
+    ? getSportConfig(universe).slots
+    : [
+        { id: "captain", label: "CAPTAIN" },
+        { id: "vice_cap", label: "VICE CAPTAIN" },
+        { id: "speedster", label: "SPEEDSTER" },
+        { id: "tank", label: "TANK" },
+        { id: "support", label: "SUPPORT" },
+        { id: "raw_power", label: "RAW POWER" },
+      ];
+
   const handleFight = async () => {
-    if (Object.keys(team).length < 6)
-      return alert("SQUAD INCOMPLETE! (6/6 REQUIRED)");
+    if (Object.keys(team).length < currentSlots.length)
+      return alert(
+        `SQUAD INCOMPLETE! (${Object.keys(team).length}/${currentSlots.length} REQUIRED)`,
+      );
 
     setLoading(true);
     let finalTeams = [];
 
     if (safeMode.includes("cpu") || safeMode.includes("pve")) {
+      // Note: generateCpuTeam will need an update later to handle sports slots!
       finalTeams = [{ ...team }, generateCpuTeam(characterPool)];
     } else {
       finalTeams = [...completedTeams, { ...team }];
     }
 
     if (finalTeams.length >= 2) {
+      // Note: calculateTeamScore will need an update later to handle sports math!
       const scores = finalTeams.map((t) => calculateTeamScore(t));
       const newBattleData = {
         teams: finalTeams,
@@ -89,13 +109,12 @@ export default function DraftManager({ user }) {
         universe,
       };
 
-      // 🔥 SMART LOGIC: Check Inventory before showing popup
-      if (myInventory.length > 0) {
-        // Agar inventory mein items hain, tabhi popup dikhao
+      // 🧠 SMART LOGIC: Check Inventory before showing popup
+      if (myInventory.length > 0 && !isSports) {
+        // Maybe restrict artifacts to Anime for now?
         setBattleData(newBattleData);
         setShowArtifactPopup(true);
       } else {
-        // Agar inventory khali hai, toh seedha battle shuru karo (without artifacts)
         const emptyArtifacts = newBattleData.teams.map(() => null);
         setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
         setIsFighting(true);
@@ -106,9 +125,7 @@ export default function DraftManager({ user }) {
     setLoading(false);
   };
 
-  // 🔥 Jab player popup se item select karke aage badhe
   const confirmAndEngage = () => {
-    // Player 1 (Aap) ko selected artifact milega, baakiyo ko null
     const assignedArtifacts = battleData.teams.map((t, i) =>
       i === 0 ? selectedArtifact : null,
     );
@@ -129,9 +146,13 @@ export default function DraftManager({ user }) {
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase">
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      {/* 📜 RULES MODAL */}
+      {showRules && (
+        // You might want to pass 'isSports' down here later to show different rules
+        <RulesModal onClose={() => setShowRules(false)} />
+      )}
 
-      {/* 🔥 ARTIFACT SELECTION POPUP (Sirf tab dikhega jab Inventory mein items honge) */}
+      {/* 🎒 ARTIFACT SELECTION POPUP */}
       <AnimatePresence>
         {showArtifactPopup && (
           <motion.div
@@ -193,15 +214,26 @@ export default function DraftManager({ user }) {
         )}
       </AnimatePresence>
 
-      {isFighting && battleData && (
-        <BattleArena
-          allTeams={battleData.teams}
-          artifacts={battleData.artifacts} // Pass correct artifacts (selected or null)
-          onComplete={(res) =>
-            navigate("/result", { state: { ...battleData, result: res } })
-          }
-        />
-      )}
+      {/* ⚔️ ARENA SWITCHER */}
+      {isFighting &&
+        battleData &&
+        (isSports ? (
+          <SportsArena
+            allTeams={battleData.teams}
+            universe={universe} // 👈 Make sure this is passed!
+            onComplete={(res) =>
+              navigate("/result", { state: { ...battleData, result: res } })
+            }
+          />
+        ) : (
+          <BattleArena
+            allTeams={battleData.teams}
+            artifacts={battleData.artifacts}
+            onComplete={(res) =>
+              navigate("/result", { state: { ...battleData, result: res } })
+            }
+          />
+        ))}
 
       {/* Glassmorphism background effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
@@ -222,11 +254,13 @@ export default function DraftManager({ user }) {
           onSkip={handleSkip}
           onPull={pull}
           universe={universe}
+          domain={domain} // 👈 NEW: Pass domain to CardDisplay
         />
       </div>
 
       <TeamDock
         team={team}
+        slots={currentSlots} // 👈 NEW: Pass dynamic slots down to TeamDock
         onAssign={assign}
         playerTurn={playerTurn}
         maxTurns={maxTurns}

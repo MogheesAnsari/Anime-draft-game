@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -6,96 +6,84 @@ import {
   Navigate,
 } from "react-router-dom";
 
-import Layout from "./components/Shared/Layout";
-import AdminPanel from "./components/Shared/AdminPanel";
-import Leaderboard from "./components/Shared/Leaderboard";
-import ProfileEntry from "./features/Auth/ProfileEntry";
-import Dashboard from "./features/Auth/Dashboard";
+// 🌍 SELECTION SCREENS
 import ModeSelection from "./features/Selection/ModeSelection";
 import DomainSelection from "./features/Selection/DomainSelection";
 import UniverseSelection from "./features/Selection/UniverseSelection";
+
+// ⚔️ DRAFT & BATTLE SCREENS
 import DraftManager from "./features/Draft/DraftManager";
+// Note: We route to BattleResult; BattleResult acts as a traffic cop and returns SportsResult if needed.
 import BattleResult from "./features/Battle/BattleResult";
+
+// 🛒 SHOP & ECONOMY
 import Shop from "./features/Shop/Shop";
+
+// ⚙️ SHARED COMPONENTS & ADMIN
+import Layout from "./components/Shared/Layout";
+import AdminPanel from "./components/Shared/AdminPanel";
+import Leaderboard from "./components/Shared/Leaderboard";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
+  // 🎒 Initialize default economy and load user session
   useEffect(() => {
-    const stored = localStorage.getItem("commander");
-    if (stored) {
-      try {
-        // Safe string-to-object conversion
-        const userData = stored.startsWith("{")
-          ? JSON.parse(stored)
-          : { username: stored };
-        setUser(userData);
-      } catch (e) {
-        localStorage.removeItem("commander");
-      }
+    if (!localStorage.getItem("user_coins")) {
+      localStorage.setItem("user_coins", "500");
     }
-    setLoading(false);
-  }, []);
+    if (!localStorage.getItem("user_gems")) {
+      localStorage.setItem("user_gems", "5");
+    }
+    if (!localStorage.getItem("animeDraft_inventory")) {
+      localStorage.setItem("animeDraft_inventory", JSON.stringify([]));
+    }
 
-  if (loading)
-    return (
-      <div className="h-screen bg-black flex items-center justify-center font-black italic text-[#ff8c32] animate-pulse uppercase tracking-[0.5em]">
-        INITIALIZING MULTIVERSE...
-      </div>
-    );
+    // Restore user session if it exists
+    const savedCommander = localStorage.getItem("commander");
+    if (savedCommander) {
+      setUser(JSON.parse(savedCommander));
+    }
+  }, []);
 
   return (
     <Router>
       <Layout user={user} setUser={setUser}>
         <Routes>
-          <Route
-            path="/"
-            element={
-              !user ? (
-                <ProfileEntry setUser={setUser} />
-              ) : (
-                <Navigate to="/modes" />
-              )
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              user ? (
-                <Dashboard user={user} setUser={setUser} />
-              ) : (
-                <Navigate to="/" />
-              )
-            }
-          />
-          <Route
-            path="/modes"
-            element={user ? <ModeSelection user={user} /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/domain"
-            element={user ? <DomainSelection /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/universe"
-            element={user ? <UniverseSelection /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/draft"
-            element={user ? <DraftManager user={user} /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/result"
-            element={user ? <BattleResult /> : <Navigate to="/" />}
-          />
+          {/* Default Route */}
+          <Route path="/" element={<Navigate to="/modes" replace />} />
+
+          {/* 🚦 The Core Flow */}
+          <Route path="/modes" element={<ModeSelection user={user} />} />
+          <Route path="/domain" element={<DomainSelection />} />
+          <Route path="/universe" element={<UniverseSelection user={user} />} />
+
+          {/* ⚔️ The Engine */}
+          <Route path="/draft" element={<DraftManager user={user} />} />
+          <Route path="/result" element={<BattleResult />} />
+
+          {/* 💰 Economy */}
           <Route path="/shop" element={<Shop />} />
+
+          {/* ⚙️ System & Social */}
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+
+          {/* 404 Fallback */}
           <Route
-            path="/leaderboard"
-            element={<Leaderboard onBack={() => window.history.back()} />}
+            path="*"
+            element={
+              <div className="h-full flex flex-col items-center justify-center font-black italic text-4xl text-red-500 bg-[#050505]">
+                404 // REALM NOT FOUND
+                <button
+                  onClick={() => (window.location.href = "/modes")}
+                  className="mt-6 text-sm bg-white/10 px-6 py-3 rounded-full text-white hover:bg-white/20 transition-all border border-white/20"
+                >
+                  RETURN TO HQ
+                </button>
+              </div>
+            }
           />
-          <Route path="*" element={<Navigate to={user ? "/modes" : "/"} />} />
         </Routes>
       </Layout>
     </Router>

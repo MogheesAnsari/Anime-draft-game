@@ -1,12 +1,10 @@
 import React from "react";
-import { SLOTS } from "../../../engine";
 
-/**
- * 🏟️ TEAM DOCK
- * Mobile-optimized bottom grid for squad management.
- */
+// ❌ Remove: import { SLOTS } from "../../../engine";
+
 const TeamDock = ({
   team,
+  slots, // 👈 New Prop: Array of slots to render
   onAssign,
   playerTurn,
   maxTurns,
@@ -14,17 +12,14 @@ const TeamDock = ({
   loading,
   theme,
 }) => {
-  const isTeamFull = Object.keys(team).length === SLOTS.length;
+  const isTeamFull = Object.keys(team).length === slots.length;
 
   return (
     <div className="w-full h-[35vh] shrink-0 px-4 md:px-8 flex flex-col justify-end pb-6 md:pb-8 bg-gradient-to-t from-black via-black/80 to-transparent relative z-20">
       <div className="w-full max-w-7xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mt-auto">
-        {SLOTS.map((slot) => {
+        {slots.map((slot) => {
           const char = team[slot.id];
-          const displayLabel =
-            slot.id === "support"
-              ? "STRATEGIST"
-              : slot.label.split(" ")[1] || slot.label;
+          const displayLabel = slot.label; // Use the direct label from the config
 
           return (
             <div

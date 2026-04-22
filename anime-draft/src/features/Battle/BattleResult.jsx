@@ -13,11 +13,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/utils/draftUtils";
 
 export default function BattleResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const domain = state?.domain || "anime";
   const [showStats, setShowStats] = useState(false);
   const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
 
@@ -35,7 +37,9 @@ export default function BattleResult() {
     "support",
     "raw_power",
   ];
-
+  if (domain === "sports") {
+    return <SportsResult />;
+  }
   const { displayCards, headerText, winnerCard } = useMemo(() => {
     let players = teams.map((team, idx) => {
       let charList = [];
