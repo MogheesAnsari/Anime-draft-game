@@ -77,12 +77,12 @@ const CardDisplay = ({
         className={`relative w-full max-w-[240px] md:max-w-[280px] lg:max-w-[300px] aspect-[3/4] rounded-[32px] overflow-hidden border-[3px] transition-all duration-500 group ${style.wrapper}`}
       >
         <img
-          src={`https://images.weserv.nl/?url=${encodeURIComponent(char.img)}`}
+          src={`https://images.weserv.nl/?url=${encodeURIComponent(currentCard?.img)}`}
           referrerPolicy="no-referrer"
-          className="w-20 h-20 rounded-full object-cover border-[3px] border-white/20 group-hover:scale-110 group-hover:border-[#ff8c32] transition-all duration-500 shadow-2xl"
-          alt={char.name}
+          className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+          alt={currentCard?.name || "UNIT"}
           onError={(e) => {
-            if (!e.target.src.includes("zoro.svg")) e.target.src = "/zoro.svg";
+            e.target.src = "/zoro.svg";
           }}
         />
         <div className={`absolute inset-0 ${style.glow}`}></div>
