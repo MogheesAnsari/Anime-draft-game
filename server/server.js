@@ -1,7 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import axios from "axios";
 import "dotenv/config";
 
 const app = express();
@@ -23,7 +22,9 @@ mongoose
 
 app.get("/api/health", (req, res) => res.status(200).send("ACTIVE"));
 
-// 📝 SCHEMAS & MODELS
+// ==========================================
+// ⚔️ ANIME MULTIVERSE SCHEMAS & ROUTES
+// ==========================================
 const CharacterSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: String,
@@ -37,16 +38,6 @@ const CharacterSchema = new mongoose.Schema({
 });
 const Character = mongoose.model("Character", CharacterSchema);
 
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  avatar: { type: String, default: "" },
-  totalGames: { type: Number, default: 0 },
-  wins: { type: Number, default: 0 },
-  scoreHistory: { type: Array, default: [] },
-});
-const User = mongoose.model("User", UserSchema);
-
-// 🚀 HYBRID FETCH: Pure stats from DB
 app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
@@ -65,60 +56,23 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// ==========================================
-// 🏆 SPORTS MULTIVERSE SCHEMAS & ROUTES
-// ==========================================
-
-const PlayerSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  name: String,
-  img: String,
-  sport: String, // 'football' or 'cricket'
-  league: String,
-  tier: { type: String, default: "B" },
-  // 💡 The Map type allows flexible keys like { PAC: 90, SHO: 85 } or { BAT: 95, BWL: 20 }
-  stats: { type: Map, of: Number, default: {} },
-});
-
-const Player = mongoose.model("Player", PlayerSchema);
-
-// 🚀 FETCH PLAYERS BY SPORT
-app.get("/api/players", async (req, res) => {
-  try {
-    const { sport } = req.query; // 'football' or 'cricket'
-    let dbQuery = {};
-
-    if (sport && sport !== "all") {
-      dbQuery.sport = sport;
-    }
-
-    const players = await Player.find(dbQuery).select(
-      "id name img sport league tier stats",
-    );
-    res.json(players);
-  } catch (err) {
-    res.status(500).json({ error: "PLAYER_DATABASE_FETCH_FAILED" });
-  }
-});
-
-// 🛠️ ADMIN ROUTE: BULK ADD/UPDATE SPORTS PLAYERS
-app.put("/api/admin/bulk-update-players", async (req, res) => {
+// 🛠️ ADMIN ROUTE: BULK ADD/UPDATE ANIME CHARACTERS
+app.put("/api/admin/bulk-update", async (req, res) => {
   try {
     const updates = req.body;
     if (!Array.isArray(updates))
       return res.status(400).json({ error: "ARRAY_REQUIRED" });
-
     const results = [];
-    for (const player of updates) {
-      const updated = await Player.findOneAndUpdate(
-        { id: String(player.id) },
-        { $set: player },
+    for (const char of updates) {
+      const updated = await Character.findOneAndUpdate(
+        { id: String(char.id) },
+        { $set: char },
         { new: true, upsert: true },
       );
       if (updated) results.push(updated.name);
     }
     res.json({
-      message: "SPORTS_ROSTER_SYNC_COMPLETE",
+      message: "ANIME_ROSTER_SYNC_COMPLETE",
       updated_count: results.length,
     });
   } catch (err) {
@@ -126,7 +80,6 @@ app.put("/api/admin/bulk-update-players", async (req, res) => {
   }
 });
 
-// ⚔️ STRICT OVERRIDE: Prevent Doubling Issue
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
     const charId = req.params.id;
@@ -160,7 +113,18 @@ app.put("/api/admin/update-character/:id", async (req, res) => {
   }
 });
 
-// 🧹 CLONE CLEANUP ROUTE
+app.delete("/api/admin/delete-character/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Character.deleteOne({ id: String(id) });
+    if (result.deletedCount === 0)
+      return res.status(404).json({ message: "Not found" });
+    res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
+  } catch (err) {
+    res.status(500).json({ error: "DELETE_FAILED" });
+  }
+});
+
 app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
   try {
     const duplicates = await Character.aggregate([
@@ -187,42 +151,99 @@ app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
   }
 });
 
-app.delete("/api/admin/delete-character/:id", async (req, res) => {
+// ==========================================
+// 🏆 SPORTS MULTIVERSE SCHEMAS & ROUTES
+// ==========================================
+const PlayerSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: String,
+  img: String,
+  sport: String,
+  league: String,
+  tier: { type: String, default: "B" },
+  stats: { type: Map, of: Number, default: {} },
+});
+const Player = mongoose.model("Player", PlayerSchema);
+
+app.get("/api/players", async (req, res) => {
+  try {
+    const { sport } = req.query;
+    let dbQuery = {};
+    if (sport && sport !== "all") dbQuery.sport = sport;
+    const players = await Player.find(dbQuery).select(
+      "id name img sport league tier stats",
+    );
+    res.json(players);
+  } catch (err) {
+    res.status(500).json({ error: "PLAYER_DATABASE_FETCH_FAILED" });
+  }
+});
+
+app.put("/api/admin/bulk-update-players", async (req, res) => {
+  try {
+    const updates = req.body;
+    if (!Array.isArray(updates))
+      return res.status(400).json({ error: "ARRAY_REQUIRED" });
+    const results = [];
+    for (const player of updates) {
+      const updated = await Player.findOneAndUpdate(
+        { id: String(player.id) },
+        { $set: player },
+        { new: true, upsert: true },
+      );
+      if (updated) results.push(updated.name);
+    }
+    res.json({
+      message: "SPORTS_ROSTER_SYNC_COMPLETE",
+      updated_count: results.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "BULK_SYNC_FAILED", details: err.message });
+  }
+});
+
+app.delete("/api/admin/delete-player/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await Character.deleteOne({ id: String(id) });
+    const result = await Player.deleteOne({ id: String(id) });
     if (result.deletedCount === 0)
       return res.status(404).json({ message: "Not found" });
-    res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
+    res.json({ message: "PLAYER_DELETED_SUCCESSFULLY" });
   } catch (err) {
     res.status(500).json({ error: "DELETE_FAILED" });
   }
 });
 
-// ✅ THE MISSING PIECE: User Access/Creation (Fixes the Pending Issue)
+// ==========================================
+// 👤 USER MANAGEMENT & ECONOMY
+// ==========================================
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  avatar: { type: String, default: "" },
+  totalGames: { type: Number, default: 0 },
+  wins: { type: Number, default: 0 },
+  scoreHistory: { type: Array, default: [] },
+});
+const User = mongoose.model("User", UserSchema);
+
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
 
-    // Find if user exists
     let user = await User.findOne({ username });
-
     if (user) {
-      // If user exists and avatar is new, update it
       if (avatar && user.avatar !== avatar) {
         user.avatar = avatar;
         await user.save();
       }
       console.log(`👤 COMMANDER_LOGIN: ${username}`);
     } else {
-      // If user does not exist, create new
       user = new User({ username, avatar, wins: 0, totalGames: 0 });
       await user.save();
       console.log(`👤 NEW_COMMANDER_REGISTERED: ${username}`);
     }
-
-    res.status(200).json(user); // Send response back to stop 'Pending'
+    res.status(200).json(user);
   } catch (err) {
     console.error("🔥 USER_ACCESS_ERROR:", err.message);
     res
@@ -231,7 +252,6 @@ app.post("/api/user/access", async (req, res) => {
   }
 });
 
-// 🔄 USER DATA SYNC ROUTE
 app.post("/api/user/sync", async (req, res) => {
   try {
     const { username } = req.body;
@@ -239,8 +259,6 @@ app.post("/api/user/sync", async (req, res) => {
 
     const user = await User.findOne({ username });
     if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
-
-    // In a real app, you would also verify the sessionId here for security
     res.json(user);
   } catch (err) {
     console.error("🔥 SYNC_ERROR:", err.message);
@@ -248,49 +266,13 @@ app.post("/api/user/sync", async (req, res) => {
   }
 });
 
-// Ignored routes for now
 app.get("/api/leaderboard", async (req, res) => {
   res.json([]);
 });
+
 app.post("/api/fight", async (req, res) => {
   res.json({ message: "FIGHT_INIT" });
 });
-// 🎯 UNIVERSAL IMAGE FETCHER (Jikan for Anime, Wikipedia for Sports)
-// 🎯 UNIVERSAL IMAGE FETCHER (Works for Anime & Sports via Wikipedia)
-const refreshSingleImage = async (charName, charId) => {
-  try {
-    setLoading(true);
 
-    // Wikipedia API Query: Searches for the name and gets a 500px thumbnail
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(charName)}&prop=pageimages&format=json&pithumbsize=500&origin=*`;
-
-    const res = await axios.get(wikiUrl);
-    const pages = res.data.query.pages;
-    const pageId = Object.keys(pages)[0];
-
-    let newImg = null;
-
-    if (pageId !== "-1" && pages[pageId].thumbnail) {
-      // Use the Wikipedia thumbnail directly
-      newImg = pages[pageId].thumbnail.source;
-    }
-
-    if (newImg) {
-      setCharacters((prev) =>
-        prev.map((c) =>
-          String(c.id) === String(charId) ? { ...c, img: newImg } : c,
-        ),
-      );
-      alert(`🔥 Image found for ${charName}! Click SYNC OVERRIDE to save.`);
-    } else {
-      alert(`No high-quality image found for "${charName}" on Wikipedia.`);
-    }
-  } catch (e) {
-    console.error("WIKI_FETCH_ERROR:", e);
-    alert("IMAGE_SERVER_ERROR: Check your connection.");
-  } finally {
-    setLoading(false);
-  }
-};
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));

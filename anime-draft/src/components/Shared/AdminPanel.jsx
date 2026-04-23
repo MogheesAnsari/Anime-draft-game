@@ -9,6 +9,7 @@ import {
   Trash2,
   Globe,
   Trophy,
+  Zap,
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -24,7 +25,6 @@ export default function AdminPanel() {
   const [jsonInput, setJsonInput] = useState("");
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
-
   const animeUniverses = [
     "naruto",
     "one_piece",
@@ -59,7 +59,6 @@ export default function AdminPanel() {
         domain === "sports"
           ? `/api/players?sport=${subSelection}`
           : `/api/characters?universe=${subSelection}`;
-
       const res = await axios.get(
         `https://anime-draft-game-1.onrender.com${endpoint}`,
       );
@@ -83,13 +82,85 @@ export default function AdminPanel() {
     if (isLoggedIn) fetchChars();
   }, [subSelection, domain, isLoggedIn]);
 
-  // 📝 DYNAMIC UPDATE HANDLER
+  // 🌐 WIKIPEDIA HELPER
+  const fetchWikiImage = async (name) => {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=500&origin=*`;
+      const res = await axios.get(wikiUrl);
+      const pages = res.data.query.pages;
+      const pageId = Object.keys(pages)[0];
+      return pageId !== "-1" && pages[pageId].thumbnail
+        ? pages[pageId].thumbnail.source
+        : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // ⚡ BULK AUTO REFRESH & SYNC
+  const handleBulkAutoRefresh = async () => {
+    if (
+      !window.confirm(
+        `⚠️ INITIATE MASS REFRESH FOR ${characters.length} UNITS? THIS WILL FETCH IMAGES FROM WIKIPEDIA AND SYNC TO YOUR DATABASE.`,
+      )
+    )
+      return;
+
+    setLoading(true);
+    const updatedRoster = [];
+
+    // Loop through everyone and fetch
+    for (let char of characters) {
+      const newImg = await fetchWikiImage(char.name);
+      updatedRoster.push(newImg ? { ...char, img: newImg } : char);
+    }
+
+    setCharacters(updatedRoster);
+
+    // 🚀 AUTO-SYNC TO DATABASE
+    try {
+      const endpoint =
+        domain === "sports"
+          ? "/api/admin/bulk-update-players"
+          : "/api/admin/bulk-update";
+      const res = await axios.put(
+        `https://anime-draft-game-1.onrender.com${endpoint}`,
+        updatedRoster,
+      );
+      alert(
+        `🔥 MASS SYNC COMPLETE: ${res.data.updated_count} UNITS REFRESHED & SAVED.`,
+      );
+    } catch (e) {
+      alert(
+        "MASS REFRESH FETCHED IMAGES, BUT AUTO-SYNC FAILED. CHECK SERVER LOGS.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔄 SINGLE IMAGE REFRESH
+  const refreshSingleImage = async (charName, charId) => {
+    setLoading(true);
+    const newImg = await fetchWikiImage(charName);
+    if (newImg) {
+      setCharacters((prev) =>
+        prev.map((c) =>
+          String(c.id) === String(charId) ? { ...c, img: newImg } : c,
+        ),
+      );
+      alert(
+        `🔥 IMAGE FOUND FOR ${charName.toUpperCase()}! CLICK SYNC TO SAVE.`,
+      );
+    } else alert(`NO WIKIPEDIA IMAGE FOUND FOR "${charName}".`);
+    setLoading(false);
+  };
+
   const handleUpdate = (id, field, val) => {
     setCharacters((prev) =>
       prev.map((c) => {
         if (String(c.id) === String(id)) {
           if (domain === "sports") {
-            // Handle Sports Stats (Nested Map)
             if (field === "img" || field === "tier")
               return { ...c, [field]: val };
             return {
@@ -97,7 +168,6 @@ export default function AdminPanel() {
               stats: { ...(c.stats || {}), [field]: Math.max(0, Number(val)) },
             };
           } else {
-            // Handle Anime Stats (Flat)
             let final = val;
             if (field === "iq") final = Math.max(0, Math.min(250, Number(val)));
             else if (["atk", "def", "spd"].includes(field))
@@ -110,7 +180,43 @@ export default function AdminPanel() {
     );
   };
 
-  // 🚀 BULK SYNC
+  const syncIndividual = async (char) => {
+    try {
+      const endpoint =
+        domain === "sports"
+          ? "/api/admin/bulk-update-players"
+          : `/api/admin/update-character/${char.id}`;
+      const data = domain === "sports" ? [char] : char;
+      await axios.put(
+        `https://anime-draft-game-1.onrender.com${endpoint}`,
+        data,
+      );
+      alert(`✅ ${char.name} SECURED IN KERNEL!`);
+    } catch (e) {
+      alert("❌ SYNC FAILED!");
+    }
+  };
+
+  const handleDelete = async (charId, charName) => {
+    if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
+      return;
+    setLoading(true);
+    try {
+      const endpoint =
+        domain === "sports"
+          ? `/api/admin/delete-player/${charId}`
+          : `/api/admin/delete-character/${charId}`;
+      await axios.delete(`https://anime-draft-game-1.onrender.com${endpoint}`);
+      alert("🚀 REMOVED FROM KERNEL!");
+      fetchChars();
+    } catch (e) {
+      alert("❌ DELETE_FAILED!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 📝 MANUAL JSON BULK SYNC
   const handleBulkSync = async () => {
     try {
       if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
@@ -141,83 +247,17 @@ export default function AdminPanel() {
     }
   };
 
-  // 🚀 INDIVIDUAL SYNC
-  const syncIndividual = async (char) => {
-    try {
-      if (domain === "sports") {
-        // Use bulk update array for a single sports player since we didn't make a standalone sports update route
-        await axios.put(
-          "https://anime-draft-game-1.onrender.com/api/admin/bulk-update-players",
-          [char],
-        );
-      } else {
-        await axios.put(
-          `https://anime-draft-game-1.onrender.com/api/admin/update-character/${char.id}`,
-          char,
-        );
-      }
-      alert(`✅ ${char.name} SECURED IN KERNEL!`);
-    } catch (e) {
-      alert("❌ UPLOAD FAILED! Check Backend Logs.");
-    }
-  };
-
-  // 🗑️ INDIVIDUAL DELETE
-  const handleDelete = async (charId, charName) => {
-    if (!window.confirm(`⚠️ DELETE ${charName.toUpperCase()} PERMANENTLY?`))
-      return;
-    setLoading(true);
-    try {
-      const endpoint =
-        domain === "sports"
-          ? `/api/admin/delete-player/${charId}`
-          : `/api/admin/delete-character/${charId}`;
-      await axios.delete(`https://anime-draft-game-1.onrender.com${endpoint}`);
-      alert("🚀 REMOVED FROM KERNEL!");
-      fetchChars();
-    } catch (e) {
-      alert("❌ DELETE_FAILED! Ensure the backend delete route exists.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 🎯 ANIME ONLY: Jikan Image Refresh
-  const refreshSingleImage = async (charName, charId) => {
-    if (domain !== "anime") return alert("Jikan API is for Anime only!");
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(charName)}&limit=1`,
-      );
-      const newImg = res.data.data[0]?.images?.jpg?.image_url;
-      if (newImg) {
-        setCharacters((prev) =>
-          prev.map((c) =>
-            String(c.id) === String(charId) ? { ...c, img: newImg } : c,
-          ),
-        );
-        alert(`🔥 Image found for ${charName}! Click SYNC OVERRIDE to save.`);
-      } else alert("No image found on Jikan.");
-    } catch (e) {
-      alert("JIKAN_API_ERROR");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Determine which stats to show based on selection
   const getStatLabels = () => {
     if (domain === "anime") return ["atk", "def", "spd", "iq"];
-    if (subSelection === "football") return ["PAC", "SHO", "PAS", "DEF"];
-    if (subSelection === "cricket") return ["BAT", "BWL", "FLD", "STR"];
-    return [];
+    return subSelection === "football"
+      ? ["PAC", "SHO", "PAS", "DEF"]
+      : ["BAT", "BWL", "FLD", "STR"];
   };
 
   if (!isLoggedIn)
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-black/50 backdrop-blur-xl p-8 rounded-[40px] border border-[#ff8c32]/30 shadow-2xl uppercase">
+      <div className="h-screen bg-[#050505] flex items-center justify-center p-4 uppercase">
+        <div className="w-full max-w-sm bg-black/50 backdrop-blur-xl p-8 rounded-[40px] border border-[#ff8c32]/30 shadow-2xl">
           <h2 className="text-2xl font-black italic text-[#ff8c32] text-center mb-8">
             RESTRICTED ACCESS
           </h2>
@@ -227,9 +267,9 @@ export default function AdminPanel() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="CLEARANCE_CODE"
-              className="w-full bg-black/80 border border-white/10 p-5 rounded-2xl text-center text-[#ff8c32] font-black outline-none focus:border-[#ff8c32]"
+              className="w-full bg-black/80 border border-white/10 p-5 rounded-2xl text-center text-[#ff8c32] font-black outline-none"
             />
-            <button className="w-full bg-[#ff8c32] text-black font-black py-5 rounded-2xl italic tracking-widest active:scale-95 transition-all">
+            <button className="w-full bg-[#ff8c32] text-black font-black py-5 rounded-2xl italic">
               INITIALIZE KERNEL
             </button>
           </form>
@@ -237,28 +277,26 @@ export default function AdminPanel() {
       </div>
     );
 
-  const statLabels = getStatLabels();
-
   return (
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
-      <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10">
+      <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10 text-center">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(255,140,50,0.5)]">
-          <Database /> HYBRID_TUNER_v5.0
+          <Database /> HYBRID_TUNER_v8.0
         </h1>
 
         {/* DOMAIN SWITCHER */}
         <div className="flex gap-4 mb-8 bg-black/50 p-2 rounded-full border border-white/10">
           <button
             onClick={() => handleDomainChange("anime")}
-            className={`px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 transition-all ${domain === "anime" ? "bg-[#ff8c32] text-black shadow-[0_0_20px_rgba(255,140,50,0.4)]" : "text-gray-500 hover:text-white"}`}
+            className={`px-8 py-3 rounded-full font-black text-xs transition-all ${domain === "anime" ? "bg-[#ff8c32] text-black shadow-[0_0_20px_rgba(255,140,50,0.4)]" : "text-gray-500 hover:text-white"}`}
           >
-            <Globe size={16} /> ANIME REALM
+            <Globe size={16} className="inline mr-2" /> ANIME REALM
           </button>
           <button
             onClick={() => handleDomainChange("sports")}
-            className={`px-8 py-3 rounded-full font-black text-xs flex items-center gap-2 transition-all ${domain === "sports" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "text-gray-500 hover:text-white"}`}
+            className={`px-8 py-3 rounded-full font-black text-xs transition-all ${domain === "sports" ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]" : "text-gray-500 hover:text-white"}`}
           >
-            <Trophy size={16} /> SPORTS ARENA
+            <Trophy size={16} className="inline mr-2" /> SPORTS ARENA
           </button>
         </div>
 
@@ -287,12 +325,21 @@ export default function AdminPanel() {
             placeholder={`PASTE CLEAN JSON FOR ${subSelection.toUpperCase()} HERE...`}
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-gray-300 outline-none focus:border-[#ff8c32] mb-6"
           />
+
+          {/* THE SIDE-BY-SIDE BUTTONS ARE HERE 👇 */}
           <div className="flex flex-wrap gap-4">
             <button
               onClick={handleBulkSync}
-              className="px-8 py-3 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
+              className="flex-1 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
             >
-              EXECUTE_BULK_SYNC
+              EXECUTE_JSON_SYNC
+            </button>
+            <button
+              onClick={handleBulkAutoRefresh}
+              disabled={loading}
+              className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-blue-500 text-blue-500 font-black rounded-xl italic flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Zap size={16} /> MASS_AUTO_REFRESH_&_SYNC
             </button>
           </div>
         </div>
@@ -325,7 +372,6 @@ export default function AdminPanel() {
                         e.target.src = "/zoro.svg";
                     }}
                   />
-
                   <button
                     onClick={() => refreshSingleImage(char.name, char.id)}
                     className={`absolute -top-2 -right-2 p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
@@ -347,34 +393,31 @@ export default function AdminPanel() {
                   className="w-full bg-black/60 border border-white/10 p-2.5 rounded-xl text-[9px] text-gray-400 outline-none focus:border-[#ff8c32] mb-5 font-mono truncate"
                 />
 
-                {/* DYNAMIC STATS GRID */}
                 <div className="grid grid-cols-2 gap-4 w-full mb-6">
-                  {statLabels.map((s) => {
-                    // Determine value based on domain
-                    const val =
-                      domain === "sports" ? char.stats?.[s] || 0 : char[s] || 0;
-
-                    return (
-                      <div
-                        key={s}
-                        className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
+                  {getStatLabels().map((s) => (
+                    <div
+                      key={s}
+                      className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
+                    >
+                      <span
+                        className={`text-[8px] font-black mb-1 tracking-widest ${domain === "sports" ? "text-green-500" : "text-gray-500"}`}
                       >
-                        <span
-                          className={`text-[8px] font-black mb-1 tracking-widest ${domain === "sports" ? "text-green-500" : "text-gray-500"}`}
-                        >
-                          {s.toUpperCase()}
-                        </span>
-                        <input
-                          type="number"
-                          value={val}
-                          onChange={(e) =>
-                            handleUpdate(char.id, s, e.target.value)
-                          }
-                          className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
-                        />
-                      </div>
-                    );
-                  })}
+                        {s.toUpperCase()}
+                      </span>
+                      <input
+                        type="number"
+                        value={
+                          domain === "sports"
+                            ? char.stats?.[s] || 0
+                            : char[s] || 0
+                        }
+                        onChange={(e) =>
+                          handleUpdate(char.id, s, e.target.value)
+                        }
+                        className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 <select
