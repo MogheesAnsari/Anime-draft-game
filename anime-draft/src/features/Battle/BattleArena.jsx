@@ -22,7 +22,7 @@ import {
   getRandomDomain,
   getUniverseSynergy,
   getSlotSkill,
-} from "../Draft/utils/draftUtils";
+} from "../Draft/Anime/utils/draftUtils";
 
 const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [phase, setPhase] = useState("INTRO");

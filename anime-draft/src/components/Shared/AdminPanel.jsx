@@ -10,9 +10,12 @@ import {
   Globe,
   Trophy,
   Zap,
+  Brain,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import { getRoleStats } from "../../features/Draft/utils/sportsConfig";
-
+// ✅ Corrected Path: Points to Sports instead of Anime
+import { getRoleStats } from "../../features/Draft/Sports/utils/sportsConfig";
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
@@ -21,6 +24,8 @@ export default function AdminPanel() {
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
+
+  const [hideZeros, setHideZeros] = useState(true);
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
   const animeUniverses = [
@@ -44,7 +49,6 @@ export default function AdminPanel() {
     return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
   };
 
-  // 🎯 FETCH ROLE OPTIONS
   const getRoles = (sport) => {
     if (sport === "football")
       return ["DEFAULT", "ATT", "MID", "DEF", "GK", "MGR", "SUB"];
@@ -112,7 +116,7 @@ export default function AdminPanel() {
   const handleBulkAutoRefresh = async () => {
     if (
       !window.confirm(
-        `⚠️ INITIATE MASS REFRESH FOR ${characters.length} UNITS? THIS WILL FETCH IMAGES FROM WIKIPEDIA AND SYNC TO YOUR DATABASE.`,
+        `⚠️ INITIATE MASS REFRESH FOR ${characters.length} UNITS?`,
       )
     )
       return;
@@ -137,9 +141,83 @@ export default function AdminPanel() {
         `🔥 MASS SYNC COMPLETE: ${res.data.updated_count} UNITS REFRESHED & SAVED.`,
       );
     } catch (e) {
-      alert(
-        "MASS REFRESH FETCHED IMAGES, BUT AUTO-SYNC FAILED. CHECK SERVER LOGS.",
+      alert("MASS REFRESH FETCHED IMAGES, BUT AUTO-SYNC FAILED.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🧠 SUPERCHARGED AI AUTO-ROLE ASSIGNMENT
+  const handleAutoAssignRoles = async () => {
+    if (
+      !window.confirm(
+        `🧠 INITIATE ADVANCED AI ROLE DETECT? This will scan and overwrite incorrect roles for all ${characters.length} players.`,
+      )
+    )
+      return;
+    setLoading(true);
+
+    const updatedRoster = characters.map((char) => {
+      let newRole = "DEFAULT";
+      const stats = char.stats || {};
+
+      if (subSelection === "football") {
+        const pac = Number(stats.PAC || 0);
+        const sho = Number(stats.SHO || 0);
+        const pas = Number(stats.PAS || 0);
+        const def = Number(stats.DEF || 0);
+        const div = Number(stats.DIV || 0);
+        const iq = Number(stats.IQ || 0);
+
+        // Advanced Football Detection Rules
+        if (div > 0 || (sho <= 35 && def >= 85 && pas < 80)) newRole = "GK";
+        else if (iq > 0 && sho === 0 && def === 0) newRole = "MGR";
+        else if (sho >= 85 && def <= 65)
+          newRole = "ATT"; // Pure attackers
+        else if (def >= 84 && sho <= 75)
+          newRole = "DEF"; // Pure defenders
+        else if (pas >= 85)
+          newRole = "MID"; // High passing heavily implies Midfielder
+        else if (sho > def + 10)
+          newRole = "ATT"; // Leans Attacker
+        else if (def > sho + 10)
+          newRole = "DEF"; // Leans Defender
+        else newRole = "MID"; // Balanced defaults to Mid
+      } else if (subSelection === "cricket") {
+        const bat = Number(stats.BAT || 0);
+        const bwl = Number(stats.BWL || 0);
+        const glv = Number(stats.GLV || 0);
+        const iq = Number(stats.IQ || 0);
+
+        // Advanced Cricket Detection Rules
+        if (glv > 0) newRole = "WK";
+        else if (iq > 0 && bat === 0 && bwl === 0) newRole = "MGR";
+        else if (bat >= 75 && bwl >= 75)
+          newRole = "ALL"; // Strong in both
+        else if (bwl >= 80 && bat < 75)
+          newRole = "BWL"; // Pure Bowler
+        else if (bat >= 80 && bwl < 75)
+          newRole = "BAT"; // Pure Batsman
+        else if (bat > bwl) newRole = "BAT";
+        else if (bwl > bat) newRole = "BWL";
+        else newRole = "BAT";
+      }
+
+      return { ...char, role: newRole };
+    });
+
+    setCharacters(updatedRoster);
+
+    try {
+      const res = await axios.put(
+        `https://anime-draft-game-1.onrender.com/api/admin/bulk-update-players`,
+        updatedRoster,
       );
+      alert(
+        `🔥 ROLES PERFECTLY CORRECTED: ${res.data.updated_count} UNITS UPDATED & SAVED.`,
+      );
+    } catch (e) {
+      alert("❌ AUTO-SYNC FAILED.");
     } finally {
       setLoading(false);
     }
@@ -157,7 +235,7 @@ export default function AdminPanel() {
       alert(
         `🔥 IMAGE FOUND FOR ${charName.toUpperCase()}! CLICK SYNC TO SAVE.`,
       );
-    } else alert(`NO WIKIPEDIA IMAGE FOUND FOR "${charName}".`);
+    } else alert(`NO WIKIPEDIA IMAGE FOUND.`);
     setLoading(false);
   };
 
@@ -189,16 +267,15 @@ export default function AdminPanel() {
     try {
       const endpoint =
         domain === "sports"
-          ? "/api/admin/bulk-update-players"
+          ? `/api/admin/update-player/${char.id}`
           : `/api/admin/update-character/${char.id}`;
-      const data = domain === "sports" ? [char] : char;
       await axios.put(
         `https://anime-draft-game-1.onrender.com${endpoint}`,
-        data,
+        char,
       );
       alert(`✅ ${char.name} SECURED IN KERNEL!`);
     } catch (e) {
-      alert("❌ SYNC FAILED!");
+      alert("❌ SYNC FAILED! " + e.message);
     }
   };
 
@@ -266,7 +343,7 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10 text-center">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(255,140,50,0.5)]">
-          <Database /> HYBRID_TUNER_v11.0
+          <Database /> HYBRID_TUNER_v14.0
         </h1>
 
         <div className="flex gap-4 mb-8 bg-black/50 p-2 rounded-full border border-white/10">
@@ -312,23 +389,46 @@ export default function AdminPanel() {
           <div className="flex flex-wrap gap-4">
             <button
               onClick={handleBulkSync}
-              className="flex-1 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 active:scale-95 transition-all"
+              className="flex-1 py-4 bg-[#ff8c32] text-black font-black rounded-xl italic hover:scale-105 transition-all"
             >
               EXECUTE_JSON_SYNC
             </button>
             <button
               onClick={handleBulkAutoRefresh}
               disabled={loading}
-              className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-blue-500 text-blue-500 font-black rounded-xl italic flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-blue-500 text-blue-500 font-black rounded-xl italic flex items-center justify-center gap-2 transition-all"
             >
-              <Zap size={16} /> MASS_AUTO_REFRESH_&_SYNC
+              <Zap size={16} /> MASS_AUTO_REFRESH
+            </button>
+            {domain === "sports" && (
+              <button
+                onClick={handleAutoAssignRoles}
+                disabled={loading}
+                className="flex-1 py-4 bg-purple-500/10 border border-purple-500/30 hover:border-purple-500 text-purple-400 font-black rounded-xl italic flex items-center justify-center gap-2 transition-all"
+              >
+                <Brain size={16} /> AUTO_DETECT_ROLES
+              </button>
+            )}
+            <button
+              onClick={() => setHideZeros(!hideZeros)}
+              className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-white text-gray-300 font-black rounded-xl italic flex items-center justify-center gap-2 transition-all"
+            >
+              {hideZeros ? (
+                <>
+                  <EyeOff size={16} /> SHOW 0 STATS
+                </>
+              ) : (
+                <>
+                  <Eye size={16} /> HIDING 0 STATS
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center h-64 text-[#ff8c32] gap-4">
+        <div className="flex justify-center h-64 text-[#ff8c32]">
           <Loader2 className="animate-spin" size={48} />
         </div>
       ) : (
@@ -336,10 +436,23 @@ export default function AdminPanel() {
           {characters
             .sort((a, b) => (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9))
             .map((char, index) => {
-              const currentStatLabels =
+              const roleStats =
                 domain === "sports"
                   ? getRoleStats(subSelection, char.role || "DEFAULT")
                   : ["atk", "def", "spd", "iq"];
+              let allStatKeys = new Set(roleStats);
+
+              if (domain === "sports" && char.stats) {
+                Object.keys(char.stats).forEach((k) => {
+                  if (Number(char.stats[k]) > 0) allStatKeys.add(k);
+                });
+              }
+
+              const visibleStats = Array.from(allStatKeys).filter((s) => {
+                const val =
+                  domain === "sports" ? char.stats?.[s] || 0 : char[s] || 0;
+                return !hideZeros || val > 0;
+              });
 
               return (
                 <div
@@ -381,7 +494,6 @@ export default function AdminPanel() {
                     className="w-full bg-black/60 border border-white/10 p-2.5 rounded-xl text-[9px] text-gray-400 outline-none focus:border-[#ff8c32] mb-3 font-mono truncate"
                   />
 
-                  {/* 🎯 ROLE DROP DOWN FOR SPORTS */}
                   {domain === "sports" && (
                     <select
                       value={char.role || "DEFAULT"}
@@ -399,7 +511,12 @@ export default function AdminPanel() {
                   )}
 
                   <div className="grid grid-cols-2 gap-4 w-full mb-6">
-                    {currentStatLabels.map((s) => (
+                    {visibleStats.length === 0 && hideZeros && (
+                      <div className="col-span-2 text-center text-[9px] text-gray-600 font-black tracking-widest py-4">
+                        ALL STATS ARE 0
+                      </div>
+                    )}
+                    {visibleStats.map((s) => (
                       <div
                         key={s}
                         className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"

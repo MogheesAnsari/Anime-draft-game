@@ -109,12 +109,15 @@ export default function UniverseSelection({ user }) {
 
   const currentList = domain === "sports" ? sportsLeagues : animeUniverses;
 
+  // 🎯 SMART ROUTING: Automatically directs the user to the correct separated Draft Engine
   const handleSelect = (universeId) => {
-    navigate("/draft", {
+    const targetRoute = domain === "sports" ? "/draft/sports" : "/draft/anime";
+
+    navigate(targetRoute, {
       state: {
         mode: selectedMode,
-        domain: domain, // We must pass the domain forward to the draft!
-        universe: universeId, // This is now either an anime name OR a sport name
+        domain: domain,
+        universe: universeId,
       },
     });
   };

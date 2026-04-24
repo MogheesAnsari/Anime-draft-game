@@ -55,14 +55,18 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
+// 🛡️ STRIPPED _id TO PREVENT MONGO CRASHES
 app.put("/api/admin/bulk-update", async (req, res) => {
   try {
     const updates = req.body;
     const results = [];
     for (const char of updates) {
+      const cData = { ...char };
+      delete cData._id;
+      delete cData.__v;
       const updated = await Character.findOneAndUpdate(
         { id: String(char.id) },
-        { $set: char },
+        { $set: cData },
         { new: true, upsert: true },
       );
       if (updated) results.push(updated.name);
@@ -134,14 +138,18 @@ app.get("/api/players", async (req, res) => {
   }
 });
 
+// 🛡️ STRIPPED _id TO PREVENT MONGO CRASHES
 app.put("/api/admin/bulk-update-players", async (req, res) => {
   try {
     const updates = req.body;
     const results = [];
     for (const player of updates) {
+      const pData = { ...player };
+      delete pData._id;
+      delete pData.__v;
       const updated = await Player.findOneAndUpdate(
         { id: String(player.id) },
-        { $set: player },
+        { $set: pData },
         { new: true, upsert: true },
       );
       if (updated) results.push(updated.name);
@@ -152,6 +160,27 @@ app.put("/api/admin/bulk-update-players", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "BULK_SYNC_FAILED", details: err.message });
+  }
+});
+
+// 🎯 NEW: INDIVIDUAL DEDICATED PLAYER SYNC ROUTE
+app.put("/api/admin/update-player/:id", async (req, res) => {
+  try {
+    const playerId = req.params.id;
+    const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.__v;
+
+    const updated = await Player.findOneAndUpdate(
+      { id: String(playerId) },
+      { $set: updateData },
+      { new: true },
+    );
+    res.json({ message: "SUCCESS", player: updated });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 

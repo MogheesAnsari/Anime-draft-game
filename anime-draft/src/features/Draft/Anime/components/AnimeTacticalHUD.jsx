@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Info } from "lucide-react";
 
-export default function TacticalHUD({
+export default function AnimeTacticalHUD({
   playerTurn,
   maxTurns,
   skips,
@@ -28,7 +28,7 @@ export default function TacticalHUD({
             <div
               className={`w-2 h-2 rounded-full bg-gradient-to-r ${safeTheme.from} ${safeTheme.to} animate-pulse`}
             ></div>
-            <p className="text-xl font-black italic italic">
+            <p className="text-xl font-black italic">
               PLAYER_{playerTurn}{" "}
               <span className="text-gray-600 text-xs">/ {maxTurns}</span>
             </p>

@@ -13,7 +13,7 @@ import {
   PackageSearch,
   TrendingUp,
 } from "lucide-react";
-import { ARTIFACTS } from "../Draft/utils/draftUtils";
+import { ARTIFACTS } from "../Draft/Anime/utils/draftUtils";
 
 export default function Shop() {
   const navigate = useNavigate();

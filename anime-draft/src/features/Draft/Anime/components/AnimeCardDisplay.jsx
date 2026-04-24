@@ -1,11 +1,9 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
-import { getRoleStats } from "../utils/sportsConfig";
 
-const CardDisplay = ({
+const AnimeCardDisplay = ({
   currentCard,
   universe,
-  domain,
   skips,
   onSkip,
   onPull,
@@ -43,6 +41,13 @@ const CardDisplay = ({
     }
   };
 
+  // 🛡️ SMART IMAGE RENDERER
+  const getValidImageUrl = (url) => {
+    if (!url) return "/zoro.svg";
+    if (url.startsWith("/")) return url;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+  };
+
   if (!currentCard || typeof currentCard !== "object") {
     return (
       <button
@@ -59,21 +64,13 @@ const CardDisplay = ({
   }
 
   const style = getTierStyles(currentCard?.tier);
-  const isSports = domain === "sports";
 
-  // 🎯 FETCH ROLE-BASED STATS (Defaults to basic stats if role isn't assigned in Admin Panel)
-  const role =
-    currentCard.role && currentCard.role !== "DEFAULT"
-      ? currentCard.role
-      : "DEFAULT";
-  const statLabels = isSports
-    ? getRoleStats(universe, role)
-    : ["atk", "def", "spd", "iq"];
+  // 🎯 ANIME STATS ONLY
+  const baseStatLabels = ["atk", "def", "spd", "iq"];
+  const visibleStats = baseStatLabels.filter((s) => Number(currentCard[s]) > 0);
 
-  // 🏷️ GENERATE DYNAMIC CARD BADGE
-  const cardBadge = isSports
-    ? `${universe} | ${role}`
-    : universe?.replace("_", " ") || "ALL";
+  const cardBadge =
+    universe?.replace("_", " ").toUpperCase() || "ALL UNIVERSES";
 
   return (
     <div className="relative h-full flex items-center justify-center w-full">
@@ -81,17 +78,19 @@ const CardDisplay = ({
         className={`relative w-full max-w-[240px] md:max-w-[280px] lg:max-w-[300px] aspect-[3/4] rounded-[32px] overflow-hidden border-[3px] transition-all duration-500 group ${style.wrapper}`}
       >
         <img
-          src={`https://images.weserv.nl/?url=${encodeURIComponent(currentCard?.img)}`}
+          src={getValidImageUrl(currentCard?.img)}
           referrerPolicy="no-referrer"
           className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
           alt={currentCard?.name}
           onError={(e) => {
-            if (!e.target.src.includes("zoro.svg")) e.target.src = "/zoro.svg";
+            if (e.target.src.includes("weserv.nl"))
+              e.target.src = currentCard.img;
+            else if (!e.target.src.includes("zoro.svg"))
+              e.target.src = "/zoro.svg";
           }}
         />
         <div className={`absolute inset-0 ${style.glow}`}></div>
 
-        {/* 🎯 SHOWS DOMAIN AND ROLE IN TOP LEFT */}
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black tracking-[0.2em] border border-white/10 text-gray-300 z-10 uppercase">
           {cardBadge}
         </div>
@@ -107,11 +106,8 @@ const CardDisplay = ({
           </h2>
 
           <div className="flex gap-2">
-            {statLabels.map((s, index) => {
-              const statValue =
-                isSports && currentCard.stats
-                  ? currentCard.stats[s]
-                  : currentCard[s.toLowerCase()];
+            {visibleStats.map((s, index) => {
+              const statValue = currentCard[s];
               const colors = [
                 "text-red-400",
                 "text-blue-400",
@@ -124,7 +120,9 @@ const CardDisplay = ({
                   key={s}
                   className="flex-1 bg-black/60 backdrop-blur-md p-2 rounded-xl text-center border border-white/10"
                 >
-                  <div className={`text-[9px] font-black ${colors[index]}`}>
+                  <div
+                    className={`text-[9px] font-black ${colors[index % colors.length]}`}
+                  >
                     {s.toUpperCase()}
                   </div>
                   <div className="text-lg font-black">{statValue || 0}</div>
@@ -147,4 +145,4 @@ const CardDisplay = ({
   );
 };
 
-export default CardDisplay;
+export default AnimeCardDisplay;

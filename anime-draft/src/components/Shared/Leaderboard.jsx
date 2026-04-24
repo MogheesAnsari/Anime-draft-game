@@ -3,7 +3,7 @@ import axios from "axios";
 import { ArrowLeft, Trophy, Crown, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 // ✅ Make sure this path points to your draftUtils correctly
-import { getRankTier } from "../../features/Draft/utils/draftUtils";
+import { getRankTier } from "../../features/Draft/Anime/utils/draftUtils";
 
 export default function Leaderboard() {
   const [leaders, setLeaders] = useState([]);

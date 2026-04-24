@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import SportsResult from "./SportsResult";
-import { calculateEffectiveScore } from "../Draft/utils/draftUtils";
+import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
 
 export default function BattleResult() {
   const { state } = useLocation();

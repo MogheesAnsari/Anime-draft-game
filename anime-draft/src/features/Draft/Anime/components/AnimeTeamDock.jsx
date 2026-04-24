@@ -1,6 +1,6 @@
 import React from "react";
 
-const TeamDock = ({
+const AnimeTeamDock = ({
   team = {},
   slots = [],
   onAssign,
@@ -11,10 +11,8 @@ const TeamDock = ({
   theme = { from: "from-orange-500", to: "to-red-600" },
 }) => {
   const teamEntries = team || {};
-  const activeSlots = slots || [];
   const isTeamFull =
-    activeSlots.length > 0 &&
-    Object.keys(teamEntries).length === activeSlots.length;
+    slots.length > 0 && Object.keys(teamEntries).length === slots.length;
 
   const getValidImageUrl = (url) => {
     if (!url) return "/zoro.svg";
@@ -25,7 +23,7 @@ const TeamDock = ({
   return (
     <div className="w-full h-[35vh] shrink-0 px-4 md:px-8 flex flex-col justify-end pb-6 md:pb-8 bg-gradient-to-t from-black via-black/80 to-transparent relative z-20">
       <div className="w-full max-w-7xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mt-auto">
-        {activeSlots.map((slot) => {
+        {slots.map((slot) => {
           const char = teamEntries[slot.id];
           const displayLabel = slot.label;
 
@@ -97,4 +95,4 @@ const TeamDock = ({
   );
 };
 
-export default TeamDock;
+export default AnimeTeamDock;
