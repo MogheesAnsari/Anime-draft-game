@@ -1,23 +1,22 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
-import { getSportConfig } from "../utils/sportsConfig"; // 👈 Import the config
+import { getRoleStats } from "../utils/sportsConfig";
 
 const CardDisplay = ({
   currentCard,
   universe,
-  domain, // 👈 Add domain as a prop
+  domain,
   skips,
   onSkip,
   onPull,
   isSPlus,
 }) => {
   const getTierStyles = (tier) => {
-    /* Keep your existing tier styles exactly as they are */
     switch (tier) {
       case "S+":
         return {
           wrapper:
-            "border-yellow-400 animate-s-plus-entry shadow-[0_0_80px_rgba(250,204,21,0.5)] z-50",
+            "border-yellow-400 shadow-[0_0_80px_rgba(250,204,21,0.5)] z-50",
           badge: "bg-gradient-to-br from-yellow-300 to-yellow-600 text-black",
           glow: "bg-gradient-to-t from-[#020202] via-[#020202]/40 to-yellow-500/30",
           hasShine: true,
@@ -60,19 +59,24 @@ const CardDisplay = ({
   }
 
   const style = getTierStyles(currentCard?.tier);
-
-  // 🎯 DYNAMIC STAT RESOLUTION
   const isSports = domain === "sports";
+
+  // 🎯 FETCH ROLE-BASED STATS (Defaults to basic stats if role isn't assigned in Admin Panel)
+  const role =
+    currentCard.role && currentCard.role !== "DEFAULT"
+      ? currentCard.role
+      : "DEFAULT";
   const statLabels = isSports
-    ? getSportConfig(universe).statLabels // e.g., ["PAC", "SHO", "PAS", "DEF"]
-    : ["atk", "def", "spd", "iq"]; // Default anime stats
+    ? getRoleStats(universe, role)
+    : ["atk", "def", "spd", "iq"];
+
+  // 🏷️ GENERATE DYNAMIC CARD BADGE
+  const cardBadge = isSports
+    ? `${universe} | ${role}`
+    : universe?.replace("_", " ") || "ALL";
 
   return (
     <div className="relative h-full flex items-center justify-center w-full">
-      {isSPlus && (
-        <div className="absolute inset-0 w-full h-full animate-flash-impact pointer-events-none rounded-full blur-[100px] z-0"></div>
-      )}
-
       <div
         className={`relative w-full max-w-[240px] md:max-w-[280px] lg:max-w-[300px] aspect-[3/4] rounded-[32px] overflow-hidden border-[3px] transition-all duration-500 group ${style.wrapper}`}
       >
@@ -80,18 +84,16 @@ const CardDisplay = ({
           src={`https://images.weserv.nl/?url=${encodeURIComponent(currentCard?.img)}`}
           referrerPolicy="no-referrer"
           className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-          alt={currentCard?.name || "UNIT"}
+          alt={currentCard?.name}
           onError={(e) => {
-            e.target.src = "/zoro.svg";
+            if (!e.target.src.includes("zoro.svg")) e.target.src = "/zoro.svg";
           }}
         />
         <div className={`absolute inset-0 ${style.glow}`}></div>
-        {style.hasShine && (
-          <div className="absolute top-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/60 to-transparent -skew-x-[35deg] animate-card-shine pointer-events-none"></div>
-        )}
 
+        {/* 🎯 SHOWS DOMAIN AND ROLE IN TOP LEFT */}
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black tracking-[0.2em] border border-white/10 text-gray-300 z-10 uppercase">
-          {universe?.replace("_", " ") || "ALL"}
+          {cardBadge}
         </div>
         <div
           className={`absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-xl font-black italic text-2xl backdrop-blur-md border z-10 ${style.badge}`}
@@ -100,15 +102,12 @@ const CardDisplay = ({
         </div>
 
         <div className="absolute bottom-0 p-5 w-full flex flex-col gap-3 z-10 text-white">
-          <h2
-            className={`text-2xl lg:text-3xl font-black italic drop-shadow-[0_4px_10px_rgba(0,0,0,1)] truncate ${isSPlus ? "text-yellow-400" : ""}`}
-          >
-            {currentCard?.name || "INITIALIZING..."}
+          <h2 className="text-2xl lg:text-3xl font-black italic drop-shadow-[0_4px_10px_rgba(0,0,0,1)] truncate">
+            {currentCard?.name}
           </h2>
 
           <div className="flex gap-2">
             {statLabels.map((s, index) => {
-              // Get value: Sports use currentCard.stats[s], Anime uses currentCard[s]
               const statValue =
                 isSports && currentCard.stats
                   ? currentCard.stats[s]

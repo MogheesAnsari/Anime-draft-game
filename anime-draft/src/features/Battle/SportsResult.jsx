@@ -1,15 +1,6 @@
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Trophy,
-  RotateCcw,
-  Home,
-  Crown,
-  Star,
-  Coins,
-  Gem,
-  Flag,
-} from "lucide-react";
+import { Trophy, RotateCcw, Home, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getSportConfig } from "../Draft/utils/sportsConfig";
@@ -19,22 +10,24 @@ export default function SportsResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [showStats, setShowStats] = useState(false);
-  const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
   const isRecorded = useRef(false);
 
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
-  const mode = String(state?.mode || "pvp").toLowerCase();
-
-  // 🎯 DYNAMIC SPORTS CONFIGURATION
+  const domain = state?.domain || "sports";
   const sportId = state?.universe || "football";
+  const mode = state?.mode || "Player vs CPU";
+
   const config = getSportConfig(sportId);
   const SLOTS = config.slots;
 
   const { displayCards, headerText, winnerCard } = useMemo(() => {
+    if (!teams || teams.length === 0)
+      return { displayCards: [], headerText: "ERROR", winnerCard: null };
+
     let players = teams.map((team, idx) => {
       let charList = [];
-      let bestChar = { name: "N/A", score: 0, slot: "N/A", scoreData: null };
+      let bestChar = { name: "N/A", score: 0, slot: "N/A" };
       let teamTotalScore = 0;
 
       const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
@@ -57,16 +50,10 @@ export default function SportsResult() {
           ...char,
           finalScore: cScore,
           slotLabel: slotConfig.label,
-          scoreData: slotData,
         });
 
         if (cScore > bestChar.score) {
-          bestChar = {
-            ...char,
-            score: cScore,
-            slotLabel: slotConfig.label,
-            scoreData: slotData,
-          };
+          bestChar = { ...char, score: cScore, slotLabel: slotConfig.label };
         }
       });
 
@@ -74,7 +61,7 @@ export default function SportsResult() {
 
       return {
         id: idx + 1,
-        name: `MANAGER 0${idx + 1}`,
+        name: idx === 0 ? "YOUR SQUAD" : "CPU SQUAD", // Safely names CPU
         score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
         characters: charList,
@@ -90,16 +77,16 @@ export default function SportsResult() {
 
     let builtCards = [
       {
-        title: "YOUR SQUAD",
+        title: players[0].name,
         score: players[0]?.score || 0,
         rank: players[0]?.score >= players[1]?.score ? 1 : 2,
-        members: [players[0]].filter(Boolean),
+        members: [players[0]],
       },
       {
-        title: "OPPONENT",
+        title: players[1].name,
         score: players[1]?.score || 0,
         rank: players[1]?.score >= players[0]?.score ? 1 : 2,
-        members: [players[1]].filter(Boolean),
+        members: [players[1]],
       },
     ];
 
@@ -108,45 +95,25 @@ export default function SportsResult() {
       headerText: status,
       winnerCard: builtCards.find((c) => c.rank === 1),
     };
-  }, [teams, rawScores, mode, state, sportId, SLOTS]);
-
-  // 💰 ECONOMY SAVING LOGIC (Exactly like Anime Result)
-  useEffect(() => {
-    if (isRecorded.current || displayCards.length === 0) return;
-    isRecorded.current = true;
-
-    const syncResult = async () => {
-      try {
-        const commanderInfo = JSON.parse(
-          localStorage.getItem("commander") || "{}",
-        );
-        if (!commanderInfo.username) return;
-
-        const isWin =
-          winnerCard?.members?.some((m) => m.name === "MANAGER 01") || false;
-        const coinsWon = isWin ? 100 : 25;
-        const gemsWon = isWin ? 1 : 0;
-
-        await axios.post("http://localhost:5000/api/user/record-match", {
-          username: commanderInfo.username,
-          sessionId: commanderInfo.sessionId,
-          isWin,
-          coinsWon,
-          gemsWon,
-        });
-
-        setEarnedLoot({ coins: coinsWon, gems: gemsWon });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    syncResult();
-  }, [displayCards, winnerCard]);
+  }, [teams, rawScores, state, sportId, SLOTS]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowStats(true), 600);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleReplay = () => {
+    // Passes unique timestamp to force character pool refresh
+    navigate("/draft", {
+      state: {
+        mode,
+        domain,
+        universe: sportId,
+        isRetry: true,
+        timestamp: Date.now(),
+      },
+    });
+  };
 
   const isVictory = headerText === "VICTORY";
   const bgTheme = isVictory
@@ -180,7 +147,6 @@ export default function SportsResult() {
                     animate={{ opacity: 1, y: 0 }}
                     className={`flex flex-col bg-[#0a0a0c] border-2 rounded-[32px] overflow-hidden ${isFirst ? "border-green-500 shadow-[0_0_40px_rgba(34,197,94,0.15)]" : "border-red-600"} relative`}
                   >
-                    {/* Header */}
                     <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5 relative">
                       <div
                         className={`absolute top-0 left-0 w-2 h-full ${isFirst ? "bg-green-500" : "bg-red-600"}`}
@@ -203,11 +169,9 @@ export default function SportsResult() {
                       )}
                     </div>
 
-                    {/* Roster & MVP */}
                     <div className="p-6">
                       {card.members.map((player, pIdx) => (
                         <div key={pIdx} className="flex flex-col gap-6">
-                          {/* MAN OF THE MATCH CARD */}
                           <div
                             className={`flex flex-col bg-black/40 p-5 rounded-3xl border ${isFirst ? "border-green-500/30" : "border-red-500/30"}`}
                           >
@@ -238,7 +202,6 @@ export default function SportsResult() {
                             </div>
                           </div>
 
-                          {/* SQUAD LIST */}
                           <div className="grid grid-cols-2 gap-3">
                             {player.characters
                               .filter(
@@ -278,13 +241,12 @@ export default function SportsResult() {
           )}
         </AnimatePresence>
 
-        {/* Footer Actions */}
         <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-6 flex justify-center gap-6 z-50">
           <button
-            onClick={() => navigate("/draft", { state })}
+            onClick={handleReplay}
             className="bg-green-500 text-black px-10 py-4 rounded-2xl text-lg font-black italic hover:scale-105 transition-transform flex items-center gap-2"
           >
-            <RotateCcw size={18} /> PLAY AGAIN
+            <RotateCcw size={18} /> DEPLOY AGAIN
           </button>
           <button
             onClick={() => navigate("/modes")}

@@ -14,7 +14,6 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
-// ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("📡 KERNEL_ONLINE: MongoDB Connected Successfully"))
@@ -56,12 +55,9 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🛠️ ADMIN ROUTE: BULK ADD/UPDATE ANIME CHARACTERS
 app.put("/api/admin/bulk-update", async (req, res) => {
   try {
     const updates = req.body;
-    if (!Array.isArray(updates))
-      return res.status(400).json({ error: "ARRAY_REQUIRED" });
     const results = [];
     for (const char of updates) {
       const updated = await Character.findOneAndUpdate(
@@ -89,22 +85,9 @@ app.put("/api/admin/update-character/:id", async (req, res) => {
 
     const updated = await Character.findOneAndUpdate(
       { id: { $in: [Number(charId), String(charId)] } },
-      {
-        $set: {
-          name: updateData.name,
-          img: updateData.img,
-          atk: Number(updateData.atk),
-          def: Number(updateData.def),
-          spd: Number(updateData.spd),
-          iq: Number(updateData.iq),
-          tier: updateData.tier,
-          universe: updateData.universe,
-        },
-      },
+      { $set: updateData },
       { new: true },
     );
-
-    if (!updated) return res.status(404).json({ error: "CHARACTER_NOT_FOUND" });
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
     res
@@ -115,39 +98,10 @@ app.put("/api/admin/update-character/:id", async (req, res) => {
 
 app.delete("/api/admin/delete-character/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const result = await Character.deleteOne({ id: String(id) });
-    if (result.deletedCount === 0)
-      return res.status(404).json({ message: "Not found" });
+    await Character.deleteOne({ id: String(req.params.id) });
     res.json({ message: "CHARACTER_DELETED_SUCCESSFULLY" });
   } catch (err) {
     res.status(500).json({ error: "DELETE_FAILED" });
-  }
-});
-
-app.delete("/api/admin/cleanup-duplicates", async (req, res) => {
-  try {
-    const duplicates = await Character.aggregate([
-      {
-        $group: {
-          _id: { name: "$name", universe: "$universe" },
-          uniqueIds: { $addToSet: "$_id" },
-          count: { $sum: 1 },
-        },
-      },
-      { $match: { count: { $gt: 1 } } },
-    ]);
-    let deletedCount = 0;
-    for (const doc of duplicates) {
-      const idsToDelete = doc.uniqueIds.slice(1);
-      const result = await Character.deleteMany({ _id: { $in: idsToDelete } });
-      deletedCount += result.deletedCount;
-    }
-    res.json({ message: "CLEANUP_SUCCESS", deletedCount });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ error: "DATABASE_CLEANUP_ERROR", details: err.message });
   }
 });
 
@@ -161,6 +115,7 @@ const PlayerSchema = new mongoose.Schema({
   sport: String,
   league: String,
   tier: { type: String, default: "B" },
+  role: { type: String, default: "DEFAULT" },
   stats: { type: Map, of: Number, default: {} },
 });
 const Player = mongoose.model("Player", PlayerSchema);
@@ -171,7 +126,7 @@ app.get("/api/players", async (req, res) => {
     let dbQuery = {};
     if (sport && sport !== "all") dbQuery.sport = sport;
     const players = await Player.find(dbQuery).select(
-      "id name img sport league tier stats",
+      "id name img sport league tier role stats",
     );
     res.json(players);
   } catch (err) {
@@ -182,8 +137,6 @@ app.get("/api/players", async (req, res) => {
 app.put("/api/admin/bulk-update-players", async (req, res) => {
   try {
     const updates = req.body;
-    if (!Array.isArray(updates))
-      return res.status(400).json({ error: "ARRAY_REQUIRED" });
     const results = [];
     for (const player of updates) {
       const updated = await Player.findOneAndUpdate(
@@ -204,10 +157,7 @@ app.put("/api/admin/bulk-update-players", async (req, res) => {
 
 app.delete("/api/admin/delete-player/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const result = await Player.deleteOne({ id: String(id) });
-    if (result.deletedCount === 0)
-      return res.status(404).json({ message: "Not found" });
+    await Player.deleteOne({ id: String(req.params.id) });
     res.json({ message: "PLAYER_DELETED_SUCCESSFULLY" });
   } catch (err) {
     res.status(500).json({ error: "DELETE_FAILED" });
@@ -215,7 +165,7 @@ app.delete("/api/admin/delete-player/:id", async (req, res) => {
 });
 
 // ==========================================
-// 👤 USER MANAGEMENT & ECONOMY
+// 👤 USER MANAGEMENT
 // ==========================================
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -230,48 +180,22 @@ app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
-
     let user = await User.findOne({ username });
     if (user) {
       if (avatar && user.avatar !== avatar) {
         user.avatar = avatar;
         await user.save();
       }
-      console.log(`👤 COMMANDER_LOGIN: ${username}`);
     } else {
       user = new User({ username, avatar, wins: 0, totalGames: 0 });
       await user.save();
-      console.log(`👤 NEW_COMMANDER_REGISTERED: ${username}`);
     }
     res.status(200).json(user);
   } catch (err) {
-    console.error("🔥 USER_ACCESS_ERROR:", err.message);
     res
       .status(500)
       .json({ error: "INTERNAL_SERVER_ERROR", details: err.message });
   }
-});
-
-app.post("/api/user/sync", async (req, res) => {
-  try {
-    const { username } = req.body;
-    if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
-
-    const user = await User.findOne({ username });
-    if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
-    res.json(user);
-  } catch (err) {
-    console.error("🔥 SYNC_ERROR:", err.message);
-    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
-  }
-});
-
-app.get("/api/leaderboard", async (req, res) => {
-  res.json([]);
-});
-
-app.post("/api/fight", async (req, res) => {
-  res.json({ message: "FIGHT_INIT" });
 });
 
 const PORT = process.env.PORT || 5000;

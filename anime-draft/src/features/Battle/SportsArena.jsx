@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, MapPin, Zap, Flag } from "lucide-react";
+import { motion } from "framer-motion";
+import { MapPin, Flag } from "lucide-react";
 import { getSportConfig } from "../Draft/utils/sportsConfig";
 import {
   getRandomStadium,
@@ -12,7 +12,6 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
   const [phase, setPhase] = useState("INTRO");
   const [currentSlotIdx, setCurrentSlotIdx] = useState(0);
 
-  // 'universe' holds the sportId (e.g., 'football' or 'cricket')
   const sportId = universe;
   const config = getSportConfig(sportId);
   const SLOTS = config.slots;
@@ -39,6 +38,7 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
     if (phase === "CLASH") {
       const roundResults = allTeams.map((team) => {
         const player = team[SLOTS[currentSlotIdx].id];
+        // 🎯 Math handles dynamic roles safely
         const score = calculateSportsEffectiveScore(
           player,
           SLOTS[currentSlotIdx].id,
@@ -67,7 +67,6 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
 
     if (phase === "FINISHER") {
       timer = setTimeout(() => {
-        // Save to local storage for the Result Screen
         localStorage.setItem(
           "animeDraft_lastBattle",
           JSON.stringify({ finalScores: capturedScores }),
@@ -172,7 +171,7 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
                     alt=""
                   />
                   <div className="text-sm md:text-2xl text-white mb-2 md:mb-4 text-center truncate w-full px-2">
-                    {player?.name}
+                    {player?.name || "N/A"}
                   </div>
                 </motion.div>
               );

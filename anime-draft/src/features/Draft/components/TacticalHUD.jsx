@@ -9,7 +9,6 @@ export default function TacticalHUD({
   onAbort,
   onShowRules,
 }) {
-  // ✅ CRITICAL FIX: Fallback theme added to prevent 'undefined' crash
   const safeTheme = theme || { from: "from-orange-500", to: "to-red-600" };
 
   return (

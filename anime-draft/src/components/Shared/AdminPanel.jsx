@@ -11,15 +11,13 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import { getRoleStats } from "../../features/Draft/utils/sportsConfig";
 
 export default function AdminPanel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
-
-  // 🌍 MULTIVERSE STATE
-  const [domain, setDomain] = useState("anime"); // "anime" or "sports"
-  const [subSelection, setSubSelection] = useState("naruto"); // specific universe or sport
-
+  const [domain, setDomain] = useState("anime");
+  const [subSelection, setSubSelection] = useState("naruto");
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
@@ -39,6 +37,21 @@ export default function AdminPanel() {
     "black_clover",
   ];
   const sportsList = ["football", "cricket"];
+
+  const getValidImageUrl = (url) => {
+    if (!url) return "/zoro.svg";
+    if (url.startsWith("/")) return url;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+  };
+
+  // 🎯 FETCH ROLE OPTIONS
+  const getRoles = (sport) => {
+    if (sport === "football")
+      return ["DEFAULT", "ATT", "MID", "DEF", "GK", "MGR", "SUB"];
+    if (sport === "cricket")
+      return ["DEFAULT", "BAT", "BWL", "ALL", "WK", "MGR"];
+    return ["DEFAULT"];
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -82,7 +95,6 @@ export default function AdminPanel() {
     if (isLoggedIn) fetchChars();
   }, [subSelection, domain, isLoggedIn]);
 
-  // 🌐 WIKIPEDIA HELPER
   const fetchWikiImage = async (name) => {
     try {
       const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=pageimages&format=json&pithumbsize=500&origin=*`;
@@ -97,7 +109,6 @@ export default function AdminPanel() {
     }
   };
 
-  // ⚡ BULK AUTO REFRESH & SYNC
   const handleBulkAutoRefresh = async () => {
     if (
       !window.confirm(
@@ -105,19 +116,14 @@ export default function AdminPanel() {
       )
     )
       return;
-
     setLoading(true);
     const updatedRoster = [];
-
-    // Loop through everyone and fetch
     for (let char of characters) {
       const newImg = await fetchWikiImage(char.name);
       updatedRoster.push(newImg ? { ...char, img: newImg } : char);
     }
-
     setCharacters(updatedRoster);
 
-    // 🚀 AUTO-SYNC TO DATABASE
     try {
       const endpoint =
         domain === "sports"
@@ -139,7 +145,6 @@ export default function AdminPanel() {
     }
   };
 
-  // 🔄 SINGLE IMAGE REFRESH
   const refreshSingleImage = async (charName, charId) => {
     setLoading(true);
     const newImg = await fetchWikiImage(charName);
@@ -161,7 +166,7 @@ export default function AdminPanel() {
       prev.map((c) => {
         if (String(c.id) === String(id)) {
           if (domain === "sports") {
-            if (field === "img" || field === "tier")
+            if (field === "img" || field === "tier" || field === "role")
               return { ...c, [field]: val };
             return {
               ...c,
@@ -207,7 +212,6 @@ export default function AdminPanel() {
           ? `/api/admin/delete-player/${charId}`
           : `/api/admin/delete-character/${charId}`;
       await axios.delete(`https://anime-draft-game-1.onrender.com${endpoint}`);
-      alert("🚀 REMOVED FROM KERNEL!");
       fetchChars();
     } catch (e) {
       alert("❌ DELETE_FAILED!");
@@ -216,23 +220,14 @@ export default function AdminPanel() {
     }
   };
 
-  // 📝 MANUAL JSON BULK SYNC
   const handleBulkSync = async () => {
     try {
-      if (!jsonInput.trim()) return alert("PASTE JSON FIRST!");
       const dataToSync = JSON.parse(jsonInput);
-
-      if (!Array.isArray(dataToSync))
-        return alert("INVALID_FORMAT: Array Expected!");
-      if (!window.confirm(`DEPLOY STATS TO ${dataToSync.length} UNITS?`))
-        return;
-
       setLoading(true);
       const endpoint =
         domain === "sports"
           ? "/api/admin/bulk-update-players"
           : "/api/admin/bulk-update";
-
       const res = await axios.put(
         `https://anime-draft-game-1.onrender.com${endpoint}`,
         dataToSync,
@@ -241,26 +236,16 @@ export default function AdminPanel() {
       setJsonInput("");
       fetchChars();
     } catch (e) {
-      alert("❌ SYNC FAILED: Check JSON Syntax or Server Status!");
+      alert("❌ SYNC FAILED");
     } finally {
       setLoading(false);
     }
-  };
-
-  const getStatLabels = () => {
-    if (domain === "anime") return ["atk", "def", "spd", "iq"];
-    return subSelection === "football"
-      ? ["PAC", "SHO", "PAS", "DEF"]
-      : ["BAT", "BWL", "FLD", "STR"];
   };
 
   if (!isLoggedIn)
     return (
       <div className="h-screen bg-[#050505] flex items-center justify-center p-4 uppercase">
         <div className="w-full max-w-sm bg-black/50 backdrop-blur-xl p-8 rounded-[40px] border border-[#ff8c32]/30 shadow-2xl">
-          <h2 className="text-2xl font-black italic text-[#ff8c32] text-center mb-8">
-            RESTRICTED ACCESS
-          </h2>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
@@ -281,10 +266,9 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-[#050505] p-6 uppercase font-sans overflow-y-auto">
       <div className="max-w-7xl mx-auto flex flex-col items-center mb-10 pt-10 text-center">
         <h1 className="text-4xl font-black italic text-[#ff8c32] tracking-tighter mb-6 flex items-center gap-3 drop-shadow-[0_0_15px_rgba(255,140,50,0.5)]">
-          <Database /> HYBRID_TUNER_v8.0
+          <Database /> HYBRID_TUNER_v11.0
         </h1>
 
-        {/* DOMAIN SWITCHER */}
         <div className="flex gap-4 mb-8 bg-black/50 p-2 rounded-full border border-white/10">
           <button
             onClick={() => handleDomainChange("anime")}
@@ -300,7 +284,6 @@ export default function AdminPanel() {
           </button>
         </div>
 
-        {/* INJECTOR TERMINAL */}
         <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl p-8 rounded-[32px] border border-[#ff8c32]/20 mb-10 shadow-2xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-sm font-black text-[#ff8c32] flex items-center gap-2">
@@ -326,7 +309,6 @@ export default function AdminPanel() {
             className="w-full h-32 bg-black border border-white/5 rounded-2xl p-4 text-[10px] font-mono text-gray-300 outline-none focus:border-[#ff8c32] mb-6"
           />
 
-          {/* THE SIDE-BY-SIDE BUTTONS ARE HERE 👇 */}
           <div className="flex flex-wrap gap-4">
             <button
               onClick={handleBulkSync}
@@ -348,108 +330,132 @@ export default function AdminPanel() {
       {loading ? (
         <div className="flex flex-col items-center justify-center h-64 text-[#ff8c32] gap-4">
           <Loader2 className="animate-spin" size={48} />
-          <span className="font-black italic tracking-widest text-[10px]">
-            SYNCING_KERNEL...
-          </span>
         </div>
       ) : (
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-20">
           {characters
             .sort((a, b) => (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9))
-            .map((char, index) => (
-              <div
-                key={`${char.id}-${index}`}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/50 transition-all duration-300 group shadow-lg"
-              >
-                <div className="relative mb-6">
-                  <img
-                    src={`https://images.weserv.nl/?url=${encodeURIComponent(char.img)}`}
-                    referrerPolicy="no-referrer"
-                    className="w-20 h-20 rounded-full object-cover border-[3px] border-white/20 group-hover:scale-110 group-hover:border-[#ff8c32] transition-all duration-500 shadow-2xl"
-                    alt={char.name}
-                    onError={(e) => {
-                      if (!e.target.src.includes("zoro.svg"))
-                        e.target.src = "/zoro.svg";
-                    }}
-                  />
-                  <button
-                    onClick={() => refreshSingleImage(char.name, char.id)}
-                    className={`absolute -top-2 -right-2 p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
-                    title="Auto-Fetch Image"
-                  >
-                    <RefreshCw size={14} />
-                  </button>
-                </div>
+            .map((char, index) => {
+              const currentStatLabels =
+                domain === "sports"
+                  ? getRoleStats(subSelection, char.role || "DEFAULT")
+                  : ["atk", "def", "spd", "iq"];
 
-                <h3 className="text-[12px] font-black italic text-white mb-6 truncate w-full text-center tracking-wide">
-                  {char.name}
-                </h3>
-
-                <input
-                  type="text"
-                  value={char.img || ""}
-                  onChange={(e) => handleUpdate(char.id, "img", e.target.value)}
-                  placeholder="PASTE MANUAL URL..."
-                  className="w-full bg-black/60 border border-white/10 p-2.5 rounded-xl text-[9px] text-gray-400 outline-none focus:border-[#ff8c32] mb-5 font-mono truncate"
-                />
-
-                <div className="grid grid-cols-2 gap-4 w-full mb-6">
-                  {getStatLabels().map((s) => (
-                    <div
-                      key={s}
-                      className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
-                    >
-                      <span
-                        className={`text-[8px] font-black mb-1 tracking-widest ${domain === "sports" ? "text-green-500" : "text-gray-500"}`}
-                      >
-                        {s.toUpperCase()}
-                      </span>
-                      <input
-                        type="number"
-                        value={
-                          domain === "sports"
-                            ? char.stats?.[s] || 0
-                            : char[s] || 0
-                        }
-                        onChange={(e) =>
-                          handleUpdate(char.id, s, e.target.value)
-                        }
-                        className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <select
-                  value={char.tier}
-                  onChange={(e) =>
-                    handleUpdate(char.id, "tier", e.target.value)
-                  }
-                  className={`w-full bg-black/60 border p-3.5 rounded-2xl text-[11px] font-black italic tracking-widest mb-6 outline-none transition-colors ${char.tier === "S+" ? "border-red-500/50 text-red-500" : "border-white/10 text-gray-400"}`}
+              return (
+                <div
+                  key={`${char.id}-${index}`}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[32px] flex flex-col items-center hover:border-[#ff8c32]/50 transition-all duration-300 group shadow-lg"
                 >
-                  {["S+", "S", "A", "B", "C"].map((t) => (
-                    <option key={t} value={t}>
-                      {t}_TIER
-                    </option>
-                  ))}
-                </select>
+                  <div className="relative mb-6">
+                    <img
+                      src={getValidImageUrl(char.img)}
+                      referrerPolicy="no-referrer"
+                      className="w-20 h-20 rounded-full object-cover border-[3px] border-white/20 group-hover:scale-110 group-hover:border-[#ff8c32] transition-all duration-500 shadow-2xl"
+                      alt={char.name}
+                      onError={(e) => {
+                        if (e.target.src.includes("weserv.nl"))
+                          e.target.src = char.img;
+                        else if (!e.target.src.includes("zoro.svg"))
+                          e.target.src = "/zoro.svg";
+                      }}
+                    />
+                    <button
+                      onClick={() => refreshSingleImage(char.name, char.id)}
+                      className={`absolute -top-2 -right-2 p-1.5 rounded-full text-black hover:rotate-180 transition-transform duration-500 shadow-xl ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
+                      title="Auto-Fetch Image"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  </div>
 
-                <div className="flex gap-2 w-full mt-2">
-                  <button
-                    onClick={() => syncIndividual(char)}
-                    className={`flex-1 text-black font-black py-4 rounded-xl text-[10px] italic hover:scale-105 active:scale-95 transition-all ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
+                  <h3 className="text-[12px] font-black italic text-white mb-4 truncate w-full text-center tracking-wide">
+                    {char.name}
+                  </h3>
+                  <input
+                    type="text"
+                    value={char.img || ""}
+                    onChange={(e) =>
+                      handleUpdate(char.id, "img", e.target.value)
+                    }
+                    placeholder="PASTE MANUAL URL..."
+                    className="w-full bg-black/60 border border-white/10 p-2.5 rounded-xl text-[9px] text-gray-400 outline-none focus:border-[#ff8c32] mb-3 font-mono truncate"
+                  />
+
+                  {/* 🎯 ROLE DROP DOWN FOR SPORTS */}
+                  {domain === "sports" && (
+                    <select
+                      value={char.role || "DEFAULT"}
+                      onChange={(e) =>
+                        handleUpdate(char.id, "role", e.target.value)
+                      }
+                      className="w-full bg-black/60 border border-green-500/30 p-2 rounded-xl text-[10px] font-black text-green-400 outline-none mb-4 text-center"
+                    >
+                      {getRoles(subSelection).map((r) => (
+                        <option key={r} value={r}>
+                          {r} CARD
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 w-full mb-6">
+                    {currentStatLabels.map((s) => (
+                      <div
+                        key={s}
+                        className="flex flex-col items-center bg-black/40 p-2 rounded-xl border border-white/5"
+                      >
+                        <span
+                          className={`text-[8px] font-black mb-1 tracking-widest ${domain === "sports" ? "text-green-500" : "text-gray-500"}`}
+                        >
+                          {s.toUpperCase()}
+                        </span>
+                        <input
+                          type="number"
+                          value={
+                            domain === "sports"
+                              ? char.stats?.[s] || 0
+                              : char[s] || 0
+                          }
+                          onChange={(e) =>
+                            handleUpdate(char.id, s, e.target.value)
+                          }
+                          className="bg-transparent text-center font-black text-sm text-white outline-none w-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <select
+                    value={char.tier}
+                    onChange={(e) =>
+                      handleUpdate(char.id, "tier", e.target.value)
+                    }
+                    className={`w-full bg-black/60 border p-3.5 rounded-2xl text-[11px] font-black italic tracking-widest mb-6 outline-none transition-colors ${char.tier === "S+" ? "border-red-500/50 text-red-500" : "border-white/10 text-gray-400"}`}
                   >
-                    <Save size={14} className="inline mr-1" /> SYNC OVERRIDE
-                  </button>
-                  <button
-                    onClick={() => handleDelete(char.id, char.name)}
-                    className="p-4 bg-red-600/20 border border-red-500/50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    {["S+", "S", "A", "B", "C"].map((t) => (
+                      <option key={t} value={t}>
+                        {t}_TIER
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="flex gap-2 w-full mt-2">
+                    <button
+                      onClick={() => syncIndividual(char)}
+                      className={`flex-1 text-black font-black py-4 rounded-xl text-[10px] italic hover:scale-105 active:scale-95 transition-all ${domain === "sports" ? "bg-green-500" : "bg-[#ff8c32]"}`}
+                    >
+                      <Save size={14} className="inline mr-1" /> SYNC OVERRIDE
+                    </button>
+                    <button
+                      onClick={() => handleDelete(char.id, char.name)}
+                      className="p-4 bg-red-600/20 border border-red-500/50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
     </div>

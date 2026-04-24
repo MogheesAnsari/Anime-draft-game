@@ -1,25 +1,33 @@
 import React from "react";
 
-// ❌ Remove: import { SLOTS } from "../../../engine";
-
 const TeamDock = ({
-  team,
-  slots, // 👈 New Prop: Array of slots to render
+  team = {},
+  slots = [],
   onAssign,
   playerTurn,
   maxTurns,
   onAction,
   loading,
-  theme,
+  theme = { from: "from-orange-500", to: "to-red-600" },
 }) => {
-  const isTeamFull = Object.keys(team).length === slots.length;
+  const teamEntries = team || {};
+  const activeSlots = slots || [];
+  const isTeamFull =
+    activeSlots.length > 0 &&
+    Object.keys(teamEntries).length === activeSlots.length;
+
+  const getValidImageUrl = (url) => {
+    if (!url) return "/zoro.svg";
+    if (url.startsWith("/")) return url;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+  };
 
   return (
     <div className="w-full h-[35vh] shrink-0 px-4 md:px-8 flex flex-col justify-end pb-6 md:pb-8 bg-gradient-to-t from-black via-black/80 to-transparent relative z-20">
       <div className="w-full max-w-7xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mt-auto">
-        {slots.map((slot) => {
-          const char = team[slot.id];
-          const displayLabel = slot.label; // Use the direct label from the config
+        {activeSlots.map((slot) => {
+          const char = teamEntries[slot.id];
+          const displayLabel = slot.label;
 
           return (
             <div
@@ -47,9 +55,14 @@ const TeamDock = ({
               {char && (
                 <>
                   <img
-                    src={char.img}
+                    src={getValidImageUrl(char.img)}
+                    referrerPolicy="no-referrer"
                     className="absolute right-0 top-0 h-full w-[60%] object-cover opacity-40 mix-blend-screen grayscale group-hover:grayscale-0 transition-all duration-500"
-                    alt=""
+                    alt={char.name}
+                    onError={(e) => {
+                      if (!e.target.src.includes("zoro.svg"))
+                        e.target.src = "/zoro.svg";
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/60 to-transparent"></div>
                 </>
