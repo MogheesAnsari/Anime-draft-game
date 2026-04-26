@@ -9,7 +9,7 @@ import SportsCardDisplay from "./components/SportsCardDisplay";
 import SportsTacticalHUD from "./components/SportsTacticalHUD";
 import SportsArena from "../../Battle/SportsArena";
 import { generateCpuTeam } from "./utils/sportsUtils";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, Users } from "lucide-react";
 
 export default function SportsDraftManager({ user }) {
   const { state } = useLocation();
@@ -17,6 +17,15 @@ export default function SportsDraftManager({ user }) {
 
   const universe = state?.universe || "football";
   const mode = state?.mode || "Player vs CPU";
+
+  // 👥 MULTIPLAYER CONFIGURATION ENGINE
+  const getMatchConfig = (m) => {
+    if (m === "Player vs Player") return { human: 2, cpu: 0 };
+    if (m === "1v1v1v1") return { human: 4, cpu: 0 };
+    if (m === "2v2") return { human: 4, cpu: 0 };
+    return { human: 1, cpu: 1 }; // Default PvE
+  };
+  const matchConfig = getMatchConfig(mode);
 
   const config = getSportConfig(universe);
   const slots = config.slots;
@@ -29,17 +38,32 @@ export default function SportsDraftManager({ user }) {
     openDraftOptions,
     selectPlayer,
     cancelDraft,
+    resetDraft,
     characterPool,
-    skips, // ✅ Grab skips here
+    skips,
   } = useSportsDraftLogic(universe);
 
   const [loading, setLoading] = useState(false);
   const [battleData, setBattleData] = useState(null);
   const [packState, setPackState] = useState("closed");
 
+  // 🔄 SEQUENTIAL DRAFTING STATE
+  const [finishedTeams, setFinishedTeams] = useState([]);
+  const currentHumanIndex = finishedTeams.length + 1;
+
+  // 🛡️ DYNAMIC DUPLICATE BLOCKER
+  const getGlobalNames = () => {
+    const names = new Set();
+    finishedTeams.forEach((t) =>
+      Object.values(t).forEach((p) => names.add(p.name.toLowerCase())),
+    );
+    Object.values(team).forEach((p) => names.add(p.name.toLowerCase())); // Include current pitch
+    return names;
+  };
+
   const handleOpenDraft = (slot) => {
     setPackState("closed");
-    openDraftOptions(slot);
+    openDraftOptions(slot, getGlobalNames()); // Passes global names!
   };
 
   const handleSelect = (player) => {
@@ -54,23 +78,42 @@ export default function SportsDraftManager({ user }) {
     }
   };
 
-  const handleFight = async () => {
-    try {
-      if (Object.keys(team).length < slots.length)
-        return alert(`SQUAD INCOMPLETE!`);
-      setLoading(true);
-      const cpuTeam = generateCpuTeam(characterPool, slots);
-      setBattleData({
-        teams: [team, cpuTeam],
-        result: { scores: [0, 0] },
-        mode,
-        universe,
-        domain: "sports",
-      });
-      setLoading(false);
-    } catch (err) {
-      alert("Match Engine Error!");
-      setLoading(false);
+  const handleConfirmOrFight = async () => {
+    if (currentHumanIndex < matchConfig.human) {
+      // Next Player's Turn!
+      setFinishedTeams([...finishedTeams, team]);
+      resetDraft();
+    } else {
+      // All Humans Drafted -> Fill CPU Teams & Fight!
+      try {
+        setLoading(true);
+        let allSquads = [...finishedTeams, team];
+        let currentGlobalNames = getGlobalNames();
+
+        for (let i = 0; i < matchConfig.cpu; i++) {
+          const cpuTeam = generateCpuTeam(
+            characterPool,
+            slots,
+            currentGlobalNames,
+          );
+          allSquads.push(cpuTeam);
+          Object.values(cpuTeam).forEach((p) =>
+            currentGlobalNames.add(p.name.toLowerCase()),
+          );
+        }
+
+        setBattleData({
+          teams: allSquads,
+          result: { scores: allSquads.map(() => 0) },
+          mode,
+          universe,
+          domain: "sports",
+        });
+        setLoading(false);
+      } catch (err) {
+        alert("Match Engine Error!");
+        setLoading(false);
+      }
     }
   };
 
@@ -98,6 +141,14 @@ export default function SportsDraftManager({ user }) {
 
       {!battleData && (
         <div className="flex-1 flex flex-col items-center justify-center px-2 z-10">
+          {/* MULTIPLAYER DRAFT HUD */}
+          <div className="mb-2 bg-black/60 border border-white/20 px-6 py-2 rounded-full flex items-center gap-3 shadow-lg">
+            <Users size={16} className="text-gray-400" />
+            <span className="text-xs md:text-sm font-black tracking-widest text-emerald-400">
+              PLAYER {currentHumanIndex} DRAFTING
+            </span>
+          </div>
+
           <SportsPitchUI
             slots={slots}
             team={team}
@@ -107,11 +158,13 @@ export default function SportsDraftManager({ user }) {
 
           {Object.keys(team).length === slots.length && (
             <button
-              onClick={handleFight}
+              onClick={handleConfirmOrFight}
               disabled={loading}
-              className="mt-6 w-full max-w-sm h-14 rounded-full font-black text-sm italic tracking-[0.3em] bg-gradient-to-r from-green-500 to-emerald-600 shadow-[0_0_40px_rgba(34,197,94,0.3)] text-black transition-all active:scale-95 z-20 relative"
+              className="mt-6 w-full max-w-sm h-14 rounded-full font-black text-sm italic tracking-[0.3em] bg-gradient-to-r from-emerald-500 to-green-700 shadow-[0_0_40px_rgba(52,211,153,0.4)] text-black transition-all active:scale-95 z-20 relative"
             >
-              ENGAGE MATCH
+              {currentHumanIndex < matchConfig.human
+                ? `CONFIRM P${currentHumanIndex} SQUAD & NEXT`
+                : "ENGAGE MATCH"}
             </button>
           )}
         </div>
@@ -126,7 +179,6 @@ export default function SportsDraftManager({ user }) {
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[6000] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 overflow-hidden"
           >
-            {/* STEP 1: THE PACK */}
             {packState !== "open" && (
               <motion.div
                 onClick={packState === "closed" ? openPack : null}
@@ -160,15 +212,13 @@ export default function SportsDraftManager({ user }) {
               </motion.div>
             )}
 
-            {/* STEP 2: THE REVEALED CARDS */}
             {packState === "open" && (
               <>
                 <div className="text-center mb-8">
-                  <h2 className="text-4xl md:text-6xl font-black italic text-green-500 tracking-tighter">
+                  <h2 className="text-4xl md:text-6xl font-black italic text-emerald-500 tracking-tighter">
                     SELECT OPERATIVE
                   </h2>
                 </div>
-
                 <div className="flex justify-center items-center gap-4 w-full max-w-4xl mb-8">
                   {draftOptions.map((option, idx) => (
                     <SportsCardDisplay
@@ -183,7 +233,6 @@ export default function SportsDraftManager({ user }) {
               </>
             )}
 
-            {/* 🛑 ANTI-SPAM CANCEL BUTTON LOGIC */}
             {skips > 0 ? (
               <button
                 onClick={handleCancel}
@@ -192,7 +241,7 @@ export default function SportsDraftManager({ user }) {
                 CANCEL SCOUTING ({skips} LEFT)
               </button>
             ) : (
-              <div className="absolute bottom-10 text-[10px] text-gray-400 font-black border border-gray-700 bg-gray-900/80 rounded-full px-8 py-3 z-50 shadow-lg flex items-center gap-2">
+              <div className="absolute bottom-10 text-[10px] text-gray-400 font-black border border-gray-700 bg-gray-900/80 rounded-full px-8 py-3 z-50 shadow-lg">
                 ⚠️ MUST SELECT PLAYER - NO SKIPS REMAINING
               </div>
             )}

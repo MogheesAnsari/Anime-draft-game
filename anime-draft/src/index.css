@@ -166,6 +166,40 @@ body {
   animation: radar-pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
 }
 
+.cricket-pitch-t20 {
+  background: linear-gradient(to bottom, #b4855a, #8b5a2b);
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.8),
+    inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.cricket-stadium-classic {
+  background-color: #4ade80; /* Bright daytime green */
+  background-image:
+    linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.05) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(0, 0, 0, 0.05) 75%,
+      rgba(0, 0, 0, 0.05)
+    ),
+    linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.05) 25%,
+      transparent 25%,
+      transparent 75%,
+      rgba(0, 0, 0, 0.05) 75%,
+      rgba(0, 0, 0, 0.05)
+    );
+  background-size: 60px 60px;
+  background-position:
+    0 0,
+    30px 30px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
 /* 🧊 GLASSMORPHISM FOR DRAFTED PLAYERS */
 .pitch-player-card {
   background: rgba(10, 10, 12, 0.7);

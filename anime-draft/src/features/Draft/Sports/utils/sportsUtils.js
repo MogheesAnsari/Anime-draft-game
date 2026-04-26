@@ -34,6 +34,7 @@ export const getRandomStadium = (sportId) => {
 
 export const getSportsPlayText = (slotId, sportId) => {
   if (slotId === "mgr") return "TACTICAL MASTERCLASS!";
+  if (slotId === "imp") return "IMPACT SUBSTITUTION!";
   const plays = {
     football: [
       `THROUGH BALL!`,
@@ -54,50 +55,46 @@ export const getSportsPlayText = (slotId, sportId) => {
   return list[Math.floor(Math.random() * list.length)];
 };
 
-// 🛡️ BULLETPROOF STAT EXTRACTOR (Zero-Bug Fix)
 export const getStatValue = (player, statName) => {
   if (!player) return 0;
-  const statsObj = player.stats || player; // Supports flat or nested DB objects
+  const statsObj = player.stats || player;
 
-  // 1. Try to find the exact stat name (Case-Insensitive)
   const exactKey = Object.keys(statsObj).find(
     (k) => k.toLowerCase() === statName.toLowerCase(),
   );
-  if (exactKey !== undefined && !isNaN(Number(statsObj[exactKey]))) {
+  if (exactKey !== undefined && !isNaN(Number(statsObj[exactKey])))
     return Number(statsObj[exactKey]);
-  }
 
-  // 2. Anime-to-Sports Auto Translator (If they only have atk, def, spd, iq)
   const fallbackMap = {
-    SHOOTING: "atk",
-    PACE: "spd",
-    DRIBBLING: "iq",
-    PHYSICAL: "def",
-    PASSING: "iq",
-    VISION: "iq",
-    STAMINA: "def",
-    DEFENDING: "def",
-    TACKLING: "def",
-    HEADING: "atk",
-    DIVING: "spd",
-    REFLEXES: "spd",
-    HANDLING: "def",
-    POSITIONING: "iq",
-    BATTING: "atk",
-    POWER: "atk",
-    TIMING: "iq",
-    RUNNING: "spd",
-    BOWLING: "def",
-    ACCURACY: "iq",
-    VARIATION: "iq",
-    SPIN: "iq",
-    GLOVES: "def",
-    AGILITY: "spd",
-    FIELDING: "def",
-    IQ: "iq",
-    EXP: "iq",
-    TACTICS: "iq",
-    CHARISMA: "def",
+    SHOOTING: "SHO",
+    PACE: "PAC",
+    DRIBBLING: "DRI",
+    PHYSICAL: "PHY",
+    PASSING: "PAS",
+    VISION: "VIS",
+    STAMINA: "STA",
+    DEFENDING: "DEF",
+    TACKLING: "TAC",
+    HEADING: "PHY",
+    DIVING: "DIV",
+    REFLEXES: "REF",
+    HANDLING: "HAN",
+    POSITIONING: "POS",
+    IQ: "IQ",
+    EXP: "EXP",
+    TACTICS: "TAC",
+    CHARISMA: "MOT",
+    BATTING: "BAT",
+    POWER: "POW",
+    TIMING: "STR",
+    RUNNING: "RUN",
+    BOWLING: "BWL",
+    ACCURACY: "ACC",
+    VARIATION: "SPN",
+    SPIN: "SPN",
+    GLOVES: "GLV",
+    AGILITY: "AGI",
+    FIELDING: "FLD",
   };
 
   const fallbackKey = fallbackMap[statName.toUpperCase()];
@@ -105,12 +102,10 @@ export const getStatValue = (player, statName) => {
     const fbExact = Object.keys(statsObj).find(
       (k) => k.toLowerCase() === fallbackKey.toLowerCase(),
     );
-    if (fbExact !== undefined && !isNaN(Number(statsObj[fbExact]))) {
+    if (fbExact !== undefined && !isNaN(Number(statsObj[fbExact])))
       return Number(statsObj[fbExact]);
-    }
   }
 
-  // 3. Last Resort Fallback: Grab ANY valid number on the card so it never returns 0
   const anyNumKey = Object.keys(statsObj).find(
     (k) =>
       !["id", "tier", "v"].includes(k.toLowerCase()) &&
@@ -118,7 +113,7 @@ export const getStatValue = (player, statName) => {
   );
   if (anyNumKey) return Number(statsObj[anyNumKey]);
 
-  return 75; // Ultimate safety net
+  return 75;
 };
 
 export const calculateManagerBonus = (manager) => {
@@ -132,46 +127,72 @@ export const calculateSportsEffectiveScore = (
   player,
   slotId,
   sportId,
-  manager = null,
+  auraProvider = null,
 ) => {
   if (!player) return 0;
-
   const statLabels = getRoleStats(sportId, player.role || "DEFAULT");
   let baseTotal = 0;
-
   statLabels.forEach((stat) => {
-    baseTotal += getStatValue(player, stat); // Pulls from our safe extractor
+    baseTotal += getStatValue(player, stat);
   });
 
   let multiplier = 1;
   if (player.tier === "S+") multiplier = 1.2;
   if (player.tier === "S") multiplier = 1.1;
 
-  const mgrBonus = slotId !== "mgr" ? calculateManagerBonus(manager) : 1.0;
-  return Math.round(baseTotal * multiplier * mgrBonus);
+  const auraBonus =
+    slotId !== "mgr" && slotId !== "imp"
+      ? calculateManagerBonus(auraProvider)
+      : 1.0;
+  return Math.round(baseTotal * multiplier * auraBonus);
 };
 
-export const generateCpuTeam = (pool, slots = []) => {
+// 🛡️ CPU GENERATOR: Now perfectly blocks names globally!
+export const generateCpuTeam = (
+  pool,
+  slots = [],
+  globalDraftedNames = new Set(),
+) => {
   if (!pool || pool.length === 0) return {};
   const cpuTeam = {};
-  const draftedIds = new Set();
+  const localDraftedNames = new Set();
 
   slots.forEach((slot) => {
-    const validPlayers = pool.filter(
-      (p) => p.role === slot.role && !draftedIds.has(p.id),
-    );
+    let validPlayers = [];
+
+    // Check globalDraftedNames & localDraftedNames by NAME
+    if (slot.role === "IMP") {
+      validPlayers = pool.filter(
+        (p) =>
+          ["BAT", "BWL", "ALL"].includes(p.role) &&
+          !globalDraftedNames.has(p.name.toLowerCase()) &&
+          !localDraftedNames.has(p.name.toLowerCase()),
+      );
+    } else {
+      validPlayers = pool.filter(
+        (p) =>
+          p.role === slot.role &&
+          !globalDraftedNames.has(p.name.toLowerCase()) &&
+          !localDraftedNames.has(p.name.toLowerCase()),
+      );
+    }
+
     if (validPlayers.length > 0) {
       const selected =
         validPlayers[Math.floor(Math.random() * validPlayers.length)];
       cpuTeam[slot.id] = selected;
-      draftedIds.add(selected.id);
+      localDraftedNames.add(selected.name.toLowerCase());
     } else {
-      const fallbackPlayers = pool.filter((p) => !draftedIds.has(p.id));
+      const fallbackPlayers = pool.filter(
+        (p) =>
+          !globalDraftedNames.has(p.name.toLowerCase()) &&
+          !localDraftedNames.has(p.name.toLowerCase()),
+      );
       if (fallbackPlayers.length > 0) {
         const selected =
           fallbackPlayers[Math.floor(Math.random() * fallbackPlayers.length)];
         cpuTeam[slot.id] = selected;
-        draftedIds.add(selected.id);
+        localDraftedNames.add(selected.name.toLowerCase());
       }
     }
   });

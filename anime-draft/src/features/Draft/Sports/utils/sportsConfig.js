@@ -2,6 +2,7 @@ export const getSportConfig = (sportId) => {
   const configs = {
     football: {
       name: "Football Arena",
+      // ⚽ FOOTBALL: 100% UNTOUCHED
       slots: [
         { id: "mgr", label: "MANAGER", role: "MGR", top: "6%", left: "12%" },
         { id: "lwf", label: "LWF", role: "ATT", top: "18%", left: "20%" },
@@ -18,29 +19,30 @@ export const getSportConfig = (sportId) => {
       ],
     },
     cricket: {
-      name: "Cricket Stadium",
+      name: "Mega Auction",
+      // 🏏 CRICKET: No positions needed because it's a List UI now!
       slots: [
-        { id: "mgr", label: "COACH", role: "MGR", top: "6%", left: "12%" },
-        { id: "op1", label: "OPENER", role: "BAT", top: "18%", left: "35%" },
-        { id: "op2", label: "OPENER", role: "BAT", top: "18%", left: "65%" },
-        { id: "mo1", label: "BATSMAN", role: "BAT", top: "33%", left: "20%" },
-        { id: "mo2", label: "BATSMAN", role: "BAT", top: "33%", left: "80%" },
-        { id: "mo3", label: "BATSMAN", role: "BAT", top: "43%", left: "50%" },
-        { id: "al1", label: "ALL RND", role: "ALL", top: "58%", left: "30%" },
-        { id: "al2", label: "ALL RND", role: "ALL", top: "58%", left: "70%" },
-        { id: "wk", label: "WICKET", role: "WK", top: "73%", left: "50%" },
-        { id: "bw1", label: "BOWLER", role: "BWL", top: "88%", left: "20%" },
-        { id: "bw2", label: "BOWLER", role: "BWL", top: "88%", left: "50%" },
-        { id: "bw3", label: "BOWLER", role: "BWL", top: "88%", left: "80%" },
+        { id: "imp", label: "IMPACT PLAYER", role: "IMP" }, // 💥 The new Impact slot!
+        { id: "wk", label: "WICKETKEEPER", role: "WK" },
+        { id: "bat1", label: "OPENING BATTER", role: "BAT" },
+        { id: "bat2", label: "OPENING BATTER", role: "BAT" },
+        { id: "bat3", label: "MIDDLE ORDER", role: "BAT" },
+        { id: "bat4", label: "MIDDLE ORDER", role: "BAT" },
+        { id: "bat5", label: "POWER HITTER", role: "BAT" },
+        { id: "all1", label: "ALL-ROUNDER", role: "ALL" },
+        { id: "all2", label: "ALL-ROUNDER", role: "ALL" },
+        { id: "bwl1", label: "PACE BOWLER", role: "BWL" },
+        { id: "bwl2", label: "PACE BOWLER", role: "BWL" },
+        { id: "bwl3", label: "SPIN BOWLER", role: "BWL" },
       ],
     },
   };
   return configs[sportId] || configs.football;
 };
 
-// 🎯 UPGRADED: Exactly 4 Stats for EVERY role!
 export const getRoleStats = (sportId, role) => {
   if (role === "MGR") return ["IQ", "EXP", "TACTICS", "CHARISMA"];
+  if (role === "IMP") return ["BATTING", "BOWLING", "FIELDING", "POWER"];
 
   const stats = {
     football: {
