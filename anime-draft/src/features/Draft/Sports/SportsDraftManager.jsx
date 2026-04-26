@@ -16,14 +16,18 @@ export default function SportsDraftManager({ user }) {
   const navigate = useNavigate();
 
   const universe = state?.universe || "football";
-  const mode = state?.mode || "Player vs CPU";
 
-  // 👥 MULTIPLAYER CONFIGURATION ENGINE
+  // 🛡️ CRITICAL FIX: Pulling mode from LocalStorage if Router drops it!
+  const savedMode = localStorage.getItem("animeDraft_mode") || "PVE";
+  const mode = state?.mode || savedMode;
+
+  // 👥 MULTIPLAYER MATCHER
   const getMatchConfig = (m) => {
-    if (m === "Player vs Player") return { human: 2, cpu: 0 };
-    if (m === "1v1v1v1") return { human: 4, cpu: 0 };
-    if (m === "2v2") return { human: 4, cpu: 0 };
-    return { human: 1, cpu: 1 }; // Default PvE
+    const safeMode = String(m).toUpperCase();
+    if (safeMode === "PVP") return { human: 2, cpu: 0 };
+    if (safeMode === "BATTLE ROYALE") return { human: 4, cpu: 0 };
+    if (safeMode === "TEAM BATTLE") return { human: 4, cpu: 0 };
+    return { human: 1, cpu: 1 }; // PVE Default
   };
   const matchConfig = getMatchConfig(mode);
 
@@ -47,23 +51,21 @@ export default function SportsDraftManager({ user }) {
   const [battleData, setBattleData] = useState(null);
   const [packState, setPackState] = useState("closed");
 
-  // 🔄 SEQUENTIAL DRAFTING STATE
   const [finishedTeams, setFinishedTeams] = useState([]);
   const currentHumanIndex = finishedTeams.length + 1;
 
-  // 🛡️ DYNAMIC DUPLICATE BLOCKER
   const getGlobalNames = () => {
     const names = new Set();
     finishedTeams.forEach((t) =>
       Object.values(t).forEach((p) => names.add(p.name.toLowerCase())),
     );
-    Object.values(team).forEach((p) => names.add(p.name.toLowerCase())); // Include current pitch
+    Object.values(team).forEach((p) => names.add(p.name.toLowerCase()));
     return names;
   };
 
   const handleOpenDraft = (slot) => {
     setPackState("closed");
-    openDraftOptions(slot, getGlobalNames()); // Passes global names!
+    openDraftOptions(slot, getGlobalNames());
   };
 
   const handleSelect = (player) => {
@@ -80,11 +82,11 @@ export default function SportsDraftManager({ user }) {
 
   const handleConfirmOrFight = async () => {
     if (currentHumanIndex < matchConfig.human) {
-      // Next Player's Turn!
+      // Next Human Player's Turn! (Clears pitch for P2, P3, etc.)
       setFinishedTeams([...finishedTeams, team]);
       resetDraft();
     } else {
-      // All Humans Drafted -> Fill CPU Teams & Fight!
+      // All Humans Drafted -> Fill CPU Teams (if any) & Fight!
       try {
         setLoading(true);
         let allSquads = [...finishedTeams, team];
@@ -124,10 +126,12 @@ export default function SportsDraftManager({ user }) {
 
   if (dbLoading)
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center text-green-500 font-black animate-pulse">
+      <div className="h-screen bg-[#050505] flex items-center justify-center text-emerald-500 font-black animate-pulse">
         WARMING UP PITCH...
       </div>
     );
+
+  const isSquadComplete = Object.keys(team).length === slots.length;
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase flex flex-col">
@@ -140,32 +144,52 @@ export default function SportsDraftManager({ user }) {
       )}
 
       {!battleData && (
-        <div className="flex-1 flex flex-col items-center justify-center px-2 z-10">
+        <div className="flex-1 flex flex-col items-center justify-start px-2 z-10 relative pt-14 md:pt-20">
           {/* MULTIPLAYER DRAFT HUD */}
-          <div className="mb-2 bg-black/60 border border-white/20 px-6 py-2 rounded-full flex items-center gap-3 shadow-lg">
-            <Users size={16} className="text-gray-400" />
-            <span className="text-xs md:text-sm font-black tracking-widest text-emerald-400">
+          <div className="absolute top-2 z-50 bg-black/80 border border-white/20 px-6 py-2 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <Users
+              size={16}
+              className={
+                currentHumanIndex === 1
+                  ? "text-emerald-400"
+                  : currentHumanIndex === 2
+                    ? "text-red-500"
+                    : "text-purple-400"
+              }
+            />
+            <span
+              className={`text-xs md:text-sm font-black tracking-widest ${currentHumanIndex === 1 ? "text-emerald-400" : currentHumanIndex === 2 ? "text-red-500" : "text-purple-400"}`}
+            >
               PLAYER {currentHumanIndex} DRAFTING
             </span>
           </div>
 
-          <SportsPitchUI
-            slots={slots}
-            team={team}
-            sportId={universe}
-            onSlotClick={handleOpenDraft}
-          />
+          <div className="w-full flex justify-center pb-24">
+            <SportsPitchUI
+              slots={slots}
+              team={team}
+              sportId={universe}
+              onSlotClick={handleOpenDraft}
+            />
+          </div>
 
-          {Object.keys(team).length === slots.length && (
-            <button
-              onClick={handleConfirmOrFight}
-              disabled={loading}
-              className="mt-6 w-full max-w-sm h-14 rounded-full font-black text-sm italic tracking-[0.3em] bg-gradient-to-r from-emerald-500 to-green-700 shadow-[0_0_40px_rgba(52,211,153,0.4)] text-black transition-all active:scale-95 z-20 relative"
+          {/* 🛡️ FLOATING BUTTON FIX: Will NEVER hide behind the Cricket UI again! */}
+          {isSquadComplete && (
+            <motion.div
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              className="fixed bottom-8 left-0 w-full flex justify-center z-[5000] px-4"
             >
-              {currentHumanIndex < matchConfig.human
-                ? `CONFIRM P${currentHumanIndex} SQUAD & NEXT`
-                : "ENGAGE MATCH"}
-            </button>
+              <button
+                onClick={handleConfirmOrFight}
+                disabled={loading}
+                className="w-full max-w-sm h-14 rounded-full font-black text-sm md:text-base italic tracking-[0.2em] bg-gradient-to-r from-emerald-500 to-green-700 shadow-[0_0_50px_rgba(52,211,153,0.8)] text-black transition-all active:scale-95 animate-bounce"
+              >
+                {currentHumanIndex < matchConfig.human
+                  ? `CONFIRM P${currentHumanIndex} SQUAD & NEXT`
+                  : "ENGAGE MATCH"}
+              </button>
+            </motion.div>
           )}
         </div>
       )}
@@ -219,7 +243,7 @@ export default function SportsDraftManager({ user }) {
                     SELECT OPERATIVE
                   </h2>
                 </div>
-                <div className="flex justify-center items-center gap-4 w-full max-w-4xl mb-8">
+                <div className="flex justify-center items-center gap-6 md:gap-12 w-full max-w-4xl mb-8">
                   {draftOptions.map((option, idx) => (
                     <SportsCardDisplay
                       key={option.id}

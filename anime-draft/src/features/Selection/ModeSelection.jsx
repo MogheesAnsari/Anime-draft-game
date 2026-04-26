@@ -16,7 +16,7 @@ export default function ModeSelection({ user }) {
     {
       id: "PVP",
       name: "PLAYER VS PLAYER",
-      desc: "1v1 local or online tactical clash.",
+      desc: "1v1 local pass-and-play tactical clash.",
       icon: <User size={32} />,
     },
     {
@@ -34,7 +34,8 @@ export default function ModeSelection({ user }) {
   ];
 
   const handleAction = (id) => {
-    // 🚀 MISSION TRIGGER: Path set to Multiverse Gate (Domain Selection)
+    // 🛡️ CRITICAL FIX: Save to localStorage so intermediate pages don't drop the state!
+    localStorage.setItem("animeDraft_mode", id);
     navigate("/domain", { state: { mode: id } });
   };
 

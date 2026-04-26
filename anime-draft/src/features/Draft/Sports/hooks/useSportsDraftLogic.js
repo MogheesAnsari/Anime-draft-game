@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-// 🎲 Casino-Grade Shuffle Array
+// 🎲 Casino-Grade Shuffle
 const shuffleArray = (array) => {
   let shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -20,7 +20,7 @@ export function useSportsDraftLogic(universe) {
   const [skips, setSkips] = useState(3);
 
   const pityBonus = useRef(0);
-  const seenHistory = useRef(new Set()); // 🧠 Remembers seen players
+  const seenHistory = useRef(new Set());
 
   useEffect(() => {
     const fetchPool = async () => {
@@ -46,7 +46,6 @@ export function useSportsDraftLogic(universe) {
     else if (roll <= 15 + currentPity) targetTier = "S";
     else if (roll <= 50) targetTier = "A";
 
-    // Prioritize players NOT seen yet
     let tierPool = availablePlayers.filter(
       (p) =>
         p.tier === targetTier &&
@@ -61,7 +60,6 @@ export function useSportsDraftLogic(universe) {
           !seenHistory.current.has(p.name.toLowerCase()),
       );
 
-    // Deck Empty Rescue: If everyone was seen, ignore seenHistory so the game doesn't break
     if (tierPool.length === 0) {
       tierPool = availablePlayers.filter(
         (p) => !usedNamesInThisDraw.has(p.name.toLowerCase()),
@@ -70,35 +68,43 @@ export function useSportsDraftLogic(universe) {
 
     if (tierPool.length === 0) return { selected: null, isSPlus: false };
 
-    const selected = tierPool[0]; // Take first from shuffled deck
-    seenHistory.current.add(selected.name.toLowerCase()); // Add name to discard pile
+    const selected = tierPool[0];
+    seenHistory.current.add(selected.name.toLowerCase());
     return { selected, isSPlus: targetTier === "S+" };
   };
 
-  // 🛡️ globalDraftedNames blocks duplicates from OTHER human teams
   const openDraftOptions = (slotConfig, globalDraftedNames = new Set()) => {
+    const draftedIds = Object.values(team).map((p) => p.id);
+
+    // 💥 IMPACT PLAYER RULE (Remains 3 Cards: BAT, BWL, ALL)
     if (slotConfig.role === "IMP") {
       const batPool = shuffleArray(
         characterPool.filter(
           (p) =>
-            p.role === "BAT" && !globalDraftedNames.has(p.name.toLowerCase()),
+            p.role === "BAT" &&
+            !globalDraftedNames.has(p.name.toLowerCase()) &&
+            !draftedIds.includes(p.id),
         ),
       );
       const bwlPool = shuffleArray(
         characterPool.filter(
           (p) =>
-            p.role === "BWL" && !globalDraftedNames.has(p.name.toLowerCase()),
+            p.role === "BWL" &&
+            !globalDraftedNames.has(p.name.toLowerCase()) &&
+            !draftedIds.includes(p.id),
         ),
       );
       const allPool = shuffleArray(
         characterPool.filter(
           (p) =>
-            p.role === "ALL" && !globalDraftedNames.has(p.name.toLowerCase()),
+            p.role === "ALL" &&
+            !globalDraftedNames.has(p.name.toLowerCase()) &&
+            !draftedIds.includes(p.id),
         ),
       );
 
       if (batPool.length < 1 || bwlPool.length < 1 || allPool.length < 1)
-        return alert("Not enough diverse players left in DB for Impact Draw!");
+        return alert("Not enough diverse players in DB for Impact!");
 
       const newOptions = [];
       const usedNamesInThisDraw = new Set();
@@ -119,22 +125,24 @@ export function useSportsDraftLogic(universe) {
       return;
     }
 
-    // STANDARD DRAFT
+    // ⚽ STANDARD RULE (FIXED: Now only draws 2 Cards for max excitement!)
     const validPlayers = shuffleArray(
       characterPool.filter(
         (p) =>
           p.role === slotConfig.role &&
-          !globalDraftedNames.has(p.name.toLowerCase()),
+          !globalDraftedNames.has(p.name.toLowerCase()) &&
+          !draftedIds.includes(p.id),
       ),
     );
-    if (validPlayers.length < 3)
+    if (validPlayers.length < 2)
       return alert(`Not enough players left for role ${slotConfig.role}!`);
 
     const newOptions = [];
     const usedNamesInThisDraw = new Set();
     let foundSPlus = false;
 
-    for (let i = 0; i < 3; i++) {
+    // LOOP CHANGED TO 2
+    for (let i = 0; i < 2; i++) {
       const { selected, isSPlus } = rollForCard(
         validPlayers,
         usedNamesInThisDraw,
@@ -165,7 +173,7 @@ export function useSportsDraftLogic(universe) {
     }
   };
 
-  // 🔄 REQUIRED FOR MULTIPLAYER: Clears the pitch for the next player!
+  // 🔄 REQUIRED FOR MULTIPLAYER
   const resetDraft = () => {
     setTeam({});
     setDraftOptions([]);

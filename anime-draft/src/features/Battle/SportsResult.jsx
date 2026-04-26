@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Trophy, RotateCcw, Home, Star, ShieldAlert } from "lucide-react";
+import { Trophy, RotateCcw, Home, Star, Medal, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
@@ -9,20 +9,19 @@ import { calculateSportsEffectiveScore } from "../Draft/Sports/utils/sportsUtils
 export default function SportsResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const [phase, setPhase] = useState("CALCULATING"); // CALCULATING -> REVEAL
+  const [showCards, setShowCards] = useState(false);
   const isRecorded = useRef(false);
 
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
-
   const sportId = state?.universe || "football";
   const config = getSportConfig(sportId);
   const SLOTS = config.slots;
 
-  // 🧠 UPGRADED: Dynamic Multi-Team Sorting (Supports 2v2 and 1v1v1v1 perfectly!)
-  const { displayCards, headerText, winnerCard } = useMemo(() => {
-    let players = teams.map((team, idx) => {
+  // 🧠 Dynamic Multi-Team Sorting
+  const { rankedTeams, statusText } = useMemo(() => {
+    let processedTeams = teams.map((team, idx) => {
       let charList = [];
       let bestChar = { name: "N/A", score: 0, slotLabel: "N/A" };
       let teamTotalScore = 0;
@@ -58,46 +57,34 @@ export default function SportsResult() {
 
       return {
         id: idx + 1,
-        name: idx === 0 ? "YOUR SQUAD" : `OPPONENT ${idx}`,
+        isMe: idx === 0, // Assume P1 is "ME"
+        name: idx === 0 ? "YOUR SQUAD" : `PLAYER ${idx + 1}`,
         score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
         characters: charList,
       };
     });
 
-    // Sort all teams from highest score to lowest
-    let builtCards = players
-      .map((p) => ({ ...p, members: [p] }))
-      .sort((a, b) => b.score - a.score);
+    // Rank Teams (Highest Score First)
+    processedTeams.sort((a, b) => b.score - a.score);
+    processedTeams.forEach((t, idx) => (t.rank = idx + 1));
 
-    // Assign Ranks
-    builtCards.forEach((c, idx) => (c.rank = idx + 1));
-
-    const myTeam = builtCards.find((c) => c.name === "YOUR SQUAD");
+    const myTeam = processedTeams.find((t) => t.isMe);
     let status = "DEFEAT";
     if (myTeam && myTeam.rank === 1) {
-      // Check for draw at 1st place
       status =
-        builtCards.length > 1 && builtCards[0].score === builtCards[1].score
+        processedTeams.length > 1 &&
+        processedTeams[0].score === processedTeams[1].score
           ? "DRAW"
           : "VICTORY";
     }
 
-    return {
-      displayCards: builtCards,
-      headerText: status,
-      winnerCard: builtCards.find((c) => c.rank === 1),
-    };
+    return { rankedTeams: processedTeams, statusText: status };
   }, [teams, rawScores, state, sportId, SLOTS]);
 
   // 📡 Sync Data
   useEffect(() => {
-    if (
-      isRecorded.current ||
-      displayCards.length === 0 ||
-      phase === "CALCULATING"
-    )
-      return;
+    if (isRecorded.current || rankedTeams.length === 0) return;
     isRecorded.current = true;
 
     const syncResult = async () => {
@@ -107,7 +94,7 @@ export default function SportsResult() {
         );
         if (!commanderInfo.username) return;
 
-        const isWin = headerText === "VICTORY";
+        const isWin = statusText === "VICTORY";
         await axios.post("http://localhost:5000/api/user/record-match", {
           username: commanderInfo.username,
           sessionId: commanderInfo.sessionId,
@@ -116,230 +103,194 @@ export default function SportsResult() {
           gemsWon: isWin ? 1 : 0,
         });
       } catch (err) {
-        console.error("Failed to sync match", err);
+        console.error(err);
       }
     };
     syncResult();
-  }, [displayCards, headerText, phase]);
+  }, [rankedTeams, statusText]);
 
-  // ⏱️ Cinematic Reveal Timing
   useEffect(() => {
-    const timer = setTimeout(() => setPhase("REVEAL"), 2000);
+    const timer = setTimeout(() => setShowCards(true), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  const isVictory = headerText === "VICTORY";
-  const isDraw = headerText === "DRAW";
-
-  // Dynamic Theming
-  const bgTheme = isVictory
-    ? "from-emerald-900/40"
-    : isDraw
-      ? "from-gray-800/40"
-      : "from-red-900/40";
+  const isVictory = statusText === "VICTORY";
+  const bgTheme = isVictory ? "from-emerald-900/40" : "from-red-900/40";
   const textTheme = isVictory
     ? "text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.8)]"
-    : isDraw
-      ? "text-gray-400"
-      : "text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]";
+    : "text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]";
 
   return (
-    <div className="h-[100dvh] w-full bg-[#030305] text-white flex flex-col items-center overflow-x-hidden overflow-y-auto custom-scrollbar relative pb-32 uppercase italic font-black">
-      {/* Cinematic Background */}
+    <div className="min-h-screen w-full bg-[#030305] text-white flex flex-col items-center overflow-x-hidden overflow-y-auto custom-scrollbar relative pb-32 uppercase italic font-black">
+      {/* Dynamic BG */}
       <div
-        className={`fixed inset-0 bg-gradient-to-b ${bgTheme} to-transparent pointer-events-none opacity-50 z-0 transition-colors duration-1000`}
+        className={`fixed inset-0 bg-gradient-to-b ${bgTheme} to-[#030305] pointer-events-none opacity-80 z-0 transition-colors duration-1000`}
       />
 
-      <AnimatePresence mode="wait">
-        {phase === "CALCULATING" && (
-          <motion.div
-            key="calc"
-            exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
-            className="flex flex-col items-center justify-center h-full z-10 mt-40"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            >
-              <ShieldAlert
-                size={60}
-                className="text-gray-500 opacity-50 mb-4"
-              />
-            </motion.div>
-            <h2 className="text-2xl md:text-4xl text-gray-400 tracking-[0.3em] animate-pulse">
-              CALCULATING
-            </h2>
-          </motion.div>
-        )}
+      <div className="z-10 mt-10 mb-6 text-center">
+        <motion.h1
+          initial={{ y: -50, opacity: 0, scale: 0.5 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ type: "spring", bounce: 0.6 }}
+          className={`text-6xl md:text-8xl tracking-tighter ${textTheme}`}
+        >
+          {statusText}
+        </motion.h1>
+      </div>
 
-        {phase === "REVEAL" && (
-          <motion.div
-            key="reveal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="w-full max-w-6xl flex flex-col items-center z-10 px-4 pt-10"
-          >
-            {/* 🏆 HEADER */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", bounce: 0.5 }}
-            >
-              {isVictory ? (
-                <Trophy
-                  size={60}
-                  className="text-yellow-400 mb-2 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]"
-                />
-              ) : (
-                <ShieldAlert size={60} className="text-red-500 mb-2" />
-              )}
-            </motion.div>
-            <motion.h1
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className={`text-6xl md:text-8xl tracking-tighter ${textTheme} mb-8`}
-            >
-              {headerText}
-            </motion.h1>
+      <AnimatePresence>
+        {showCards && (
+          <div className="w-full max-w-6xl px-4 z-10 flex flex-col gap-8 items-center">
+            {/* 🏆 THE WINNER PODIUM (Rank 1 gets massive spotlight) */}
+            {rankedTeams.map((team, idx) => {
+              const isFirst = team.rank === 1;
+              const cardColor = isFirst
+                ? "border-emerald-500 shadow-[0_0_40px_rgba(52,211,153,0.3)] bg-gradient-to-b from-emerald-900/40 to-black"
+                : "border-white/10 bg-black/60 opacity-90";
+              const titleColor = isFirst ? "text-emerald-400" : "text-gray-400";
 
-            {/* 📊 MULTIPLAYER DYNAMIC GRID */}
-            <div
-              className={`grid gap-6 w-full ${displayCards.length > 2 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 md:grid-cols-2"}`}
-            >
-              {displayCards.map((card, cIdx) => {
-                const isFirst = card.rank === 1;
-                const borderCol = isFirst
-                  ? "border-emerald-500 shadow-[0_0_30px_rgba(52,211,153,0.2)]"
-                  : "border-red-600/50";
-                const player = card.members[0]; // Safely grab the player object
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 50, scale: isFirst ? 0.8 : 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: idx * 0.3, type: "spring" }}
+                  className={`w-full ${isFirst ? "max-w-4xl" : "max-w-2xl"} border-2 rounded-[32px] overflow-hidden ${cardColor} relative`}
+                >
+                  {isFirst && (
+                    <div className="absolute inset-0 holo-shimmer opacity-10 pointer-events-none mix-blend-overlay" />
+                  )}
 
-                return (
-                  <motion.div
-                    key={cIdx}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 + cIdx * 0.2 }}
-                    className={`bg-[#0a0a0c]/80 backdrop-blur-xl border-2 rounded-[32px] overflow-hidden ${borderCol} flex flex-col`}
-                  >
-                    {/* SCORE BANNER */}
-                    <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5 relative">
-                      <div
-                        className={`absolute top-0 left-0 w-2 h-full ${isFirst ? "bg-emerald-500" : "bg-red-600"}`}
-                      />
-                      <div className="pl-4">
-                        <div className="text-[10px] md:text-xs text-gray-500 tracking-widest mb-1">
-                          {card.name}
+                  {/* SCORE HEADER */}
+                  <div className="flex justify-between items-center p-6 border-b border-white/10 relative z-10">
+                    <div className="flex items-center gap-4">
+                      {isFirst ? (
+                        <Crown
+                          size={40}
+                          className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
+                        />
+                      ) : (
+                        <Medal size={24} className="text-gray-500" />
+                      )}
+                      <div>
+                        <div
+                          className={`text-[10px] md:text-xs tracking-widest mb-1 ${titleColor}`}
+                        >
+                          RANK {team.rank} • {team.name}
                         </div>
                         <Counter
-                          target={card.score}
-                          className={`text-5xl md:text-6xl font-black ${isFirst ? "text-emerald-500" : "text-white"}`}
+                          target={team.score}
+                          className={`text-4xl md:text-6xl font-black ${isFirst ? "text-white" : "text-gray-400"}`}
                         />
                       </div>
-                      {isFirst && (
-                        <div className="bg-yellow-500 text-black px-4 py-1 rounded-full text-[10px] tracking-widest shadow-[0_0_15px_rgba(250,204,21,0.5)]">
-                          WINNER
-                        </div>
-                      )}
                     </div>
+                    {isFirst && (
+                      <Trophy
+                        size={60}
+                        className="text-emerald-500 opacity-20 absolute right-6"
+                      />
+                    )}
+                  </div>
 
-                    <div className="p-4 md:p-6 flex-1 flex flex-col gap-4">
-                      {/* ⭐ HOLOGRAPHIC MVP BLOCK */}
-                      <div
-                        className={`relative flex gap-4 p-4 rounded-2xl border overflow-hidden ${isFirst ? "bg-gradient-to-r from-emerald-900/30 to-black border-emerald-500/50" : "bg-black/50 border-white/10"}`}
-                      >
+                  <div
+                    className={`p-6 flex ${isFirst ? "flex-col md:flex-row" : "flex-col"} gap-6 relative z-10`}
+                  >
+                    {/* ⭐ MATCH MVP SHOWCASE */}
+                    <div
+                      className={`${isFirst ? "w-full md:w-1/2" : "w-full"} flex flex-col`}
+                    >
+                      <div className="flex gap-4 p-4 rounded-2xl bg-black/80 border border-white/10 shadow-xl relative overflow-hidden">
                         {isFirst && (
-                          <div className="absolute inset-0 holo-shimmer opacity-20 mix-blend-overlay pointer-events-none" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent" />
                         )}
 
                         <div
-                          className={`relative w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl border-2 shrink-0 overflow-hidden ${isFirst ? "border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]" : "border-gray-700"}`}
+                          className={`relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border-2 ${isFirst ? "border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)]" : "border-gray-600"}`}
                         >
                           <img
-                            src={player.mvp?.img || "/zoro.svg"}
+                            src={team.mvp?.img || "/zoro.svg"}
                             className="w-full h-full object-cover"
-                            alt=""
+                            alt="MVP"
                           />
                           <div
-                            className={`absolute bottom-0 w-full text-center text-[8px] md:text-[10px] ${isFirst ? "bg-yellow-400 text-black" : "bg-black/80 text-white"}`}
+                            className={`absolute bottom-0 w-full text-center text-[10px] ${isFirst ? "bg-yellow-400 text-black" : "bg-black/80 text-white"}`}
                           >
-                            {player.mvp?.tier || "S+"}
+                            {team.mvp?.tier || "S+"}
                           </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-center z-10">
+                        <div className="flex-1 flex flex-col justify-center">
                           <div
-                            className={`text-[8px] md:text-[10px] font-black flex items-center gap-1 mb-1 tracking-widest ${isFirst ? "text-yellow-400" : "text-gray-400"}`}
+                            className={`text-[10px] font-black flex items-center gap-1 mb-1 tracking-widest ${isFirst ? "text-yellow-400" : "text-gray-400"}`}
                           >
                             <Star
-                              size={10}
+                              size={12}
                               className={isFirst ? "fill-yellow-400" : ""}
                             />{" "}
-                            MATCH MVP
+                            MVP
                           </div>
-                          <div className="text-lg md:text-2xl font-black truncate">
-                            {player.mvp?.name}
+                          <div className="text-xl md:text-2xl font-black truncate text-white">
+                            {team.mvp?.name}
                           </div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-widest">
-                            {player.mvp?.slotLabel}
+                          <div className="text-[10px] text-gray-400 tracking-widest">
+                            {team.mvp?.slotLabel}
                           </div>
                           <div
-                            className={`text-xl md:text-3xl font-black italic mt-1 ${isFirst ? "text-white" : "text-gray-400"}`}
+                            className={`text-2xl font-black italic mt-1 ${isFirst ? "text-white" : "text-gray-400"}`}
                           >
-                            {player.mvp?.score}{" "}
+                            {team.mvp?.score}{" "}
                             <span className="text-[10px] text-gray-500">
                               PTS
                             </span>
                           </div>
                         </div>
                       </div>
-
-                      {/* 👥 MOBILE-FRIENDLY SQUAD GRID */}
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
-                        {player.characters
-                          .filter((c) => c.slotLabel !== player.mvp?.slotLabel)
-                          .map((char, cIndex) => (
-                            <div
-                              key={cIndex}
-                              className="flex flex-col bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 border border-white/5 items-center text-center"
-                            >
-                              <img
-                                src={char.img}
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover mb-1 border border-white/10"
-                                alt=""
-                              />
-                              <div className="text-[7px] text-emerald-400 font-black">
-                                {char.slotLabel}
-                              </div>
-                              <div className="text-[8px] md:text-[9px] font-bold truncate w-full text-gray-300">
-                                {char.name}
-                              </div>
-                              <div className="text-[9px] md:text-[10px] font-black italic text-white mt-1">
-                                {char.finalScore}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
+
+                    {/* 👥 REST OF SQUAD GRID */}
+                    <div
+                      className={`${isFirst ? "w-full md:w-1/2" : "w-full"} grid grid-cols-4 sm:grid-cols-5 gap-2 content-start`}
+                    >
+                      {team.characters
+                        .filter((c) => c.slotLabel !== team.mvp?.slotLabel)
+                        .map((char, cIndex) => (
+                          <div
+                            key={cIndex}
+                            className="flex flex-col items-center bg-white/5 rounded-lg p-2 border border-white/5 hover:bg-white/10 transition-colors"
+                          >
+                            <img
+                              src={char.img}
+                              className="w-8 h-8 md:w-10 md:h-10 rounded-md object-cover mb-1 border border-white/10"
+                              alt=""
+                            />
+                            <div className="text-[6px] md:text-[7px] text-emerald-400 font-black">
+                              {char.slotLabel}
+                            </div>
+                            <div className="text-[8px] font-bold truncate w-full text-gray-300 text-center">
+                              {char.name}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         )}
       </AnimatePresence>
 
-      {/* 🎮 NAVIGATION FOOTER */}
+      {/* 🎮 FLOATING FOOTER */}
       <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 flex justify-center gap-4 z-50 px-4">
         <button
           onClick={() => navigate("/draft/sports", { state })}
-          className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-2xl text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all active:scale-95"
+          className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all active:scale-95"
         >
           <RotateCcw size={16} /> PLAY AGAIN
         </button>
         <button
           onClick={() => navigate("/modes")}
-          className="flex-1 max-w-[200px] bg-black/80 hover:bg-white/10 py-4 rounded-2xl text-xs md:text-sm font-black italic tracking-widest border border-white/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+          className="flex-1 max-w-[200px] bg-black/80 hover:bg-white/10 py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest border border-white/20 flex items-center justify-center gap-2 transition-all active:scale-95"
         >
           <Home size={16} /> HUB
         </button>
@@ -348,7 +299,7 @@ export default function SportsResult() {
   );
 }
 
-// 🔢 Animated Number Counter Component
+// 🔢 Animated Counter
 function Counter({ target, className }) {
   const [count, setCount] = useState(0);
 
