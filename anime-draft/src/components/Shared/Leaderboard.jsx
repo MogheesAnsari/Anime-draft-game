@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ArrowLeft, Trophy, Crown, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-// ✅ Make sure this path points to your draftUtils correctly
+import api from "../../services/api"; // 🛡️ SECURE API IMPORT
 import { getRankTier } from "../../features/Draft/Anime/utils/draftUtils";
 
 export default function Leaderboard() {
@@ -13,8 +12,8 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        // 🔥 Pointed to the correct Backend API Server
-        const res = await axios.get("http://localhost:5000/api/leaderboard");
+        // 🔥 Using the secure api interceptor
+        const res = await api.get("/leaderboard");
         setLeaders(res.data);
       } catch (error) {
         console.error("Failed to fetch leaderboard", error);
@@ -78,7 +77,6 @@ export default function Leaderboard() {
                     key={player._id || idx}
                     className={`flex items-center justify-between p-4 rounded-2xl transition-transform hover:scale-[1.01] ${idx === 0 ? "bg-[#ff8c32]/10 border-2 border-[#ff8c32]/50" : idx === 1 ? "bg-gray-300/10 border border-gray-300/30" : idx === 2 ? "bg-amber-700/10 border border-amber-700/30" : "bg-white/5 border border-white/5 hover:bg-white/10"}`}
                   >
-                    {/* Rank Number & Avatar */}
                     <div className="flex items-center gap-4 md:gap-6">
                       <div
                         className={`w-10 text-center font-black italic text-2xl md:text-3xl ${idx === 0 ? "text-[#ff8c32]" : idx === 1 ? "text-gray-300" : idx === 2 ? "text-amber-600" : "text-gray-600"}`}

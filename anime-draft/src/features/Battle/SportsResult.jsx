@@ -1,15 +1,26 @@
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Trophy, RotateCcw, Home, Star, Medal, Crown } from "lucide-react";
+import {
+  Trophy,
+  RotateCcw,
+  Home,
+  Star,
+  Medal,
+  Crown,
+  Coins,
+  Gem,
+  ShieldAlert,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import { calculateSportsEffectiveScore } from "../Draft/Sports/utils/sportsUtils";
 
-export default function SportsResult() {
+export default function SportsResult({ user, setUser }) {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [showCards, setShowCards] = useState(false);
+  const [rewardData, setRewardData] = useState(null);
   const isRecorded = useRef(false);
 
   const teams = state?.teams || [];
@@ -19,7 +30,6 @@ export default function SportsResult() {
   const config = getSportConfig(sportId);
   const SLOTS = config.slots;
 
-  // 🧠 Dynamic Multi-Team Sorting
   const { rankedTeams, statusText } = useMemo(() => {
     let processedTeams = teams.map((team, idx) => {
       let charList = [];
@@ -57,7 +67,7 @@ export default function SportsResult() {
 
       return {
         id: idx + 1,
-        isMe: idx === 0, // Assume P1 is "ME"
+        isMe: idx === 0,
         name: idx === 0 ? "YOUR SQUAD" : `PLAYER ${idx + 1}`,
         score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
@@ -65,7 +75,6 @@ export default function SportsResult() {
       };
     });
 
-    // Rank Teams (Highest Score First)
     processedTeams.sort((a, b) => b.score - a.score);
     processedTeams.forEach((t, idx) => (t.rank = idx + 1));
 
@@ -82,32 +91,47 @@ export default function SportsResult() {
     return { rankedTeams: processedTeams, statusText: status };
   }, [teams, rawScores, state, sportId, SLOTS]);
 
-  // 📡 Sync Data
+  // 🛡️ REFRESH / F5 BUG FIX:
   useEffect(() => {
-    if (isRecorded.current || rankedTeams.length === 0) return;
+    // If state explicitly says we already recorded this match, abort!
+    if (isRecorded.current || rankedTeams.length === 0 || state?.isRecorded)
+      return;
     isRecorded.current = true;
 
     const syncResult = async () => {
       try {
-        const commanderInfo = JSON.parse(
-          localStorage.getItem("commander") || "{}",
-        );
-        if (!commanderInfo.username) return;
+        const cmd = JSON.parse(localStorage.getItem("commander") || "{}");
+        if (!cmd.username) return;
 
         const isWin = statusText === "VICTORY";
-        await axios.post("http://localhost:5000/api/user/record-match", {
-          username: commanderInfo.username,
-          sessionId: commanderInfo.sessionId,
-          isWin,
-          coinsWon: isWin ? 100 : 25,
-          gemsWon: isWin ? 1 : 0,
-        });
+
+        const res = await axios.post(
+          "http://localhost:5000/api/user/record-match",
+          {
+            username: cmd.username,
+            isWin: isWin,
+          },
+        );
+
+        if (res.data) {
+          setRewardData({
+            coinsAdded: res.data.coinsWon,
+            gemsAdded: res.data.gemsWon,
+          });
+          if (setUser) setUser(res.data.user);
+
+          // 🛑 CRITICAL FIX: Update URL state so hitting F5 won't reward coins again!
+          navigate(location.pathname, {
+            state: { ...state, isRecorded: true },
+            replace: true,
+          });
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Match saving failed:", err);
       }
     };
     syncResult();
-  }, [rankedTeams, statusText]);
+  }, [rankedTeams, statusText, state, navigate, location.pathname, setUser]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowCards(true), 500);
@@ -115,14 +139,20 @@ export default function SportsResult() {
   }, []);
 
   const isVictory = statusText === "VICTORY";
-  const bgTheme = isVictory ? "from-emerald-900/40" : "from-red-900/40";
+  const isDraw = statusText === "DRAW";
+  const bgTheme = isVictory
+    ? "from-emerald-900/40"
+    : isDraw
+      ? "from-gray-800/40"
+      : "from-red-900/40";
   const textTheme = isVictory
     ? "text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.8)]"
-    : "text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]";
+    : isDraw
+      ? "text-gray-400"
+      : "text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]";
 
   return (
     <div className="min-h-screen w-full bg-[#030305] text-white flex flex-col items-center overflow-x-hidden overflow-y-auto custom-scrollbar relative pb-32 uppercase italic font-black">
-      {/* Dynamic BG */}
       <div
         className={`fixed inset-0 bg-gradient-to-b ${bgTheme} to-[#030305] pointer-events-none opacity-80 z-0 transition-colors duration-1000`}
       />
@@ -138,10 +168,32 @@ export default function SportsResult() {
         </motion.h1>
       </div>
 
+      {/* 💰 LOOT REVEAL ANIMATION */}
+      <AnimatePresence>
+        {showCards &&
+          rewardData &&
+          rewardData.coinsAdded > 0 &&
+          !state?.isRecorded && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex gap-4 mb-6 z-30"
+            >
+              <div className="bg-yellow-500/10 border border-yellow-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_20px_rgba(234,179,8,0.2)]">
+                <Coins size={18} /> +{rewardData.coinsAdded} COINS
+              </div>
+              {rewardData.gemsAdded > 0 && (
+                <div className="bg-purple-500/10 border border-purple-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-purple-400 font-black shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                  <Gem size={18} /> +{rewardData.gemsAdded} GEM
+                </div>
+              )}
+            </motion.div>
+          )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showCards && (
           <div className="w-full max-w-6xl px-4 z-10 flex flex-col gap-8 items-center">
-            {/* 🏆 THE WINNER PODIUM (Rank 1 gets massive spotlight) */}
             {rankedTeams.map((team, idx) => {
               const isFirst = team.rank === 1;
               const cardColor = isFirst
@@ -161,7 +213,6 @@ export default function SportsResult() {
                     <div className="absolute inset-0 holo-shimmer opacity-10 pointer-events-none mix-blend-overlay" />
                   )}
 
-                  {/* SCORE HEADER */}
                   <div className="flex justify-between items-center p-6 border-b border-white/10 relative z-10">
                     <div className="flex items-center gap-4">
                       {isFirst ? (
@@ -195,7 +246,6 @@ export default function SportsResult() {
                   <div
                     className={`p-6 flex ${isFirst ? "flex-col md:flex-row" : "flex-col"} gap-6 relative z-10`}
                   >
-                    {/* ⭐ MATCH MVP SHOWCASE */}
                     <div
                       className={`${isFirst ? "w-full md:w-1/2" : "w-full"} flex flex-col`}
                     >
@@ -247,7 +297,6 @@ export default function SportsResult() {
                       </div>
                     </div>
 
-                    {/* 👥 REST OF SQUAD GRID */}
                     <div
                       className={`${isFirst ? "w-full md:w-1/2" : "w-full"} grid grid-cols-4 sm:grid-cols-5 gap-2 content-start`}
                     >
@@ -280,13 +329,18 @@ export default function SportsResult() {
         )}
       </AnimatePresence>
 
-      {/* 🎮 FLOATING FOOTER */}
       <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 flex justify-center gap-4 z-50 px-4">
         <button
           onClick={() => navigate("/draft/sports", { state })}
           className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all active:scale-95"
         >
           <RotateCcw size={16} /> PLAY AGAIN
+        </button>
+        <button
+          onClick={() => navigate("/shop")}
+          className="flex-1 max-w-[200px] bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)] transition-all active:scale-95"
+        >
+          <Coins size={16} /> VISIT SHOP
         </button>
         <button
           onClick={() => navigate("/modes")}
@@ -299,30 +353,22 @@ export default function SportsResult() {
   );
 }
 
-// 🔢 Animated Counter
 function Counter({ target, className }) {
   const [count, setCount] = useState(0);
-
   useEffect(() => {
     let start = 0;
-    const end = target;
-    if (start === end) {
-      setCount(end);
+    if (start === target) {
+      setCount(target);
       return;
     }
-
-    let totalDuration = 1500;
-    let incrementTime = totalDuration / end;
-
+    let incrementTime = 1500 / target;
     let timer = setInterval(() => {
-      start += Math.ceil(end / 50) || 1;
-      if (start > end) start = end;
+      start += Math.ceil(target / 50) || 1;
+      if (start > target) start = target;
       setCount(start);
-      if (start === end) clearInterval(timer);
+      if (start === target) clearInterval(timer);
     }, incrementTime);
-
     return () => clearInterval(timer);
   }, [target]);
-
   return <span className={className}>{count}</span>;
 }

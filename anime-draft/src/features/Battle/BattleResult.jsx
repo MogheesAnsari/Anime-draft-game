@@ -16,14 +16,13 @@ import axios from "axios";
 import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
 
-export default function BattleResult() {
+export default function BattleResult({ user, setUser }) {
   const { state } = useLocation();
   const navigate = useNavigate();
   const domain = state?.domain || "anime";
   const [showStats, setShowStats] = useState(false);
   const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
 
-  // 🔥 THE GATEKEEPER (Fixes the infinite loop / 20 Lakh coin bug)
   const isRecorded = useRef(false);
 
   const teams = state?.teams || [];
@@ -37,16 +36,16 @@ export default function BattleResult() {
     "support",
     "raw_power",
   ];
-  if (domain === "sports") {
-    return <SportsResult />;
-  }
+
+  if (domain === "sports")
+    return <SportsResult user={user} setUser={setUser} />;
+
   const { displayCards, headerText, winnerCard } = useMemo(() => {
     let players = teams.map((team, idx) => {
       let charList = [];
       let bestChar = { name: "N/A", score: 0, slot: "N/A", scoreData: null };
       let teamTotalScore = 0;
 
-      // Ensure we extract data properly, handle the state fallback
       const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
       const parsedData = savedDataRaw ? JSON.parse(savedDataRaw) : {};
       const battleData =
@@ -82,8 +81,9 @@ export default function BattleResult() {
 
       return {
         id: idx + 1,
-        name: `COMMANDER 0${idx + 1}`,
-        score: rawScores[idx] || teamTotalScore, // Fallback to teamTotal if rawScores is missing
+        isMe: idx === 0,
+        name: idx === 0 ? "YOUR SQUAD" : `COMMANDER 0${idx + 1}`,
+        score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
         characters: charList,
       };
@@ -164,80 +164,85 @@ export default function BattleResult() {
       headerText: status,
       winnerCard: builtCards.find((c) => c.rank === 1),
     };
-  }, [teams, rawScores, mode, state]);
+  }, [teams, rawScores, mode, state, SLOTS]);
 
-  // 🔥 SECURE DATABASE SAVE LOGIC (Runs exactly ONCE)
+  // 🛡️ REFRESH / F5 BUG FIX:
   useEffect(() => {
-    if (isRecorded.current || displayCards.length === 0) return;
-    isRecorded.current = true; // Lock the gate immediately!
+    // If the match was already recorded, or the state explicitly says it's recorded, abort!
+    if (isRecorded.current || displayCards.length === 0 || state?.isRecorded)
+      return;
+    isRecorded.current = true;
 
     const syncResultToDatabase = async () => {
       try {
-        const commanderInfo = JSON.parse(
-          localStorage.getItem("commander") || "{}",
-        );
-        if (!commanderInfo.username) return;
+        const cmd = JSON.parse(localStorage.getItem("commander") || "{}");
+        if (!cmd.username) return;
 
-        // Check if User won
         const isWin =
-          winnerCard?.members?.some((m) => m.name === "COMMANDER 01") || false;
-        const coinsWon = isWin ? 100 : 25;
-        const gemsWon = isWin ? 1 : 0;
+          winnerCard?.members?.some(
+            (m) => m.name === "YOUR SQUAD" || m.name === "COMMANDER 01",
+          ) || false;
 
-        await axios.post("http://localhost:5000/api/user/record-match", {
-          username: commanderInfo.username,
-          sessionId: commanderInfo.sessionId,
-          isWin: isWin,
-          coinsWon: coinsWon,
-          gemsWon: gemsWon,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/api/user/record-match",
+          {
+            username: cmd.username,
+            isWin: isWin,
+          },
+        );
 
-        setEarnedLoot({ coins: coinsWon, gems: gemsWon });
-        window.dispatchEvent(new Event("storage"));
+        if (res.data) {
+          setEarnedLoot({ coins: res.data.coinsWon, gems: res.data.gemsWon });
+          if (setUser) setUser(res.data.user);
+
+          // 🛑 CRITICAL FIX: Replace the React Router state so F5 doesn't trigger this again!
+          navigate(location.pathname, {
+            state: { ...state, isRecorded: true },
+            replace: true,
+          });
+        }
       } catch (error) {
         console.error("Match saving failed:", error);
       }
     };
 
     syncResultToDatabase();
-  }, [displayCards, winnerCard]);
+  }, [displayCards, winnerCard, state, navigate, location.pathname, setUser]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowStats(true), 600);
     return () => clearTimeout(timer);
   }, []);
 
-  if (displayCards.length === 0) {
+  if (displayCards.length === 0)
     return (
       <div className="h-screen bg-black flex items-center justify-center font-black italic text-white">
         BATTLE DATA LOST. RETURN TO HQ.
       </div>
     );
-  }
 
   const isVictory =
     headerText.includes("VICTORY") ||
     headerText.includes("WINS") ||
-    headerText.includes("SURVIVES");
+    headerText.includes("SURVIVES") ||
+    headerText.includes("YOUR SQUAD");
   const isDefeat = headerText.includes("DEFEAT");
-
-  const getRankColor = (rank) => {
-    if (rank === 1)
-      return "border-[#ff8c32] shadow-[0_0_40px_rgba(255,140,50,0.15)]";
-    if (rank === 2)
-      return "border-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.15)]";
-    return "border-gray-600";
-  };
+  const getRankColor = (rank) =>
+    rank === 1
+      ? "border-[#ff8c32] shadow-[0_0_40px_rgba(255,140,50,0.15)]"
+      : rank === 2
+        ? "border-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.15)]"
+        : "border-gray-600";
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 md:p-8 uppercase font-sans selection:bg-[#ff8c32] relative overflow-y-auto overflow-x-hidden custom-scrollbar">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 md:p-8 uppercase font-sans selection:bg-[#ff8c32] relative overflow-y-auto overflow-x-hidden custom-scrollbar pb-32">
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
           className={`absolute inset-0 opacity-20 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#ea580c_0%,_transparent_60%)]" : isDefeat ? "bg-[radial-gradient(circle_at_top,_#2563eb_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#4b5563_0%,_transparent_60%)]"}`}
         />
       </div>
 
-      <div className="w-full max-w-[1600px] relative z-10 flex flex-col items-center pb-32">
+      <div className="w-full max-w-[1600px] relative z-10 flex flex-col items-center">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,9 +270,9 @@ export default function BattleResult() {
           </h1>
         </motion.div>
 
-        {/* LOOT REVEAL ANIMATION */}
+        {/* 💰 LOOT REVEAL ANIMATION */}
         <AnimatePresence>
-          {showStats && earnedLoot.coins > 0 && (
+          {showStats && earnedLoot.coins > 0 && !state?.isRecorded && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -341,7 +346,6 @@ export default function BattleResult() {
                           key={pIdx}
                           className="flex-1 flex flex-col gap-4 md:gap-6 p-2"
                         >
-                          {/* SQUAD MVP */}
                           <div
                             className={`flex flex-col bg-black/40 p-4 md:p-5 rounded-2xl md:rounded-3xl border ${isFirst ? "border-[#ff8c32]/30" : "border-blue-500/30"}`}
                           >
@@ -350,14 +354,21 @@ export default function BattleResult() {
                             >
                               <Flame size={12} /> {player.name} SQUAD MVP
                             </div>
-
                             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-5">
-                              <img
-                                src={player.mvp?.img || "/zoro.svg"}
-                                className={`w-20 h-20 md:w-28 md:h-28 object-cover rounded-xl md:rounded-2xl border-2 ${isFirst ? "border-[#ff8c32]" : "border-blue-600"}`}
-                                alt="MVP"
-                              />
-
+                              <div
+                                className={`relative w-20 h-20 md:w-28 md:h-28 rounded-xl md:rounded-2xl border-2 shrink-0 overflow-hidden ${isFirst ? "border-[#ff8c32]" : "border-blue-600"}`}
+                              >
+                                <img
+                                  src={player.mvp?.img || "/zoro.svg"}
+                                  className="w-full h-full object-cover"
+                                  alt="MVP"
+                                />
+                                <div
+                                  className={`absolute bottom-0 w-full text-center text-[8px] md:text-[10px] ${isFirst ? "bg-[#ff8c32] text-black" : "bg-black/80 text-white"}`}
+                                >
+                                  {player.mvp?.tier || "S+"}
+                                </div>
+                              </div>
                               <div className="flex-1 w-full">
                                 <div className="text-lg md:text-2xl font-black text-white truncate text-center sm:text-left mb-1">
                                   {player.mvp?.name}
@@ -365,8 +376,6 @@ export default function BattleResult() {
                                 <div className="text-[10px] md:text-xs text-gray-500 font-black mb-2 md:mb-3 text-center sm:text-left">
                                   {player.mvp?.slot?.replace("_", " ")}
                                 </div>
-
-                                {/* THE MATH RECEIPT */}
                                 {player.mvp?.scoreData?.breakdown && (
                                   <div className="bg-black/60 rounded-xl p-2 md:p-3 border border-white/5 w-full">
                                     <div className="text-[8px] text-gray-500 border-b border-white/10 pb-1 mb-1.5 md:mb-2 tracking-widest">
@@ -402,7 +411,6 @@ export default function BattleResult() {
                               </div>
                             </div>
                           </div>
-
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                             {player.characters
                               .filter((c) => c.slot !== player.mvp?.slot)

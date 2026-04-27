@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import {
   Camera,
   ArrowLeft,
@@ -10,8 +9,8 @@ import {
   Crown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-// ✅ Make sure this path points to your draftUtils correctly
-import { getRankTier } from "../Draft/utils/draftUtils";
+import api from "../../services/api"; // 🛡️ SECURE API IMPORT
+import { getRankTier } from "../../features/Draft/Anime/utils/draftUtils";
 
 export default function Dashboard({ user, setUser }) {
   const [editing, setEditing] = useState(false);
@@ -20,28 +19,30 @@ export default function Dashboard({ user, setUser }) {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  // 🔥 REAL DATABASE STATS (No more localStorage fake 0s!)
+  // 🏆 REAL DATABASE STATS (No more fake local storage)
   const wins = user?.wins || 0;
   const totalMatches = user?.totalGames || 0;
   const winRate =
     totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-
-  // 🏅 Calculate Player's Rank based on Real Wins
   const rank = getRankTier(wins);
 
   const handleUpdate = async () => {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/user/access", {
+      // 🛡️ Secure POST via interceptor
+      const res = await api.post("/user/access", {
         username: newName.toLowerCase().trim(),
         avatar: newAvatar,
       });
+
+      // Keep token synced locally for immediate reloads
       localStorage.setItem(
         "commander",
         JSON.stringify({
           username: res.data.username,
           sessionId: res.data.sessionId,
+          token: res.data.token,
         }),
       );
       setUser(res.data);
@@ -56,10 +57,9 @@ export default function Dashboard({ user, setUser }) {
 
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white flex flex-col p-4 md:p-8 overflow-hidden uppercase font-sans selection:bg-[#ff8c32]">
-      {/* 🌌 Top Navigation */}
       <div className="flex justify-between items-center mb-6 shrink-0 relative z-10">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-[10px] font-black text-gray-500 hover:text-[#ff8c32] transition-colors"
         >
           <ArrowLeft size={16} /> RETURN_LOBBY
@@ -73,7 +73,7 @@ export default function Dashboard({ user, setUser }) {
       </div>
 
       <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 overflow-y-auto custom-scrollbar pb-10">
-        {/* 🃏 PROFILE CARD (Left Side) */}
+        {/* PROFILE CARD */}
         <div
           className={`lg:col-span-4 bg-[#0a0a0c] border-2 ${rank.color.replace("text-", "border-")}/30 rounded-[40px] p-8 flex flex-col items-center justify-center relative shadow-2xl overflow-hidden`}
         >
@@ -96,7 +96,6 @@ export default function Dashboard({ user, setUser }) {
                 EDIT_AVATAR
               </span>
             </div>
-
             {wins >= 25 && (
               <div
                 className={`absolute -top-4 left-1/2 -translate-x-1/2 bg-black px-3 py-1 rounded-full border border-white/10 z-30 ${rank.color}`}
@@ -113,6 +112,12 @@ export default function Dashboard({ user, setUser }) {
                 readOnly
                 title="Username cannot be changed"
                 className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-center font-black text-xs outline-none text-gray-500 cursor-not-allowed"
+              />
+              <input
+                value={newAvatar}
+                onChange={(e) => setNewAvatar(e.target.value)}
+                placeholder="AVATAR_URL"
+                className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl text-center font-black text-xs outline-none text-[#ff8c32] focus:border-[#ff8c32] transition-colors"
               />
               <div className="flex gap-2">
                 <button
@@ -150,7 +155,7 @@ export default function Dashboard({ user, setUser }) {
           )}
         </div>
 
-        {/* 📊 STATS GRID (Right Side) */}
+        {/* STATS GRID */}
         <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
           {[
             {

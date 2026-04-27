@@ -16,7 +16,7 @@ export default function ModeSelection({ user }) {
     {
       id: "PVP",
       name: "PLAYER VS PLAYER",
-      desc: "1v1 local pass-and-play tactical clash.",
+      desc: "1v1 local or online tactical clash.",
       icon: <User size={32} />,
     },
     {
@@ -34,7 +34,7 @@ export default function ModeSelection({ user }) {
   ];
 
   const handleAction = (id) => {
-    // 🛡️ CRITICAL FIX: Save to localStorage so intermediate pages don't drop the state!
+    // 🚀 CRITICAL FIX: Save the mode to localStorage so the engine Remembers it!
     localStorage.setItem("animeDraft_mode", id);
     navigate("/domain", { state: { mode: id } });
   };
@@ -87,7 +87,7 @@ export default function ModeSelection({ user }) {
       </div>
 
       <div className="mt-12 text-center">
-        <div className="flex items-center gap-3 bg-white/5 px-6 py-2 rounded-full border border-white/5">
+        <div className="flex items-center justify-center gap-3 bg-white/5 px-6 py-2 rounded-full border border-white/5 inline-flex">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
           <span className="text-[9px] font-black text-gray-500 tracking-[0.3em]">
             ENGINE ONLINE : SECURE CONNECTION

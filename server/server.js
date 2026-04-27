@@ -41,11 +41,10 @@ app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
     let dbQuery = {};
-    if (universe) {
+    if (universe)
       dbQuery.universe = universe.includes(",")
         ? { $in: universe.split(",") }
         : universe;
-    }
     const chars = await Character.find(dbQuery).select(
       "id name img universe atk def spd iq tier",
     );
@@ -55,7 +54,6 @@ app.get("/api/characters", async (req, res) => {
   }
 });
 
-// 🛡️ STRIPPED _id TO PREVENT MONGO CRASHES
 app.put("/api/admin/bulk-update", async (req, res) => {
   try {
     const updates = req.body;
@@ -82,21 +80,17 @@ app.put("/api/admin/bulk-update", async (req, res) => {
 
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
-    const charId = req.params.id;
     const updateData = { ...req.body };
     delete updateData._id;
     delete updateData.__v;
-
     const updated = await Character.findOneAndUpdate(
-      { id: { $in: [Number(charId), String(charId)] } },
+      { id: String(req.params.id) },
       { $set: updateData },
       { new: true },
     );
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+    res.status(500).json({ error: "DATABASE_SYNC_ERROR" });
   }
 });
 
@@ -138,7 +132,6 @@ app.get("/api/players", async (req, res) => {
   }
 });
 
-// 🛡️ STRIPPED _id TO PREVENT MONGO CRASHES
 app.put("/api/admin/bulk-update-players", async (req, res) => {
   try {
     const updates = req.body;
@@ -163,24 +156,19 @@ app.put("/api/admin/bulk-update-players", async (req, res) => {
   }
 });
 
-// 🎯 NEW: INDIVIDUAL DEDICATED PLAYER SYNC ROUTE
 app.put("/api/admin/update-player/:id", async (req, res) => {
   try {
-    const playerId = req.params.id;
     const updateData = { ...req.body };
     delete updateData._id;
     delete updateData.__v;
-
     const updated = await Player.findOneAndUpdate(
-      { id: String(playerId) },
+      { id: String(req.params.id) },
       { $set: updateData },
       { new: true },
     );
     res.json({ message: "SUCCESS", player: updated });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
+    res.status(500).json({ error: "DATABASE_SYNC_ERROR" });
   }
 });
 
@@ -194,36 +182,117 @@ app.delete("/api/admin/delete-player/:id", async (req, res) => {
 });
 
 // ==========================================
-// 👤 USER MANAGEMENT
+// 👤 USER MANAGEMENT & ECONOMY
 // ==========================================
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  avatar: { type: String, default: "" },
+  avatar: { type: String, default: "/zoro.svg" },
   totalGames: { type: Number, default: 0 },
   wins: { type: Number, default: 0 },
-  scoreHistory: { type: Array, default: [] },
+  coins: { type: Number, default: 500 },
+  gems: { type: Number, default: 5 },
+  inventory: { type: Array, default: [] },
 });
 const User = mongoose.model("User", UserSchema);
 
+// 🛡️ Login or Create Profile (NO GUESTS)
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
-    let user = await User.findOne({ username });
-    if (user) {
-      if (avatar && user.avatar !== avatar) {
-        user.avatar = avatar;
-        await user.save();
-      }
-    } else {
-      user = new User({ username, avatar, wins: 0, totalGames: 0 });
+
+    // Force lowercase to prevent duplicate accounts like "Moghees" and "moghees"
+    const safeUsername = username.toLowerCase().trim();
+
+    let user = await User.findOne({ username: safeUsername });
+
+    if (!user) {
+      // Create fresh profile
+      user = new User({
+        username: safeUsername,
+        avatar: avatar || "/zoro.svg",
+        coins: 500,
+        gems: 5,
+        wins: 0,
+        totalGames: 0,
+      });
+      await user.save();
+    } else if (avatar && user.avatar !== avatar) {
+      // Update avatar if provided
+      user.avatar = avatar;
       await user.save();
     }
+
     res.status(200).json(user);
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "INTERNAL_SERVER_ERROR", details: err.message });
+    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+  }
+});
+
+// 🛡️ Record Match & Safely Reward Coins
+app.post("/api/user/record-match", async (req, res) => {
+  try {
+    const { username, isWin } = req.body;
+    if (!username) return res.status(400).json({ error: "MISSING_USER" });
+
+    const user = await User.findOne({ username: username.toLowerCase() });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const coinsWon = isWin ? 100 : 25;
+    const gemsWon = isWin ? 1 : 0;
+
+    user.totalGames += 1;
+    if (isWin) user.wins += 1;
+    user.coins += coinsWon;
+    user.gems += gemsWon;
+
+    await user.save();
+
+    // Send back the new totals so UI updates instantly
+    res.status(200).json({
+      user,
+      coinsWon,
+      gemsWon,
+      newTotalCoins: user.coins,
+      newTotalGems: user.gems,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "REWARD_CALCULATION_FAILED" });
+  }
+});
+
+// 🛡️ Secure Shop Purchase
+app.post("/api/shop/buy", async (req, res) => {
+  try {
+    const { username, cost, itemId, name } = req.body;
+    const user = await User.findOne({ username: username.toLowerCase() });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (user.coins < cost)
+      return res.status(400).json({ error: "INSUFFICIENT_FUNDS" });
+
+    user.coins -= cost;
+    user.inventory.push({ id: itemId, name, acquiredAt: new Date() });
+    await user.save();
+
+    res.status(200).json({
+      newBalance: user.coins,
+      newInventory: user.inventory,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "TRANSACTION_FAILED" });
+  }
+});
+
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const leaders = await User.find()
+      .sort({ wins: -1 })
+      .limit(50)
+      .select("username avatar wins totalGames");
+    res.json(leaders);
+  } catch (err) {
+    res.status(500).json({ error: "LEADERBOARD_FAILED" });
   }
 });
 

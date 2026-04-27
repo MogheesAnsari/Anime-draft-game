@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // ✅ Missing Import Fixed
+import { useNavigate } from "react-router-dom";
 
 const AVATARS = [
   { id: 1, name: "GOJO", img: "/gojo.svg" },
@@ -16,9 +16,8 @@ export default function ProfileEntry({ setUser }) {
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // ✅ Hook initialized
+  const navigate = useNavigate();
 
-  // ✅ MERGED PROFILE HANDLER: Retries until Render wakes up and uses correct route
   const handleEntry = async () => {
     const specialCharRegex = /[._@#$]/;
     if (name.length < 3) return setError("NAME TOO SHORT! (MIN 3)");
@@ -27,39 +26,27 @@ export default function ProfileEntry({ setUser }) {
     if (name.includes(" ")) return setError("NO SPACES ALLOWED!");
 
     setLoading(true);
-    let attempts = 0;
-    const maxAttempts = 3;
 
-    const attemptConnection = async () => {
-      try {
-        console.log(`📡 ATTEMPT ${attempts + 1}: Contacting Database...`);
-        const res = await axios.post(
-          "https://anime-draft-game-1.onrender.com/api/user/access",
-          { username: name.toLowerCase().trim(), avatar: selectedAvatar.img },
-          { timeout: 20000 }, // 🛡️ 20s timeout
-        );
+    try {
+      // Create or Fetch the user profile from the database
+      const res = await axios.post("http://localhost:5000/api/user/access", {
+        username: name.toLowerCase().trim(),
+        avatar: selectedAvatar.img,
+      });
 
-        if (res.status === 200 || res.status === 201) {
-          localStorage.setItem("commander", JSON.stringify(res.data));
-          setUser(res.data);
-          navigate("/modes"); // ✅ Navigate to modes after login
-          return true;
-        }
-      } catch (err) {
-        attempts++;
-        if (attempts < maxAttempts) {
-          setError(`WAKING SERVER... RETRY ${attempts}/3`);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-          return attemptConnection();
-        } else {
-          setError("🚨 KERNEL OFFLINE. TRY AGAIN.");
-        }
+      if (res.status === 200 || res.status === 201) {
+        localStorage.setItem("commander", JSON.stringify(res.data));
+        setUser(res.data);
+
+        // 💥 Force the page to load into the mode selection Menu!
+        window.location.href = "/modes";
       }
-      return false;
-    };
-
-    const success = await attemptConnection();
-    setLoading(false);
+    } catch (err) {
+      setError("🚨 KERNEL OFFLINE. TRY AGAIN.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,7 +56,7 @@ export default function ProfileEntry({ setUser }) {
         <div className="relative w-32 h-32 mx-auto mb-8">
           <img
             src={selectedAvatar.img}
-            className="w-full h-full rounded-full border-4 border-[#ff8c32] object-cover object-top p-1"
+            className="w-full h-full rounded-full border-4 border-[#ff8c32] object-cover object-top p-1 bg-black"
             alt=""
           />
         </div>
@@ -81,11 +68,11 @@ export default function ProfileEntry({ setUser }) {
             <button
               key={av.id}
               onClick={() => setSelectedAvatar(av)}
-              className={`aspect-square rounded-2xl border-2 transition-all p-1 ${selectedAvatar.id === av.id ? "border-[#ff8c32] scale-110" : "border-white/5 opacity-50"}`}
+              className={`aspect-square rounded-2xl border-2 transition-all p-1 ${selectedAvatar.id === av.id ? "border-[#ff8c32] scale-110" : "border-white/5 opacity-50 hover:opacity-100"}`}
             >
               <img
                 src={av.img}
-                className="w-full h-full rounded-xl object-cover object-top"
+                className="w-full h-full rounded-xl object-cover object-top bg-black"
                 alt=""
               />
             </button>
@@ -102,14 +89,14 @@ export default function ProfileEntry({ setUser }) {
           className="w-full bg-black border border-white/10 p-5 rounded-3xl text-center text-white font-black mb-4 focus:border-[#ff8c32] outline-none transition-all uppercase"
         />
         {error && (
-          <p className="text-[10px] text-red-500 font-bold mb-4 animate-pulse uppercase">
+          <p className="text-[10px] text-red-500 font-bold mb-4 animate-pulse uppercase tracking-widest">
             {error}
           </p>
         )}
         <button
           onClick={handleEntry}
           disabled={loading}
-          className="w-full bg-[#ff8c32] text-black font-black py-5 rounded-3xl italic tracking-widest hover:shadow-[0_0_30px_rgba(255,140,50,0.3)] transition-all uppercase"
+          className="w-full bg-[#ff8c32] text-black font-black py-5 rounded-3xl italic tracking-widest hover:shadow-[0_0_30px_rgba(255,140,50,0.3)] transition-all uppercase disabled:opacity-50"
         >
           {loading ? "INITIALIZING..." : "DEPLOY COMMANDER"}
         </button>
