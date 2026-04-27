@@ -1,8 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { getRoleStats } from "../utils/sportsConfig";
-import { getStatValue } from "../utils/sportsUtils"; // 👈 Import our bulletproof reader
-import { Star } from "lucide-react";
+import { getStatValue } from "../utils/sportsUtils";
+import { Star, Flame } from "lucide-react";
 
 const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
   const getTierStyles = (tier) => {
@@ -10,33 +10,34 @@ const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
       case "S+":
         return {
           wrapper:
-            "border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.6)] z-50 transform hover:-translate-y-4 hover:scale-105",
-          badge: "bg-gradient-to-br from-yellow-300 to-yellow-600 text-black",
-          glow: "bg-gradient-to-t from-[#020202] via-[#020202]/40 to-yellow-500/40",
+            "border-yellow-400 shadow-[0_20px_60px_rgba(250,204,21,0.8)] z-50",
+          badge:
+            "bg-gradient-to-br from-yellow-300 via-yellow-500 to-orange-600 text-black",
+          glow: "bg-gradient-to-t from-black via-black/40 to-yellow-500/40",
           isLegendary: true,
+          icon: <Flame size={16} className="fill-black" />,
         };
       case "S":
         return {
           wrapper:
-            "border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)] z-40 transform hover:-translate-y-4 hover:scale-105",
-          badge: "bg-gradient-to-br from-purple-400 to-purple-700 text-white",
-          glow: "bg-gradient-to-t from-[#020202] via-[#020202]/60 to-purple-500/20",
-          isLegendary: false,
+            "border-purple-500 shadow-[0_15px_40px_rgba(168,85,247,0.6)] z-40",
+          badge: "bg-gradient-to-br from-purple-400 to-indigo-700 text-white",
+          glow: "bg-gradient-to-t from-black via-black/60 to-purple-500/30",
+          isLegendary: true,
+          icon: <Star size={16} className="fill-white" />,
         };
       case "A":
         return {
-          wrapper:
-            "border-blue-400 z-30 transform hover:-translate-y-2 hover:scale-105",
+          wrapper: "border-blue-400 shadow-xl z-30",
           badge: "bg-blue-600 text-white",
-          glow: "bg-gradient-to-t from-[#020202] via-[#020202]/70 to-transparent",
+          glow: "bg-gradient-to-t from-black via-black/70 to-transparent",
           isLegendary: false,
         };
       default:
         return {
-          wrapper:
-            "border-gray-700 opacity-90 z-20 transform hover:-translate-y-2 hover:scale-105",
+          wrapper: "border-gray-600 opacity-95 z-20 shadow-lg",
           badge: "bg-gray-800 text-gray-300",
-          glow: "bg-gradient-to-t from-[#020202] via-[#020202]/80 to-transparent",
+          glow: "bg-gradient-to-t from-black via-black/80 to-transparent",
           isLegendary: false,
         };
     }
@@ -46,51 +47,60 @@ const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
   const role = currentCard?.role || "DEFAULT";
   const statLabels = getRoleStats(universe, role);
 
+  // 🚀 FAST & ATTRACTIVE ENTRY ANIMATION
+  const anim =
+    currentCard?.tier === "S+" || currentCard?.tier === "S"
+      ? {
+          initial: { opacity: 0, scale: 0.5, y: 100, filter: "brightness(2)" },
+          animate: { opacity: 1, scale: 1, y: 0, filter: "brightness(1)" },
+          transition: { type: "spring", stiffness: 300, damping: 15 },
+        }
+      : {
+          initial: { opacity: 0, scale: 0.9, y: 30 },
+          animate: { opacity: 1, scale: 1, y: 0 },
+          transition: { type: "spring", stiffness: 400, damping: 25 },
+        };
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0, rotateY: 90 }}
-      animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-      transition={{
-        delay: index * 0.15,
-        type: "spring",
-        stiffness: 200,
-        damping: 15,
-      }}
+      initial={anim.initial}
+      animate={anim.animate}
+      transition={anim.transition}
+      whileHover={{ scale: 1.05, y: -10 }}
+      whileTap={{ scale: 0.95 }}
       onClick={() => onClick(currentCard)}
-      className={`relative w-1/3 max-w-[220px] aspect-[3/4] cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-300 active:scale-95 ${style.wrapper}`}
+      // 📱 MOBILE SIZING FIX: `w-full max-w-[260px]` ensures they fill the screen on mobile when stacked vertically!
+      className={`relative w-full max-w-[260px] md:max-w-[240px] aspect-[3/4] cursor-pointer rounded-3xl overflow-hidden border-[3px] transition-all duration-300 ${style.wrapper} mx-auto`}
     >
       <img
         src={currentCard?.img || "/zoro.svg"}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover bg-black"
         alt={currentCard?.name}
       />
       <div className={`absolute inset-0 ${style.glow}`}></div>
 
       {style.isLegendary && (
-        <div className="absolute inset-0 holo-shimmer pointer-events-none mix-blend-overlay"></div>
+        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+          <div className="absolute top-[-100%] left-[-100%] w-[300%] h-[300%] bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 translate-x-[-100%] animate-shimmer" />
+        </div>
       )}
 
       <div
-        className={`absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg font-black italic text-sm backdrop-blur-md border z-10 ${style.badge}`}
+        className={`absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-xl font-black italic text-lg backdrop-blur-md border z-20 ${style.badge}`}
       >
-        {currentCard?.tier === "S+" ? (
-          <Star size={16} className="fill-black" />
-        ) : (
-          currentCard?.tier || "C"
-        )}
+        {style.icon ? style.icon : currentCard?.tier || "C"}
       </div>
 
-      <div className="absolute bottom-0 p-2 w-full flex flex-col gap-1 z-10 text-white bg-gradient-to-t from-black via-black/95 to-transparent">
+      <div className="absolute bottom-0 p-3 w-full flex flex-col gap-1 z-20 text-white bg-gradient-to-t from-black via-black/95 to-transparent border-t border-white/10">
         <h2
-          className={`text-[10px] md:text-xs font-black italic truncate text-center ${style.isLegendary ? "text-yellow-400 drop-shadow-md" : ""}`}
+          className={`text-sm md:text-sm font-black italic truncate text-center uppercase tracking-wide ${style.isLegendary ? "text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]" : "text-white"}`}
         >
           {currentCard?.name}
         </h2>
 
-        {/* 🎯 Displays the 4 Stats perfectly in a 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-1 mt-1 px-1">
+        <div className="grid grid-cols-2 gap-1.5 mt-2 px-1">
           {statLabels.map((s, idx) => {
-            const statValue = getStatValue(currentCard, s); // Uses the foolproof reader!
+            const statValue = getStatValue(currentCard, s);
             const colors = [
               "text-red-400",
               "text-blue-400",
@@ -101,15 +111,15 @@ const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
             return (
               <div
                 key={s}
-                className="bg-black/80 backdrop-blur-md rounded border border-white/10 flex flex-col items-center justify-center py-1"
+                className="bg-black/60 backdrop-blur-sm rounded-lg border border-white/10 flex flex-col items-center justify-center py-1.5"
               >
                 <span
-                  className={`text-[6px] md:text-[7px] font-black ${colors[idx % colors.length]}`}
+                  className={`text-[7px] md:text-[8px] font-black tracking-widest ${colors[idx % colors.length]}`}
                 >
                   {s}
                 </span>
                 <span
-                  className={`text-[9px] md:text-[11px] font-black ${style.isLegendary ? "text-yellow-400" : "text-white"}`}
+                  className={`text-[12px] md:text-[14px] font-black leading-none mt-1 ${style.isLegendary ? "text-white drop-shadow-[0_0_3px_white]" : "text-gray-300"}`}
                 >
                   {statValue}
                 </span>

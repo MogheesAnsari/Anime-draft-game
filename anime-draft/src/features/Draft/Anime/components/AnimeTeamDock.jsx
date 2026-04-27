@@ -1,98 +1,188 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Swords, Plus } from "lucide-react";
 
-const AnimeTeamDock = ({
-  team = {},
-  slots = [],
+// 💥 THE LIVE ROLLING NUMBER ENGINE
+function AnimatedNumber({ value, className }) {
+  const [count, setCount] = useState(value || 0);
+  const [isBoosting, setIsBoosting] = useState(false);
+
+  useEffect(() => {
+    let start = count;
+    const target = Number(value) || 0;
+    if (start === target) return;
+
+    setIsBoosting(true);
+    const duration = 1000;
+    const steps = 30;
+    const increment = (target - start) / steps;
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (
+        (increment > 0 && start >= target) ||
+        (increment < 0 && start <= target)
+      ) {
+        setCount(target);
+        setIsBoosting(false);
+        clearInterval(timer);
+      } else {
+        setCount(Math.round(start));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return (
+    <span
+      className={`${className} transition-colors duration-300 inline-block ${isBoosting ? "text-white scale-125 drop-shadow-[0_0_10px_white]" : ""}`}
+    >
+      {count}
+    </span>
+  );
+}
+
+export default function AnimeTeamDock({
+  team,
+  slots,
   onAssign,
   playerTurn,
   maxTurns,
-  onAction,
   loading,
-  theme = { from: "from-orange-500", to: "to-red-600" },
-}) => {
-  const teamEntries = team || {};
-  const isTeamFull =
-    slots.length > 0 && Object.keys(teamEntries).length === slots.length;
-
-  const getValidImageUrl = (url) => {
-    if (!url) return "/zoro.svg";
-    if (url.startsWith("/")) return url;
-    return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
-  };
+  theme,
+  onAction,
+}) {
+  const isSquadComplete = Object.keys(team).length === slots.length;
 
   return (
-    <div className="w-full h-[35vh] shrink-0 px-4 md:px-8 flex flex-col justify-end pb-6 md:pb-8 bg-gradient-to-t from-black via-black/80 to-transparent relative z-20">
-      <div className="w-full max-w-7xl mx-auto grid grid-cols-3 lg:grid-cols-6 gap-2 md:gap-4 mt-auto">
-        {slots.map((slot) => {
-          const char = teamEntries[slot.id];
-          const displayLabel = slot.label;
+    <div className="w-full px-2 sm:px-4 md:px-8 pb-4 md:pb-6">
+      <motion.div
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="w-full max-w-5xl mx-auto flex flex-col items-center"
+      >
+        {/* 📱 STRICT 3x2 GRID ON MOBILE. Flexible on Desktop. */}
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-3 w-full">
+          {slots.map((slot) => {
+            const char = team[slot.id];
 
-          return (
-            <div
-              key={slot.id}
-              onClick={() => onAssign(slot.id)}
-              className={`relative h-[75px] lg:h-[90px] rounded-2xl flex flex-col justify-center transition-all cursor-pointer overflow-hidden group ${
-                char
-                  ? "bg-black/50 border border-white/20 shadow-lg"
-                  : "bg-white/5 border border-dashed border-white/10 hover:border-orange-500/50"
-              }`}
+            return (
+              <motion.button
+                key={slot.id}
+                onClick={() => onAssign(slot.id)}
+                whileHover={!char ? { scale: 1.02 } : {}}
+                whileTap={!char ? { scale: 0.95 } : {}}
+                className={`relative w-full sm:w-[15%] sm:max-w-[120px] aspect-[3/4] rounded-xl md:rounded-2xl border-2 flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${
+                  char
+                    ? `border-${theme.from.split("-")[1]}-500 shadow-[0_0_15px_rgba(255,255,255,0.1)] bg-black`
+                    : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 backdrop-blur-md border-dashed"
+                }`}
+              >
+                {char ? (
+                  <>
+                    <img
+                      src={char.img || "/zoro.svg"}
+                      className="absolute inset-0 w-full h-full object-cover opacity-70"
+                      alt={char.name}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+
+                    <div className="absolute inset-0 p-1 flex flex-col justify-between z-10 text-center">
+                      {/* Top Label (Ultra Compact) */}
+                      <div className="w-full bg-black/60 backdrop-blur-sm py-0.5 rounded border border-white/10">
+                        <span className="text-[6px] md:text-[8px] font-black text-gray-300 tracking-widest leading-none block truncate px-1 uppercase">
+                          {slot.label}
+                        </span>
+                      </div>
+
+                      {/* Bottom Info & Stats (Ultra Compact) */}
+                      <div className="w-full flex flex-col items-center bg-black/80 rounded-b-lg border-t border-white/10 p-1">
+                        <span
+                          className={`text-[7px] md:text-[9px] font-black italic truncate w-full leading-none mb-1 uppercase ${char.tier === "S+" ? "text-yellow-400" : "text-white"}`}
+                        >
+                          {char.name}
+                        </span>
+
+                        <div className="grid grid-cols-2 gap-0.5 w-full">
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
+                            <span className="text-[5px] text-red-400 font-black">
+                              A
+                            </span>
+                            <AnimatedNumber
+                              value={char.atk}
+                              className="text-[6px] font-black text-gray-200"
+                            />
+                          </div>
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
+                            <span className="text-[5px] text-blue-400 font-black">
+                              D
+                            </span>
+                            <AnimatedNumber
+                              value={char.def}
+                              className="text-[6px] font-black text-gray-200"
+                            />
+                          </div>
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
+                            <span className="text-[5px] text-green-400 font-black">
+                              S
+                            </span>
+                            <AnimatedNumber
+                              value={char.spd}
+                              className="text-[6px] font-black text-gray-200"
+                            />
+                          </div>
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
+                            <span className="text-[5px] text-cyan-400 font-black">
+                              I
+                            </span>
+                            <AnimatedNumber
+                              value={char.iq}
+                              className="text-[6px] font-black text-gray-200"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-1 shadow-inner">
+                      <Plus size={14} className="text-gray-500" />
+                    </div>
+                    <span className="text-[6px] md:text-[8px] font-black text-gray-500 text-center px-1 tracking-widest leading-tight uppercase">
+                      {slot.label}
+                    </span>
+                  </>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <AnimatePresence>
+          {isSquadComplete && (
+            <motion.button
+              initial={{ y: 20, opacity: 0, scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.9 }}
+              onClick={onAction}
+              disabled={loading}
+              className={`w-full max-w-sm mt-4 py-3 md:py-4 bg-gradient-to-r ${theme.from} ${theme.to} rounded-full text-black font-black italic tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-xs md:text-sm uppercase`}
             >
-              <div className="pl-4 relative z-10 w-full">
-                <div
-                  className={`text-[8px] md:text-[9px] font-black tracking-[0.2em] ${char ? "text-orange-500" : "text-gray-500"}`}
-                >
-                  {displayLabel}
-                </div>
-                <div
-                  className={`text-[10px] lg:text-sm font-black italic truncate max-w-[85%] mt-0.5 ${char ? "text-white" : "text-gray-600"}`}
-                >
-                  {char?.name || "EMPTY"}
-                </div>
-              </div>
-
-              {char && (
+              {loading ? (
+                "PROCESSING..."
+              ) : playerTurn < maxTurns ? (
+                `CONFIRM SQUAD & NEXT`
+              ) : (
                 <>
-                  <img
-                    src={getValidImageUrl(char.img)}
-                    referrerPolicy="no-referrer"
-                    className="absolute right-0 top-0 h-full w-[60%] object-cover opacity-40 mix-blend-screen grayscale group-hover:grayscale-0 transition-all duration-500"
-                    alt={char.name}
-                    onError={(e) => {
-                      if (!e.target.src.includes("zoro.svg"))
-                        e.target.src = "/zoro.svg";
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/60 to-transparent"></div>
+                  <Swords size={18} /> ENGAGE BATTLE
                 </>
               )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="w-full flex justify-center mt-4 md:mt-6">
-        {isTeamFull ? (
-          <button
-            onClick={onAction}
-            disabled={loading}
-            className={`w-full max-w-sm h-14 rounded-full font-black text-sm italic tracking-[0.3em] bg-gradient-to-r ${theme.from} ${theme.to} shadow-[0_0_40px_rgba(255,140,50,0.3)] border border-white/20 transition-all active:scale-95`}
-          >
-            {loading ? (
-              <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            ) : playerTurn < maxTurns ? (
-              "NEXT COMMANDER"
-            ) : (
-              "ENGAGE PROTOCOL"
-            )}
-          </button>
-        ) : (
-          <div className="w-full max-w-sm h-12 border border-white/5 rounded-full flex items-center justify-center text-[10px] font-black text-gray-600 bg-black/60 tracking-[0.4em]">
-            AWAITING SQUAD...
-          </div>
-        )}
-      </div>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
-};
-
-export default AnimeTeamDock;
+}

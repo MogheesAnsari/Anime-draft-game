@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSportConfig } from "./utils/sportsConfig";
@@ -8,29 +8,25 @@ import SportsPitchUI from "./components/SportsPitchUI";
 import SportsCardDisplay from "./components/SportsCardDisplay";
 import SportsTacticalHUD from "./components/SportsTacticalHUD";
 import SportsArena from "../../Battle/SportsArena";
+import TacticalInventory from "../../Battle/TacticalInventory";
 import { generateCpuTeam } from "./utils/sportsUtils";
 import { PackageOpen, Users } from "lucide-react";
 
-export default function SportsDraftManager({ user }) {
+export default function SportsDraftManager({ user, setUser }) {
   const { state } = useLocation();
   const navigate = useNavigate();
-
   const universe = state?.universe || "football";
-
-  // 🛡️ CRITICAL FIX: Pulling mode from LocalStorage if Router drops it!
   const savedMode = localStorage.getItem("animeDraft_mode") || "PVE";
   const mode = state?.mode || savedMode;
 
-  // 👥 MULTIPLAYER MATCHER
   const getMatchConfig = (m) => {
     const safeMode = String(m).toUpperCase();
     if (safeMode === "PVP") return { human: 2, cpu: 0 };
     if (safeMode === "BATTLE ROYALE") return { human: 4, cpu: 0 };
     if (safeMode === "TEAM BATTLE") return { human: 4, cpu: 0 };
-    return { human: 1, cpu: 1 }; // PVE Default
+    return { human: 1, cpu: 1 };
   };
   const matchConfig = getMatchConfig(mode);
-
   const config = getSportConfig(universe);
   const slots = config.slots;
 
@@ -50,9 +46,15 @@ export default function SportsDraftManager({ user }) {
   const [loading, setLoading] = useState(false);
   const [battleData, setBattleData] = useState(null);
   const [packState, setPackState] = useState("closed");
-
   const [finishedTeams, setFinishedTeams] = useState([]);
   const currentHumanIndex = finishedTeams.length + 1;
+
+  const [activeBoosts, setActiveBoosts] = useState({
+    atk: 0,
+    iq: false,
+    skips: 0,
+  });
+  const [boostOverlay, setBoostOverlay] = useState(null);
 
   const getGlobalNames = () => {
     const names = new Set();
@@ -61,6 +63,71 @@ export default function SportsDraftManager({ user }) {
     );
     Object.values(team).forEach((p) => names.add(p.name.toLowerCase()));
     return names;
+  };
+
+  const handleDeployBoost = (boostId) => {
+    if (boostId === "boost_skip") {
+      setActiveBoosts((prev) => ({ ...prev, skips: prev.skips + 1 }));
+      setBoostOverlay({
+        title: "DRAFT OVERRIDE",
+        desc: "+1 TACTICAL SKIP SECURED",
+        color: "text-blue-400",
+      });
+    } else if (boostId === "boost_atk") {
+      setActiveBoosts((prev) => ({ ...prev, atk: prev.atk + 10 }));
+      setBoostOverlay({
+        title: "STRENGTH STIM",
+        desc: "POWER STATS +10",
+        color: "text-red-500",
+      });
+    } else if (boostId === "boost_iq") {
+      setActiveBoosts((prev) => ({ ...prev, iq: true }));
+      setBoostOverlay({
+        title: "IQ OVERCLOCK",
+        desc: "MAXIMUM TACTICS SECURED",
+        color: "text-cyan-400",
+      });
+    }
+    setTimeout(() => setBoostOverlay(null), 2500);
+  };
+
+  const boostedTeam = useMemo(() => {
+    const newTeam = { ...team };
+    Object.keys(newTeam).forEach((slot) => {
+      if (newTeam[slot]) {
+        newTeam[slot] = { ...newTeam[slot] };
+        let statsObj = {};
+        if (newTeam[slot].stats instanceof Map) {
+          newTeam[slot].stats.forEach((v, k) => {
+            statsObj[k] = v;
+          });
+        } else {
+          statsObj = { ...newTeam[slot].stats };
+        }
+        if (activeBoosts.atk > 0) {
+          if (statsObj["POWER"]) statsObj["POWER"] += 10;
+          if (statsObj["SHOOTING"]) statsObj["SHOOTING"] += 10;
+          if (statsObj["BATTING"]) statsObj["BATTING"] += 10;
+        }
+        if (activeBoosts.iq) {
+          statsObj["IQ"] = 250;
+          statsObj["TACTICS"] = 250;
+        }
+        newTeam[slot].stats = statsObj;
+      }
+    });
+    return newTeam;
+  }, [team, activeBoosts]);
+
+  const effectiveSkips = skips + activeBoosts.skips;
+  const handleEffectiveCancel = () => {
+    if (effectiveSkips > 0) {
+      if (activeBoosts.skips > 0) {
+        setActiveBoosts((prev) => ({ ...prev, skips: prev.skips - 1 }));
+      }
+      setPackState("closed");
+      cancelDraft();
+    }
   };
 
   const handleOpenDraft = (slot) => {
@@ -73,23 +140,15 @@ export default function SportsDraftManager({ user }) {
     selectPlayer(player);
   };
 
-  const handleCancel = () => {
-    if (skips > 0) {
-      setPackState("closed");
-      cancelDraft();
-    }
-  };
-
   const handleConfirmOrFight = async () => {
     if (currentHumanIndex < matchConfig.human) {
-      // Next Human Player's Turn! (Clears pitch for P2, P3, etc.)
-      setFinishedTeams([...finishedTeams, team]);
+      setFinishedTeams([...finishedTeams, boostedTeam]);
       resetDraft();
+      setActiveBoosts({ atk: 0, iq: false, skips: 0 });
     } else {
-      // All Humans Drafted -> Fill CPU Teams (if any) & Fight!
       try {
         setLoading(true);
-        let allSquads = [...finishedTeams, team];
+        let allSquads = [...finishedTeams, boostedTeam];
         let currentGlobalNames = getGlobalNames();
 
         for (let i = 0; i < matchConfig.cpu; i++) {
@@ -119,9 +178,10 @@ export default function SportsDraftManager({ user }) {
     }
   };
 
+  // 🚀 CRITICAL FIX: Fast & Explosive Pack Opening
   const openPack = () => {
     setPackState("opening");
-    setTimeout(() => setPackState("open"), 1200);
+    setTimeout(() => setPackState("open"), 400); // ⚡ 1200ms se 400ms kar diya!
   };
 
   if (dbLoading)
@@ -130,22 +190,56 @@ export default function SportsDraftManager({ user }) {
         WARMING UP PITCH...
       </div>
     );
-
-  const isSquadComplete = Object.keys(team).length === slots.length;
+  const isSquadComplete = Object.keys(boostedTeam).length === slots.length;
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase flex flex-col">
+      <AnimatePresence>
+        {boostOverlay && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.2, filter: "blur(10px)" }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none"
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <h1
+              className={`text-5xl md:text-8xl font-black italic tracking-tighter drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] z-10 ${boostOverlay.color}`}
+            >
+              SYSTEM OVERRIDE
+            </h1>
+            <h2 className="text-xl md:text-4xl font-black text-white mt-2 md:mt-4 z-10 tracking-widest bg-black/50 px-6 py-2 rounded-2xl border border-white/10">
+              {boostOverlay.desc}
+            </h2>
+            <div className="mt-8 w-64 h-2 bg-gray-800 rounded-full overflow-hidden z-10">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 2.3 }}
+                className={`h-full ${boostOverlay.color.replace("text-", "bg-")}`}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {!battleData && (
         <SportsTacticalHUD
           onAbort={() => navigate("/modes")}
-          rosterCount={Object.keys(team).length}
+          rosterCount={Object.keys(boostedTeam).length}
           maxRoster={slots.length}
+        />
+      )}
+      {!battleData && (
+        <TacticalInventory
+          user={user}
+          setUser={setUser}
+          onDeployBoost={handleDeployBoost}
         />
       )}
 
       {!battleData && (
         <div className="flex-1 flex flex-col items-center justify-start px-2 z-10 relative pt-14 md:pt-20">
-          {/* MULTIPLAYER DRAFT HUD */}
           <div className="absolute top-2 z-50 bg-black/80 border border-white/20 px-6 py-2 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <Users
               size={16}
@@ -167,13 +261,12 @@ export default function SportsDraftManager({ user }) {
           <div className="w-full flex justify-center pb-24">
             <SportsPitchUI
               slots={slots}
-              team={team}
+              team={boostedTeam}
               sportId={universe}
               onSlotClick={handleOpenDraft}
             />
           </div>
 
-          {/* 🛡️ FLOATING BUTTON FIX: Will NEVER hide behind the Cricket UI again! */}
           {isSquadComplete && (
             <motion.div
               initial={{ y: 100 }}
@@ -194,7 +287,7 @@ export default function SportsDraftManager({ user }) {
         </div>
       )}
 
-      {/* 🎁 THE PACK OPENING EXPERIENCE */}
+      {/* 🚀 NEW: FAST & MOBILE RESPONSIVE PACK OPENING */}
       <AnimatePresence>
         {draftOptions.length > 0 && !battleData && (
           <motion.div
@@ -209,18 +302,18 @@ export default function SportsDraftManager({ user }) {
                 animate={
                   packState === "opening"
                     ? {
-                        x: [-10, 10, -10, 10, -5, 5, 0],
-                        scale: 1.1,
-                        filter: "brightness(1.5)",
+                        scale: [1, 1.5, 0.8, 2],
+                        rotate: [-5, 5, -10, 10, 0],
+                        filter: "brightness(2)",
                       }
                     : { y: [0, -10, 0] }
                 }
                 transition={
                   packState === "opening"
-                    ? { duration: 0.5, repeat: 2 }
+                    ? { duration: 0.4 }
                     : { repeat: Infinity, duration: 2 }
                 }
-                className="relative w-64 h-96 bg-gradient-to-br from-gray-800 via-gray-600 to-gray-900 rounded-xl border-4 border-gray-500 shadow-[0_0_50px_rgba(255,255,255,0.2)] cursor-pointer flex flex-col items-center justify-center group"
+                className="relative w-64 h-96 bg-gradient-to-br from-gray-800 via-gray-600 to-gray-900 rounded-xl border-4 border-gray-500 shadow-[0_0_80px_rgba(255,255,255,0.4)] cursor-pointer flex flex-col items-center justify-center group"
               >
                 <div className="absolute inset-0 holo-shimmer opacity-30 pointer-events-none rounded-xl" />
                 <PackageOpen
@@ -230,7 +323,7 @@ export default function SportsDraftManager({ user }) {
                 <h3 className="text-2xl font-black italic text-white z-10 tracking-widest">
                   {currentDraftSlot.role} PACK
                 </h3>
-                <p className="text-[10px] text-gray-400 z-10 tracking-[0.4em] mt-2">
+                <p className="text-[10px] text-gray-400 z-10 tracking-[0.4em] mt-2 bg-black/50 px-3 py-1 rounded-full border border-white/10 animate-pulse">
                   TAP TO REVEAL
                 </p>
               </motion.div>
@@ -238,12 +331,14 @@ export default function SportsDraftManager({ user }) {
 
             {packState === "open" && (
               <>
-                <div className="text-center mb-8">
-                  <h2 className="text-4xl md:text-6xl font-black italic text-emerald-500 tracking-tighter">
+                <div className="text-center mb-4 md:mb-8 mt-10 md:mt-0">
+                  <h2 className="text-3xl md:text-6xl font-black italic text-emerald-500 tracking-tighter drop-shadow-md">
                     SELECT OPERATIVE
                   </h2>
                 </div>
-                <div className="flex justify-center items-center gap-6 md:gap-12 w-full max-w-4xl mb-8">
+
+                {/* 📱 MOBILE FIX: `flex-col sm:flex-row` ki wajah se cards uper-niche aayenge aur bade dikhenge! */}
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-6 w-full max-w-5xl mb-8 px-4 overflow-y-auto max-h-[75vh] pb-10 custom-scrollbar">
                   {draftOptions.map((option, idx) => (
                     <SportsCardDisplay
                       key={option.id}
@@ -257,15 +352,15 @@ export default function SportsDraftManager({ user }) {
               </>
             )}
 
-            {skips > 0 ? (
+            {effectiveSkips > 0 ? (
               <button
-                onClick={handleCancel}
-                className="absolute bottom-10 text-xs text-red-500 font-black border border-red-500/50 rounded-full px-8 py-3 hover:bg-red-500/20 transition-all z-50"
+                onClick={handleEffectiveCancel}
+                className="absolute bottom-6 md:bottom-10 text-xs text-red-500 font-black border border-red-500/50 rounded-full px-8 py-3 bg-black/80 hover:bg-red-500/20 transition-all z-50 shadow-xl"
               >
-                CANCEL SCOUTING ({skips} LEFT)
+                CANCEL SCOUTING ({effectiveSkips} LEFT)
               </button>
             ) : (
-              <div className="absolute bottom-10 text-[10px] text-gray-400 font-black border border-gray-700 bg-gray-900/80 rounded-full px-8 py-3 z-50 shadow-lg">
+              <div className="absolute bottom-6 md:bottom-10 text-[10px] text-gray-400 font-black border border-gray-700 bg-gray-900/90 rounded-full px-8 py-3 z-50 shadow-lg">
                 ⚠️ MUST SELECT PLAYER - NO SKIPS REMAINING
               </div>
             )}

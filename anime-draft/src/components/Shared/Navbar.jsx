@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   Coins,
   Gem,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -21,6 +22,12 @@ export default function Navbar({ user, setUser }) {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // 🔮 COSMETIC DETECTION
+  const hasGlow = user?.inventory?.some((item) => item.id === "cosmetic_glow");
+  const hasFrame = user?.inventory?.some(
+    (item) => item.id === "cosmetic_frame",
+  );
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -57,7 +64,7 @@ export default function Navbar({ user, setUser }) {
       localStorage.removeItem("commander");
       setUser(null);
       setIsOpen(false);
-      window.location.href = "/login"; // Hard reload to kill ghost data
+      window.location.href = "/login";
     }
   };
 
@@ -76,6 +83,7 @@ export default function Navbar({ user, setUser }) {
       </div>
 
       <div className="flex items-center gap-3 md:gap-6">
+        {/* ECONOMY BAR */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/shop")}
@@ -97,22 +105,30 @@ export default function Navbar({ user, setUser }) {
           </button>
         </div>
 
-        {/* 🛡️ THE RELATIVE CONTAINER: Forces dropdown to stick directly under the button */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`flex items-center gap-2 bg-[#111113] border ${isOpen ? "border-[#ff8c32]" : "border-white/10"} pl-1.5 pr-3 md:pr-4 py-1.5 rounded-full md:rounded-2xl transition-all`}
           >
-            <img
-              src={user.avatar || "/zoro.svg"}
-              className="w-8 h-8 md:w-9 md:h-9 rounded-full md:rounded-xl border border-[#ff8c32]/50 object-cover bg-black"
-              alt=""
-            />
+            {/* AVATAR & ABYSSAL FRAME */}
+            <div
+              className={`relative rounded-full ${hasFrame ? "p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500" : ""}`}
+            >
+              <img
+                src={user.avatar || "/zoro.svg"}
+                className={`w-8 h-8 md:w-9 md:h-9 rounded-full md:rounded-xl object-cover bg-black ${!hasFrame ? "border border-[#ff8c32]/50" : ""}`}
+                alt=""
+              />
+            </div>
+
+            {/* NAME & NEON GLOW */}
             <div className="hidden md:block text-left">
-              <p className="text-[10px] font-black text-white leading-none truncate max-w-[100px]">
+              <p
+                className={`text-[10px] font-black leading-none truncate max-w-[100px] ${hasGlow ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "text-white"}`}
+              >
                 {user.username}
               </p>
-              <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase">
+              <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase mt-0.5">
                 LVL {Math.floor((user.wins || 0) / 5) + 1}
               </p>
             </div>
@@ -122,7 +138,6 @@ export default function Navbar({ user, setUser }) {
             />
           </button>
 
-          {/* 🛡️ THE DROPDOWN: 'absolute right-0 top-full mt-2' ensures it perfectly aligns to the button and never goes off-screen! */}
           <AnimatePresence>
             {isOpen && (
               <motion.div
@@ -133,7 +148,9 @@ export default function Navbar({ user, setUser }) {
                 className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] p-2 z-[9999] origin-top-right"
               >
                 <div className="md:hidden px-4 py-3 border-b border-white/5 mb-2">
-                  <p className="text-xs font-black text-white truncate">
+                  <p
+                    className={`text-xs font-black truncate ${hasGlow ? "text-emerald-400" : "text-white"}`}
+                  >
                     {user.username}
                   </p>
                   <p className="text-[10px] font-bold text-[#ff8c32]">
@@ -145,7 +162,7 @@ export default function Navbar({ user, setUser }) {
                     navigate("/shop");
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500 transition-all text-[10px] font-black"
+                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500 transition-all text-[10px] font-black tracking-widest"
                 >
                   <ShoppingCart size={16} className="text-yellow-500" />{" "}
                   BLACK_MARKET
@@ -155,33 +172,34 @@ export default function Navbar({ user, setUser }) {
                     navigate("/leaderboard");
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
+                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
                 >
                   <Trophy size={16} className="text-[#ff8c32]" /> HALL_OF_FAME
-                </button>
-                <button
-                  onClick={() => {
-                    navigate("/admin");
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-orange-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
-                >
-                  <Database size={16} className="text-orange-500" />{" "}
-                  KERNEL_ADMIN
                 </button>
                 <button
                   onClick={() => {
                     navigate("/dashboard");
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-blue-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black"
+                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-blue-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
                 >
-                  <Settings size={16} className="text-blue-500" /> PROFILE_STATS
+                  <Settings size={16} className="text-blue-500" />{" "}
+                  PROFILE_ARMORY
+                </button>
+                <button
+                  onClick={() => {
+                    navigate("/admin");
+                    setIsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-orange-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
+                >
+                  <Database size={16} className="text-orange-500" />{" "}
+                  KERNEL_ADMIN
                 </button>
                 <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black"
+                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black tracking-widest"
                 >
                   <LogOut size={16} /> DISCONNECT
                 </button>

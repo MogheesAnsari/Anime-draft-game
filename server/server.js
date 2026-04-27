@@ -41,10 +41,11 @@ app.get("/api/characters", async (req, res) => {
   try {
     const { universe } = req.query;
     let dbQuery = {};
-    if (universe)
+    if (universe) {
       dbQuery.universe = universe.includes(",")
         ? { $in: universe.split(",") }
         : universe;
+    }
     const chars = await Character.find(dbQuery).select(
       "id name img universe atk def spd iq tier",
     );
@@ -80,17 +81,21 @@ app.put("/api/admin/bulk-update", async (req, res) => {
 
 app.put("/api/admin/update-character/:id", async (req, res) => {
   try {
+    const charId = req.params.id;
     const updateData = { ...req.body };
     delete updateData._id;
     delete updateData.__v;
+
     const updated = await Character.findOneAndUpdate(
-      { id: String(req.params.id) },
+      { id: { $in: [Number(charId), String(charId)] } },
       { $set: updateData },
       { new: true },
     );
     res.json({ message: "SUCCESS", character: updated });
   } catch (err) {
-    res.status(500).json({ error: "DATABASE_SYNC_ERROR" });
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 
@@ -158,17 +163,21 @@ app.put("/api/admin/bulk-update-players", async (req, res) => {
 
 app.put("/api/admin/update-player/:id", async (req, res) => {
   try {
+    const playerId = req.params.id;
     const updateData = { ...req.body };
     delete updateData._id;
     delete updateData.__v;
+
     const updated = await Player.findOneAndUpdate(
-      { id: String(req.params.id) },
+      { id: String(playerId) },
       { $set: updateData },
       { new: true },
     );
     res.json({ message: "SUCCESS", player: updated });
   } catch (err) {
-    res.status(500).json({ error: "DATABASE_SYNC_ERROR" });
+    res
+      .status(500)
+      .json({ error: "DATABASE_SYNC_ERROR", details: err.message });
   }
 });
 
@@ -182,108 +191,141 @@ app.delete("/api/admin/delete-player/:id", async (req, res) => {
 });
 
 // ==========================================
-// 👤 USER MANAGEMENT & ECONOMY
+// 👤 USER MANAGEMENT & DYNAMIC ECONOMY
 // ==========================================
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  avatar: { type: String, default: "/zoro.svg" },
+  avatar: { type: String, default: "" },
   totalGames: { type: Number, default: 0 },
   wins: { type: Number, default: 0 },
   coins: { type: Number, default: 500 },
   gems: { type: Number, default: 5 },
   inventory: { type: Array, default: [] },
+  scoreHistory: { type: Array, default: [] },
 });
 const User = mongoose.model("User", UserSchema);
 
-// 🛡️ Login or Create Profile (NO GUESTS)
 app.post("/api/user/access", async (req, res) => {
   try {
     const { username, avatar } = req.body;
     if (!username) return res.status(400).json({ error: "USERNAME_REQUIRED" });
 
-    // Force lowercase to prevent duplicate accounts like "Moghees" and "moghees"
-    const safeUsername = username.toLowerCase().trim();
+    let user = await User.findOne({ username: username.toLowerCase() });
 
-    let user = await User.findOne({ username: safeUsername });
-
-    if (!user) {
-      // Create fresh profile
+    if (user) {
+      if (avatar && user.avatar !== avatar) {
+        user.avatar = avatar;
+        await user.save();
+      }
+    } else {
       user = new User({
-        username: safeUsername,
-        avatar: avatar || "/zoro.svg",
-        coins: 500,
-        gems: 5,
+        username: username.toLowerCase(),
+        avatar,
         wins: 0,
         totalGames: 0,
+        coins: 500,
+        gems: 5,
+        inventory: [],
       });
       await user.save();
-    } else if (avatar && user.avatar !== avatar) {
-      // Update avatar if provided
-      user.avatar = avatar;
-      await user.save();
     }
-
     res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+    res
+      .status(500)
+      .json({ error: "INTERNAL_SERVER_ERROR", details: err.message });
   }
 });
 
-// 🛡️ Record Match & Safely Reward Coins
 app.post("/api/user/record-match", async (req, res) => {
   try {
-    const { username, isWin } = req.body;
-    if (!username) return res.status(400).json({ error: "MISSING_USER" });
-
+    const { username, isWin, coinsWon, gemsWon } = req.body;
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ error: "User not found" });
-
-    const coinsWon = isWin ? 100 : 25;
-    const gemsWon = isWin ? 1 : 0;
 
     user.totalGames += 1;
     if (isWin) user.wins += 1;
-    user.coins += coinsWon;
-    user.gems += gemsWon;
+    user.coins += coinsWon || 0;
+    user.gems += gemsWon || 0;
 
     await user.save();
-
-    // Send back the new totals so UI updates instantly
-    res.status(200).json({
-      user,
-      coinsWon,
-      gemsWon,
-      newTotalCoins: user.coins,
-      newTotalGems: user.gems,
-    });
+    res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ error: "REWARD_CALCULATION_FAILED" });
+    res.status(500).json({ error: "MATCH_RECORD_FAILED" });
   }
 });
 
-// 🛡️ Secure Shop Purchase
+// 🛍️ MULTI-CURRENCY SHOP
 app.post("/api/shop/buy", async (req, res) => {
   try {
-    const { username, cost, itemId, name } = req.body;
+    const { username, itemId, cost, currency, name, type } = req.body;
+    if (!username) return res.status(400).json({ error: "MISSING_USERNAME" });
+
+    let buyer = await User.findOne({ username: username.toLowerCase() });
+    if (!buyer) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+    if (currency === "gems") {
+      if (buyer.gems < cost)
+        return res.status(400).json({ error: "INSUFFICIENT GEMS." });
+      buyer.gems -= cost;
+    } else {
+      if (buyer.coins < cost)
+        return res.status(400).json({ error: "INSUFFICIENT COINS." });
+      buyer.coins -= cost;
+    }
+
+    if (!buyer.inventory) buyer.inventory = [];
+
+    if (type === "EXCHANGE") {
+      if (itemId === "exchange_gem") buyer.gems += 1;
+    } else {
+      buyer.inventory.push({ id: itemId, name, type, acquiredAt: new Date() });
+    }
+
+    buyer.markModified("inventory");
+    await buyer.save();
+
+    res.status(200).json({
+      newBalance: { coins: buyer.coins, gems: buyer.gems },
+      newInventory: buyer.inventory,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "TRANSACTION_FAILED", details: err.message });
+  }
+});
+
+// 🎒 TACTICAL ARMORY - DEPLOY ITEM IN COMBAT
+// This route MUST be inside your server.js
+app.post("/api/user/consume-item", async (req, res) => {
+  try {
+    const { username, itemId } = req.body;
+    if (!username || !itemId)
+      return res.status(400).json({ error: "Missing data" });
+
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (user.coins < cost)
-      return res.status(400).json({ error: "INSUFFICIENT_FUNDS" });
+    // 🛡️ Find the item in the inventory array
+    if (!user.inventory) user.inventory = [];
+    const itemIndex = user.inventory.findIndex((i) => i.id === itemId);
 
-    user.coins -= cost;
-    user.inventory.push({ id: itemId, name, acquiredAt: new Date() });
+    if (itemIndex === -1) {
+      return res.status(400).json({ error: "ITEM_NOT_FOUND_IN_INVENTORY" });
+    }
+
+    // 💥 Remove exactly ONE copy of the item
+    user.inventory.splice(itemIndex, 1);
+
+    // 🛡️ Tell Mongoose the array changed
+    user.markModified("inventory");
     await user.save();
 
-    res.status(200).json({
-      newBalance: user.coins,
-      newInventory: user.inventory,
-    });
+    res.json({ newInventory: user.inventory });
   } catch (err) {
-    res.status(500).json({ error: "TRANSACTION_FAILED" });
+    console.error("🔥 CONSUME ERROR:", err);
+    res.status(500).json({ error: "CONSUME_FAILED", details: err.message });
   }
 });
-
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const leaders = await User.find()

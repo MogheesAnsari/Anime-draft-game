@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDraftLogic } from "./hooks/useDraftLogic";
 import { calculateTeamScore, generateCpuTeam } from "./utils/draftUtils";
@@ -10,8 +10,9 @@ import AnimeCardDisplay from "./components/AnimeCardDisplay";
 import AnimeTeamDock from "./components/AnimeTeamDock";
 import AnimeRulesModal from "./components/AnimeRulesModal";
 import BattleArena from "../../Battle/BattleArena";
+import TacticalInventory from "../../Battle/TacticalInventory";
 
-export default function AnimeDraftManager() {
+export default function AnimeDraftManager({ user, setUser }) {
   const { state } = useLocation();
   const navigate = useNavigate();
 
@@ -37,14 +38,14 @@ export default function AnimeDraftManager() {
   const [isFighting, setIsFighting] = useState(false);
   const [battleData, setBattleData] = useState(null);
   const [showRules, setShowRules] = useState(!isRetry);
-  const [showArtifactPopup, setShowArtifactPopup] = useState(false);
-  const [selectedArtifact, setSelectedArtifact] = useState(null);
-  const [myInventory, setMyInventory] = useState([]);
 
-  useEffect(() => {
-    const savedInventory = localStorage.getItem("animeDraft_inventory");
-    if (savedInventory) setMyInventory(JSON.parse(savedInventory));
-  }, []);
+  // 🎒 LIVE INVENTORY STATES
+  const [activeBoosts, setActiveBoosts] = useState({
+    atk: 0,
+    iq: false,
+    skips: 0,
+  });
+  const [boostOverlay, setBoostOverlay] = useState(null);
 
   const themeColors = {
     1: { from: "from-orange-500", to: "to-red-600", name: "PLAYER_01" },
@@ -61,7 +62,6 @@ export default function AnimeDraftManager() {
   else if (safeMode.includes("2v2") || safeMode.includes("team")) maxTurns = 4;
   else if (safeMode.includes("pvp") || safeMode.includes("1v1")) maxTurns = 2;
 
-  // 🎯 STRICT ANIME SLOTS
   const animeSlots = [
     { id: "captain", label: "CAPTAIN" },
     { id: "vice_cap", label: "VICE CAPTAIN" },
@@ -71,20 +71,79 @@ export default function AnimeDraftManager() {
     { id: "raw_power", label: "RAW POWER" },
   ];
 
+  const handleDeployBoost = (boostId) => {
+    if (boostId === "boost_skip") {
+      setActiveBoosts((prev) => ({ ...prev, skips: prev.skips + 1 }));
+      setBoostOverlay({
+        title: "TACTICAL OVERRIDE",
+        desc: "+1 SKIP SECURED",
+        color: "text-blue-400",
+      });
+    } else if (boostId === "boost_atk") {
+      setActiveBoosts((prev) => ({ ...prev, atk: prev.atk + 10 }));
+      setBoostOverlay({
+        title: "POWER STIM",
+        desc: "FRONTLINE ATK +10",
+        color: "text-red-500",
+      });
+    } else if (boostId === "boost_iq") {
+      setActiveBoosts((prev) => ({ ...prev, iq: true }));
+      setBoostOverlay({
+        title: "IQ OVERCLOCK",
+        desc: "MAXIMUM IQ SECURED",
+        color: "text-cyan-400",
+      });
+    }
+    setTimeout(() => setBoostOverlay(null), 2000);
+  };
+
+  const boostedTeam = useMemo(() => {
+    const newTeam = { ...team };
+    Object.keys(newTeam).forEach((slot) => {
+      if (newTeam[slot]) {
+        newTeam[slot] = { ...newTeam[slot] };
+        if (
+          activeBoosts.atk > 0 &&
+          ["captain", "vice_cap", "tank", "raw_power"].includes(slot)
+        ) {
+          newTeam[slot].atk = Number(newTeam[slot].atk) + activeBoosts.atk;
+        }
+        if (activeBoosts.iq) {
+          newTeam[slot].iq = 250;
+        }
+      }
+    });
+    return newTeam;
+  }, [team, activeBoosts]);
+
+  const effectiveSkips = skips + activeBoosts.skips;
+  const handleEffectiveSkip = () => {
+    if (effectiveSkips > 0) {
+      if (activeBoosts.skips > 0) {
+        setActiveBoosts((prev) => ({ ...prev, skips: prev.skips - 1 }));
+        pull();
+      } else {
+        handleSkip();
+      }
+    }
+  };
+
   const handleFight = async () => {
-    if (Object.keys(team).length < animeSlots.length)
+    if (Object.keys(boostedTeam).length < animeSlots.length)
       return alert(
-        `SQUAD INCOMPLETE! (${Object.keys(team).length}/${animeSlots.length} REQUIRED)`,
+        `SQUAD INCOMPLETE! (${Object.keys(boostedTeam).length}/${animeSlots.length} REQUIRED)`,
       );
 
     setLoading(true);
     let finalTeams = [];
 
     if (safeMode.includes("cpu") || safeMode.includes("pve")) {
-      // Pass the specific slots to CPU generator so it fills the correct anime roles
-      finalTeams = [{ ...team }, generateCpuTeam(characterPool, animeSlots)];
+      finalTeams = [
+        { ...boostedTeam },
+        generateCpuTeam(characterPool, animeSlots),
+      ];
     } else {
-      finalTeams = [...completedTeams, { ...team }];
+      finalTeams = [...completedTeams, { ...boostedTeam }];
     }
 
     if (finalTeams.length >= 2) {
@@ -97,77 +156,92 @@ export default function AnimeDraftManager() {
         domain: "anime",
       };
 
-      if (myInventory.length > 0) {
-        setBattleData(newBattleData);
-        setShowArtifactPopup(true);
-      } else {
-        const emptyArtifacts = newBattleData.teams.map(() => null);
-        setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
-        setIsFighting(true);
-      }
+      const emptyArtifacts = newBattleData.teams.map(() => null);
+      setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
+      setIsFighting(true);
     }
     setLoading(false);
   };
 
-  const confirmAndEngage = () => {
-    const assignedArtifacts = battleData.teams.map((t, i) =>
-      i === 0 ? selectedArtifact : null,
-    );
-    setBattleData((prev) => ({ ...prev, artifacts: assignedArtifacts }));
-    setShowArtifactPopup(false);
-    setIsFighting(true);
-  };
-
   if (dbLoading)
     return (
-      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center text-[#ff8c32] font-black animate-pulse">
-        <div className="text-[10px] tracking-widest text-gray-500 mb-2">
-          ACCESSING_MAINFRAME
+      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center overflow-hidden relative">
+        {/* 🌀 Cinematic Background Aura */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#ff8c3215_0%,_transparent_70%)] animate-pulse" />
+
+        {/* ⚡ High-Tech Summoning Rings */}
+        <div className="relative w-48 h-48 flex items-center justify-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 border-2 border-dashed border-[#ff8c32]/20 rounded-full"
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-4 border-2 border-t-[#ff8c32] border-r-transparent border-b-transparent border-l-transparent rounded-full shadow-[0_0_20px_#ff8c3250]"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="w-20 h-20 bg-[#ff8c32]/10 rounded-full flex items-center justify-center border border-[#ff8c32]/40 backdrop-blur-xl"
+          >
+            <div className="w-8 h-8 bg-[#ff8c32] rounded-full shadow-[0_0_30px_#ff8c32]" />
+          </motion.div>
         </div>
-        BOOTING KERNEL...
-      </div>
-    );
 
-  return (
-    <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase">
-      {showRules && <AnimeRulesModal onClose={() => setShowRules(false)} />}
-
-      <AnimatePresence>
-        {showArtifactPopup && (
+        {/* 🤖 Tactical Terminal Text */}
+        <div className="mt-12 text-center z-10">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-[6000] flex items-center justify-center p-4 backdrop-blur-sm"
+            className="text-[10px] tracking-[0.6em] text-gray-500 font-black mb-3 uppercase"
           >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-[#0a0a0c] border-2 border-[#ff8c32]/50 rounded-[40px] p-8 max-w-4xl w-full text-center shadow-[0_0_50px_rgba(255,140,50,0.15)]"
-            >
-              <Gem
-                size={40}
-                className="mx-auto text-[#ff8c32] mb-4 animate-pulse"
+            Initializing Kernel Sync
+          </motion.div>
+          <div className="flex items-center gap-3">
+            <span className="h-[1px] w-8 bg-gradient-to-r from-transparent to-[#ff8c32]" />
+            <h1 className="text-2xl md:text-3xl font-black italic text-white tracking-tighter">
+              SYNCING <span className="text-[#ff8c32]">MULTIVERSE</span>
+            </h1>
+            <span className="h-[1px] w-8 bg-gradient-to-l from-transparent to-[#ff8c32]" />
+          </div>
+          <div className="mt-4 flex justify-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0.2, 1, 0.2] }}
+                transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                className="w-1.5 h-1.5 bg-[#ff8c32] rounded-full shadow-[0_0_10px_#ff8c32]"
               />
-              <h2 className="text-3xl md:text-5xl font-black italic text-white mb-2">
-                EQUIP <span className="text-[#ff8c32]">ARTIFACT</span>
-              </h2>
-              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8">
-                <button
-                  onClick={() => setShowArtifactPopup(false)}
-                  className="px-8 py-4 border border-white/20 rounded-2xl text-white font-black hover:bg-white/5 transition-colors"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={confirmAndEngage}
-                  disabled={!selectedArtifact}
-                  className={`px-10 py-4 rounded-2xl font-black italic transition-transform flex items-center justify-center gap-2 ${selectedArtifact ? "bg-[#ff8c32] text-black hover:scale-105 shadow-[0_0_20px_rgba(255,140,50,0.4)]" : "bg-gray-800 text-gray-500 cursor-not-allowed"}`}
-                >
-                  CONFIRM & BATTLE <Flame size={18} />
-                </button>
-              </div>
-            </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  return (
+    // 🛡️ CRITICAL FIX: Strict flex-col layout. HUD (top), Card (middle/flex-1), Dock (bottom/shrink-0)
+    <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden flex flex-col uppercase relative">
+      {showRules && <AnimeRulesModal onClose={() => setShowRules(false)} />}
+
+      <AnimatePresence>
+        {boostOverlay && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, filter: "blur(10px)" }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none"
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <h1
+              className={`text-4xl md:text-7xl font-black italic tracking-tighter drop-shadow-[0_0_40px_rgba(255,255,255,0.8)] z-10 ${boostOverlay.color}`}
+            >
+              {boostOverlay.title}
+            </h1>
+            <h2 className="text-lg md:text-3xl font-black text-white mt-2 z-10 tracking-widest bg-black/50 px-6 py-2 rounded-2xl border border-white/10">
+              {boostOverlay.desc}
+            </h2>
           </motion.div>
         )}
       </AnimatePresence>
@@ -182,37 +256,53 @@ export default function AnimeDraftManager() {
         />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/5 to-[#050505] pointer-events-none" />
 
-      <AnimeTacticalHUD
-        playerTurn={playerTurn}
-        maxTurns={maxTurns}
-        skips={skips}
-        theme={currentTheme}
-        onAbort={() => navigate("/modes")}
-        onShowRules={() => setShowRules(true)}
-      />
+      {!isFighting && (
+        <TacticalInventory
+          user={user}
+          setUser={setUser}
+          onDeployBoost={handleDeployBoost}
+        />
+      )}
 
-      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
+      {/* 1. TOP: HUD */}
+      <div className="shrink-0 z-20">
+        <AnimeTacticalHUD
+          playerTurn={playerTurn}
+          maxTurns={maxTurns}
+          skips={effectiveSkips}
+          theme={currentTheme}
+          onAbort={() => navigate("/modes")}
+          onShowRules={() => setShowRules(true)}
+        />
+      </div>
+
+      {/* 2. MIDDLE: CARD DISPLAY (Takes exact remaining space, min-h-0 prevents overflow) */}
+      <div className="flex-1 min-h-0 flex items-center justify-center w-full px-4 relative z-10">
         <AnimeCardDisplay
           currentCard={currentCard}
-          skips={skips}
-          onSkip={handleSkip}
+          skips={effectiveSkips}
+          onSkip={handleEffectiveSkip}
           onPull={pull}
           universe={universe}
         />
       </div>
 
-      <AnimeTeamDock
-        team={team}
-        slots={animeSlots}
-        onAssign={assign}
-        playerTurn={playerTurn}
-        maxTurns={maxTurns}
-        loading={loading}
-        theme={currentTheme}
-        onAction={playerTurn < maxTurns ? nextTurn : handleFight}
-      />
+      {/* 3. BOTTOM: TEAM DOCK (Pushed to bottom, never overlaps) */}
+      <div className="shrink-0 w-full z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-4">
+        <AnimeTeamDock
+          team={boostedTeam}
+          slots={animeSlots}
+          onAssign={assign}
+          playerTurn={playerTurn}
+          maxTurns={maxTurns}
+          loading={loading}
+          theme={currentTheme}
+          onAction={playerTurn < maxTurns ? nextTurn : handleFight}
+        />
+      </div>
     </div>
   );
 }
