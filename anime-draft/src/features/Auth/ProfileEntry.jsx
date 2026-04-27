@@ -29,10 +29,13 @@ export default function ProfileEntry({ setUser }) {
 
     try {
       // Create or Fetch the user profile from the database
-      const res = await axios.post("http://localhost:5000/api/user/access", {
-        username: name.toLowerCase().trim(),
-        avatar: selectedAvatar.img,
-      });
+      const res = await axios.post(
+        "https://anime-draft-game-1.onrender.com/api/user/access",
+        {
+          username: name.toLowerCase().trim(),
+          avatar: selectedAvatar.img,
+        },
+      );
 
       if (res.status === 200 || res.status === 201) {
         localStorage.setItem("commander", JSON.stringify(res.data));

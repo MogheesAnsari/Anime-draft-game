@@ -15,7 +15,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar({ user, setUser }) {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_URL =
+    import.meta.env.VITE_API_URL || "https://anime-draft-game-1.onrender.com";
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);

@@ -105,7 +105,7 @@ export default function App() {
           const parsed = JSON.parse(savedCommander);
           // 2. Fetch REAL stats from the server
           const res = await axios.post(
-            "http://localhost:5000/api/user/access",
+            "https://anime-draft-game-1.onrender.com/api/user/access",
             {
               username: parsed.username,
             },

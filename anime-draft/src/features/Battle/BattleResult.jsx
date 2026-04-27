@@ -184,7 +184,7 @@ export default function BattleResult({ user, setUser }) {
           ) || false;
 
         const res = await axios.post(
-          "http://localhost:5000/api/user/record-match",
+          "https://anime-draft-game-1.onrender.com/api/user/record-match",
           {
             username: cmd.username,
             isWin: isWin,
