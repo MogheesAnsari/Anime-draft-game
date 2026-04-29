@@ -17,7 +17,9 @@ import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import { calculateSportsEffectiveScore } from "../Draft/Sports/utils/sportsUtils";
 
 export default function SportsResult({ user, setUser }) {
-  const { state } = useLocation();
+  // FIXED: Properly defining location so location.pathname doesn't crash the app
+  const location = useLocation();
+  const { state } = location;
   const navigate = useNavigate();
   const [showCards, setShowCards] = useState(false);
   const [rewardData, setRewardData] = useState(null);
@@ -93,7 +95,6 @@ export default function SportsResult({ user, setUser }) {
 
   // 🛡️ REFRESH / F5 BUG FIX:
   useEffect(() => {
-    // If state explicitly says we already recorded this match, abort!
     if (isRecorded.current || rankedTeams.length === 0 || state?.isRecorded)
       return;
     isRecorded.current = true;
@@ -115,10 +116,16 @@ export default function SportsResult({ user, setUser }) {
 
         if (res.data) {
           setRewardData({
-            coinsAdded: res.data.coinsWon,
-            gemsAdded: res.data.gemsWon,
+            coinsAdded: res.data.coinsWon || 0,
+            gemsAdded: res.data.gemsWon || 0,
           });
-          if (setUser) setUser(res.data.user);
+
+          // FIXED: Prevents wiping the user object if the backend returns it under a different key
+          if (setUser) {
+            if (res.data.user) setUser(res.data.user);
+            else if (res.data.updatedUser)
+              setUser((prev) => ({ ...prev, ...res.data.updatedUser }));
+          }
 
           // 🛑 CRITICAL FIX: Update URL state so hitting F5 won't reward coins again!
           navigate(location.pathname, {

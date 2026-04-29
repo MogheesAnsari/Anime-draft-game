@@ -18,7 +18,8 @@ import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
 
 export default function BattleResult({ user, setUser }) {
-  const { state } = useLocation();
+  const location = useLocation();
+  const { state } = location;
   const navigate = useNavigate();
   const domain = state?.domain || "anime";
 
@@ -100,9 +101,11 @@ export default function BattleResult({ user, setUser }) {
     let builtCards = [];
     let status = "MATCH OVER";
     const isTeamMode = mode.includes("2v2") || mode.includes("team");
+    // 🚀 FIXED: Ensure Auction triggers Battle Royale scoring logic
     const isRoyaleMode =
       mode.includes("royale") ||
       mode.includes("ffa") ||
+      mode.includes("auction") ||
       (players.length > 2 && !isTeamMode);
 
     if (isTeamMode && players.length >= 4) {
@@ -198,8 +201,16 @@ export default function BattleResult({ user, setUser }) {
         );
 
         if (res.data) {
-          setEarnedLoot({ coins: res.data.coinsWon, gems: res.data.gemsWon });
-          if (setUser) setUser(res.data.user);
+          setEarnedLoot({
+            coins: res.data.coinsWon || 0,
+            gems: res.data.gemsWon || 0,
+          });
+
+          if (setUser) {
+            if (res.data.user) setUser(res.data.user);
+            else if (res.data.updatedUser)
+              setUser((prev) => ({ ...prev, ...res.data.updatedUser }));
+          }
 
           navigate(location.pathname, {
             state: { ...state, isRecorded: true },
@@ -461,7 +472,6 @@ export default function BattleResult({ user, setUser }) {
         </AnimatePresence>
       </div>
 
-      {/* 🚀 FIXED FOOTER: Snappy, Clean, Properly Sized & Redeploy Logic Fixed */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -471,17 +481,29 @@ export default function BattleResult({ user, setUser }) {
         <div className="flex flex-wrap justify-center gap-3 md:gap-4 max-w-3xl w-full">
           <button
             onClick={() => {
-              // 🛡️ HARD RESET: Clear specific local storage that might interfere
+              // 🛡️ RE-ROUTE TO AUCTION IF AUCTION MODE WAS ACTIVE
               localStorage.removeItem("animeDraft_lastBattle");
-              navigate("/draft", {
-                state: {
-                  mode: state?.mode,
-                  universe: state?.universe,
-                  domain: state?.domain,
-                  isRetry: true,
-                  resetToken: Date.now(), // 🔥 Unique token forces the receiver to refresh
-                },
-              });
+              if (mode.includes("auction")) {
+                navigate("/auction-difficulty", {
+                  state: {
+                    mode: state?.mode,
+                    universe: state?.universe,
+                    domain: state?.domain,
+                    isRetry: true,
+                    resetToken: Date.now(),
+                  },
+                });
+              } else {
+                navigate("/draft", {
+                  state: {
+                    mode: state?.mode,
+                    universe: state?.universe,
+                    domain: state?.domain,
+                    isRetry: true,
+                    resetToken: Date.now(),
+                  },
+                });
+              }
             }}
             className="flex-1 min-w-[120px] max-w-[180px] bg-[#ff8c32] text-black px-3 py-3 rounded-xl text-[9px] md:text-[11px] font-black italic hover:scale-105 transition-transform flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,140,50,0.3)] active:scale-95"
           >

@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-
 import { useLocation } from "react-router-dom";
-
 import { motion, AnimatePresence } from "framer-motion";
-
 import {
   Zap,
   Crown,
@@ -15,7 +12,6 @@ import {
   Target,
   FastForward,
 } from "lucide-react";
-
 import {
   calculateFinalBattleScore,
   getRoleAction,
@@ -26,50 +22,36 @@ import {
 
 const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [phase, setPhase] = useState("INTRO");
-
   const [currentSlot, setCurrentSlot] = useState(0);
-
   const [battleDomain] = useState(getRandomDomain());
 
   const [teamArtifacts] = useState(() => {
     if (artifacts && artifacts.length > 0) return artifacts;
-
     return allTeams.map(() => null);
   });
 
   const [gauges, setGauges] = useState(allTeams.map(() => 0));
-
   const [capturedScores, setCapturedScores] = useState(
     allTeams.map(() => ({})),
   );
-
   const [currentActions, setCurrentActions] = useState([]);
-
   const [clashText, setClashText] = useState("");
 
   // 🔥 SPEED CONTROLS
-
   const [isFastForward, setIsFastForward] = useState(false);
-
   const speedRef = useRef(false);
 
   const toggleSpeed = () => {
     setIsFastForward(!isFastForward);
-
     speedRef.current = !isFastForward;
   };
 
   const SLOTS = [
     "captain",
-
     "vice_cap",
-
     "speedster",
-
     "tank",
-
     "support",
-
     "raw_power",
   ];
 
@@ -77,7 +59,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     let timer;
 
     // Speed Multiplier: 0.25 means 4x faster!
-
     const getDelay = (ms) => (speedRef.current ? ms * 0.25 : ms);
 
     const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
@@ -88,7 +69,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     if (phase === "DOMAIN_REVEAL")
       timer = setTimeout(
         () => setPhase(hasAnyArtifact ? "ARTIFACT_REVEAL" : "SKILL_FLASH"),
-
         getDelay(3500),
       );
 
@@ -101,9 +81,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       setClashText(
         getSlotSkill(
           winChar,
-
           SLOTS[currentSlot],
-
           getUniverseSynergy(allTeams[0] || {}),
         ),
       );
@@ -124,17 +102,11 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
         return calculateFinalBattleScore(
           team[SLOTS[currentSlot]],
-
           SLOTS[currentSlot],
-
           battleDomain,
-
           teamArtifacts[idx],
-
           actions[idx]?.boost || 1,
-
           actions[idx]?.text || null,
-
           isAwakened,
         );
       });
@@ -153,20 +125,16 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         const scores = roundResults.map((r) => r.final);
 
         // TRUE AURA MATH: Mana based on raw performance
-
         setGauges((prev) =>
           prev.map((g, idx) => {
             const performanceRatio = Math.min(1, scores[idx] / 800);
-
             const earnedMana = 10 + Math.round(performanceRatio * 25);
-
             return Math.min(100, g + earnedMana);
           }),
         );
 
         if (currentSlot < SLOTS.length - 1) {
           setCurrentSlot((s) => s + 1);
-
           setPhase("SKILL_FLASH");
         } else {
           setPhase("FINISHER");
@@ -178,12 +146,9 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       timer = setTimeout(() => {
         localStorage.setItem(
           "animeDraft_lastBattle",
-
           JSON.stringify({
             finalScores: capturedScores,
-
             domain: battleDomain,
-
             artifacts: teamArtifacts,
           }),
         );
@@ -197,18 +162,15 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   const currentScores = allTeams.map((team, idx) => {
     const res = capturedScores[idx]?.[SLOTS[currentSlot]];
-
     return res ? res.final : 0;
   });
 
   const maxScoreRender = Math.max(...currentScores);
-
   const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
       {/* ⏩ FAST FORWARD BUTTON */}
-
       <button
         onClick={toggleSpeed}
         className={`fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -333,21 +295,17 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
             <MapPin size={12} /> {battleDomain.name} ACTIVE
           </div>
 
+          {/* 🚀 AUCTION LAYOUT UPDATE: Dynamically scales to support 4 teams without breaking UI */}
           <div
-            className={`grid gap-4 md:gap-8 w-full max-w-7xl justify-center mt-6 ${allTeams.length > 2 ? "grid-cols-2 lg:grid-cols-2" : "grid-cols-2"}`}
+            className={`grid gap-4 md:gap-8 w-full max-w-[1600px] justify-center mt-6 ${allTeams.length > 2 ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
           >
             {allTeams.map((team, idx) => {
               const char = team[SLOTS[currentSlot]];
-
               const scoreData = capturedScores[idx]?.[SLOTS[currentSlot]];
-
               const score = scoreData ? scoreData.final : 0;
-
               const isWinner = score === maxScoreRender && score > 0;
-
               const isAwakened =
                 SLOTS[currentSlot] === "raw_power" && gauges[idx] >= 100;
-
               const rng = currentActions[idx];
 
               return (
@@ -383,29 +341,18 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
 const BattleSide = ({
   teamIdx,
-
   char,
-
   slot,
-
   scoreData,
-
   score,
-
   isWinner,
-
   isAwakened,
-
   rng,
-
   artifact,
-
   gauge,
 }) => {
   const isAtk = slot === "raw_power" || slot === "captain";
-
   const isDef = slot === "tank" || slot === "captain";
-
   const isSpd = slot === "speedster" || slot === "captain";
 
   return (
@@ -413,9 +360,7 @@ const BattleSide = ({
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{
         scale: isWinner ? 1.05 : 1,
-
         opacity: 1,
-
         y: isWinner ? -10 : 0,
       }}
       className={`w-full bg-[#0a0a0a] border-2 rounded-[20px] md:rounded-[40px] p-3 md:p-8 flex flex-col items-center relative ${isWinner ? "border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.3)] z-30" : "border-white/10 opacity-80 z-10"}`}
@@ -494,7 +439,6 @@ const BattleSide = ({
       <div className="w-full bg-black/40 p-2 md:p-3 rounded-xl md:rounded-2xl border border-white/5 mt-auto">
         <div className="flex justify-between w-full text-[8px] md:text-[10px] mb-1 text-gray-400">
           <span>AURA GAUGE</span>
-
           <span className={gauge >= 100 ? "text-orange-500" : ""}>
             {gauge}%
           </span>

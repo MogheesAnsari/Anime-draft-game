@@ -7,7 +7,7 @@ export default function UniverseSelection({ user }) {
   const { state } = useLocation();
 
   const selectedMode = state?.mode || "Player vs CPU";
-  const domain = state?.domain || "anime"; // Detect if we are in anime or sports
+  const domain = state?.domain || "anime";
 
   // 🌌 ANIME MULTIVERSE
   const animeUniverses = [
@@ -109,9 +109,14 @@ export default function UniverseSelection({ user }) {
 
   const currentList = domain === "sports" ? sportsLeagues : animeUniverses;
 
-  // 🎯 SMART ROUTING: Automatically directs the user to the correct separated Draft Engine
+  // 🎯 SMART ROUTING
   const handleSelect = (universeId) => {
-    const targetRoute = domain === "sports" ? "/draft/sports" : "/draft/anime";
+    let targetRoute = domain === "sports" ? "/draft/sports" : "/draft/anime";
+
+    // If Auction mode, we must visit difficulty first!
+    if (selectedMode === "AUCTION") {
+      targetRoute = "/auction-difficulty";
+    }
 
     navigate(targetRoute, {
       state: {
