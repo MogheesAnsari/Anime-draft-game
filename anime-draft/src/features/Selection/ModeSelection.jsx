@@ -32,8 +32,9 @@ export default function ModeSelection({ user }) {
       icon: <Gavel size={32} />,
       color:
         "border-yellow-500/50 hover:border-yellow-400 hover:bg-yellow-500/10 text-yellow-400",
-      // 🚀 FIXED: Now routes to Universe Selection first!
-      action: () => navigate("/domain", { state: { mode: "AUCTION" } }),
+      // 🚀 FIXED: Bypasses Domain and goes straight to the Anime Universe Selector!
+      action: () =>
+        navigate("/universe", { state: { mode: "AUCTION", domain: "anime" } }),
     },
     {
       id: "TEAM BATTLE",
