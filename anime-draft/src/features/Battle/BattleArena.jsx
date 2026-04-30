@@ -90,18 +90,26 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     }
 
     if (phase === "CLASH") {
-      const actions = allTeams.map((team) =>
-        getRoleAction(team[SLOTS[currentSlot]], SLOTS[currentSlot]),
-      );
+      // 🚀 FIXED: Added safety fallback to prevent crash if char is missing
+      const actions = allTeams.map((team) => {
+        const char = team[SLOTS[currentSlot]];
+        return char
+          ? getRoleAction(char, SLOTS[currentSlot])
+          : { boost: 1, text: "MISSING", color: "text-gray-500" };
+      });
 
       setCurrentActions(actions);
 
       const roundResults = allTeams.map((team, idx) => {
+        const char = team[SLOTS[currentSlot]];
         const isAwakened =
           SLOTS[currentSlot] === "raw_power" && gauges[idx] >= 100;
 
+        // 🚀 FIXED: Skip calculation if character is completely missing
+        if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
+
         return calculateFinalBattleScore(
-          team[SLOTS[currentSlot]],
+          char,
           SLOTS[currentSlot],
           battleDomain,
           teamArtifacts[idx],
@@ -111,14 +119,12 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         );
       });
 
+      // 🚀 FIXED: Deep copy state mapping to prevent React UI freezing
       setCapturedScores((prev) => {
-        const newState = [...prev];
-
-        roundResults.forEach(
-          (res, idx) => (newState[idx][SLOTS[currentSlot]] = res),
-        );
-
-        return newState;
+        return prev.map((teamScores, idx) => ({
+          ...teamScores,
+          [SLOTS[currentSlot]]: roundResults[idx],
+        }));
       });
 
       timer = setTimeout(() => {
@@ -167,6 +173,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   const maxScoreRender = Math.max(...currentScores);
   const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
+  const isMultiplayer = allTeams.length > 2;
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
@@ -245,7 +252,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
             </h2>
 
             <div
-              className={`grid gap-4 md:gap-10 w-full justify-center ${allTeams.length > 2 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"}`}
+              className={`grid gap-4 md:gap-10 w-full justify-center ${isMultiplayer ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2"}`}
             >
               {teamArtifacts.map((art, i) => (
                 <div
@@ -295,9 +302,9 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
             <MapPin size={12} /> {battleDomain.name} ACTIVE
           </div>
 
-          {/* 🚀 AUCTION LAYOUT UPDATE: Dynamically scales to support 4 teams without breaking UI */}
+          {/* 🚀 FIXED: Responsive grid supports 4 teams cleanly across the screen */}
           <div
-            className={`grid gap-4 md:gap-8 w-full max-w-[1600px] justify-center mt-6 ${allTeams.length > 2 ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
+            className={`grid gap-4 md:gap-8 w-full max-w-[1600px] justify-center mt-6 ${isMultiplayer ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
           >
             {allTeams.map((team, idx) => {
               const char = team[SLOTS[currentSlot]];
@@ -321,6 +328,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
                   rng={rng}
                   artifact={teamArtifacts[idx]}
                   gauge={gauges[idx]}
+                  isMultiplayer={isMultiplayer}
                 />
               );
             })}
@@ -350,6 +358,7 @@ const BattleSide = ({
   rng,
   artifact,
   gauge,
+  isMultiplayer,
 }) => {
   const isAtk = slot === "raw_power" || slot === "captain";
   const isDef = slot === "tank" || slot === "captain";
@@ -406,14 +415,15 @@ const BattleSide = ({
         {score || "---"}
       </div>
 
+      {/* 🚀 FIXED: Responsive image sizing so 4 cards fit evenly without breaking the layout */}
       <img
         src={char?.img || "/zoro.svg"}
-        className={`w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48 object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}
+        className={`${isMultiplayer ? "w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32" : "w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48"} object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}
         alt=""
       />
 
       <div className="text-sm md:text-2xl text-white mb-2 md:mb-4 text-center truncate w-full px-2">
-        {char?.name}
+        {char?.name || "MISSING ASSET"}
       </div>
 
       <div className="hidden sm:flex gap-2 md:gap-4 mb-4 bg-black/50 px-3 py-1.5 rounded-full border border-white/5">
@@ -439,6 +449,7 @@ const BattleSide = ({
       <div className="w-full bg-black/40 p-2 md:p-3 rounded-xl md:rounded-2xl border border-white/5 mt-auto">
         <div className="flex justify-between w-full text-[8px] md:text-[10px] mb-1 text-gray-400">
           <span>AURA GAUGE</span>
+
           <span className={gauge >= 100 ? "text-orange-500" : ""}>
             {gauge}%
           </span>

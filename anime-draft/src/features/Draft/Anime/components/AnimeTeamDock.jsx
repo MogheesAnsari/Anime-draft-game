@@ -1,20 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, Swords, Plus } from "lucide-react";
 
-// 💥 THE LIVE ROLLING NUMBER ENGINE
+// 💥 LIVE ROLLING NUMBER ENGINE WITH GREEN GLOW FOR BOOSTS
 function AnimatedNumber({ value, className }) {
   const [count, setCount] = useState(value || 0);
   const [isBoosting, setIsBoosting] = useState(false);
+  const prevValue = useRef(value);
 
   useEffect(() => {
     let start = count;
     const target = Number(value) || 0;
+
+    // Check if the value actually went UP (e.g. from an artifact)
+    if (target > (Number(prevValue.current) || 0)) {
+      setIsBoosting(true);
+      // Remove the green glow after 1.5s
+      setTimeout(() => setIsBoosting(false), 1500);
+    }
+
+    prevValue.current = target;
+
     if (start === target) return;
 
-    setIsBoosting(true);
-    const duration = 1000;
-    const steps = 30;
+    const duration = 500; // Faster animation for stats
+    const steps = 20;
     const increment = (target - start) / steps;
 
     const timer = setInterval(() => {
@@ -24,7 +34,6 @@ function AnimatedNumber({ value, className }) {
         (increment < 0 && start <= target)
       ) {
         setCount(target);
-        setIsBoosting(false);
         clearInterval(timer);
       } else {
         setCount(Math.round(start));
@@ -32,14 +41,33 @@ function AnimatedNumber({ value, className }) {
     }, duration / steps);
 
     return () => clearInterval(timer);
-  }, [value]);
+  }, [value, count]);
 
   return (
-    <span
-      className={`${className} transition-colors duration-300 inline-block ${isBoosting ? "text-white scale-125 drop-shadow-[0_0_10px_white]" : ""}`}
-    >
-      {count}
-    </span>
+    <div className="relative inline-block">
+      <span
+        className={`${className} transition-all duration-300 ${
+          isBoosting
+            ? "text-emerald-400 scale-125 font-black drop-shadow-[0_0_10px_#34d399]"
+            : ""
+        }`}
+      >
+        {count}
+      </span>
+      {/* Little +XX floater that pops up when boosted */}
+      <AnimatePresence>
+        {isBoosting && (
+          <motion.span
+            initial={{ opacity: 0, y: 0, scale: 0.5 }}
+            animate={{ opacity: 1, y: -10, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute -top-3 -right-3 text-[5px] text-emerald-400 font-black drop-shadow-[0_0_5px_#34d399]"
+          >
+            +UP
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -62,7 +90,6 @@ export default function AnimeTeamDock({
         animate={{ y: 0, opacity: 1 }}
         className="w-full max-w-5xl mx-auto flex flex-col items-center"
       >
-        {/* 📱 STRICT 3x2 GRID ON MOBILE. Flexible on Desktop. */}
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-3 w-full">
           {slots.map((slot) => {
             const char = team[slot.id];
@@ -89,14 +116,12 @@ export default function AnimeTeamDock({
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
                     <div className="absolute inset-0 p-1 flex flex-col justify-between z-10 text-center">
-                      {/* Top Label (Ultra Compact) */}
                       <div className="w-full bg-black/60 backdrop-blur-sm py-0.5 rounded border border-white/10">
                         <span className="text-[6px] md:text-[8px] font-black text-gray-300 tracking-widest leading-none block truncate px-1 uppercase">
                           {slot.label}
                         </span>
                       </div>
 
-                      {/* Bottom Info & Stats (Ultra Compact) */}
                       <div className="w-full flex flex-col items-center bg-black/80 rounded-b-lg border-t border-white/10 p-1">
                         <span
                           className={`text-[7px] md:text-[9px] font-black italic truncate w-full leading-none mb-1 uppercase ${char.tier === "S+" ? "text-yellow-400" : "text-white"}`}
@@ -110,7 +135,7 @@ export default function AnimeTeamDock({
                               A
                             </span>
                             <AnimatedNumber
-                              value={char.atk}
+                              value={char.atk || char.ATK}
                               className="text-[6px] font-black text-gray-200"
                             />
                           </div>
@@ -119,7 +144,7 @@ export default function AnimeTeamDock({
                               D
                             </span>
                             <AnimatedNumber
-                              value={char.def}
+                              value={char.def || char.DEF}
                               className="text-[6px] font-black text-gray-200"
                             />
                           </div>
@@ -128,7 +153,7 @@ export default function AnimeTeamDock({
                               S
                             </span>
                             <AnimatedNumber
-                              value={char.spd}
+                              value={char.spd || char.SPD}
                               className="text-[6px] font-black text-gray-200"
                             />
                           </div>
@@ -137,7 +162,7 @@ export default function AnimeTeamDock({
                               I
                             </span>
                             <AnimatedNumber
-                              value={char.iq}
+                              value={char.iq || char.IQ}
                               className="text-[6px] font-black text-gray-200"
                             />
                           </div>

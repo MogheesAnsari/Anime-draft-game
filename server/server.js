@@ -46,9 +46,9 @@ app.get("/api/characters", async (req, res) => {
         ? { $in: universe.split(",") }
         : universe;
     }
-    const chars = await Character.find(dbQuery).select(
-      "id name img universe atk def spd iq tier",
-    );
+    const chars = await Character.find(dbQuery)
+      .select("id name img universe atk def spd iq tier")
+      .lean();
     res.json(chars);
   } catch (err) {
     res.status(500).json({ error: "DATABASE_FETCH_FAILED" });
@@ -119,7 +119,8 @@ const PlayerSchema = new mongoose.Schema({
   league: String,
   tier: { type: String, default: "B" },
   role: { type: String, default: "DEFAULT" },
-  stats: { type: Map, of: Number, default: {} },
+  // 🚀 FIXED: Switched from strict 'Map' to 'Mixed' so any valid JSON object uploaded is saved perfectly
+  stats: { type: mongoose.Schema.Types.Mixed, default: {} },
 });
 const Player = mongoose.model("Player", PlayerSchema);
 
@@ -128,9 +129,10 @@ app.get("/api/players", async (req, res) => {
     const { sport } = req.query;
     let dbQuery = {};
     if (sport && sport !== "all") dbQuery.sport = sport;
-    const players = await Player.find(dbQuery).select(
-      "id name img sport league tier role stats",
-    );
+
+    const players = await Player.find(dbQuery)
+      .select("id name img sport league tier role stats")
+      .lean();
     res.json(players);
   } catch (err) {
     res.status(500).json({ error: "PLAYER_DATABASE_FETCH_FAILED" });
@@ -294,8 +296,6 @@ app.post("/api/shop/buy", async (req, res) => {
   }
 });
 
-// 🎒 TACTICAL ARMORY - DEPLOY ITEM IN COMBAT
-// This route MUST be inside your server.js
 app.post("/api/user/consume-item", async (req, res) => {
   try {
     const { username, itemId } = req.body;
@@ -305,7 +305,6 @@ app.post("/api/user/consume-item", async (req, res) => {
     const user = await User.findOne({ username: username.toLowerCase() });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // 🛡️ Find the item in the inventory array
     if (!user.inventory) user.inventory = [];
     const itemIndex = user.inventory.findIndex((i) => i.id === itemId);
 
@@ -313,10 +312,7 @@ app.post("/api/user/consume-item", async (req, res) => {
       return res.status(400).json({ error: "ITEM_NOT_FOUND_IN_INVENTORY" });
     }
 
-    // 💥 Remove exactly ONE copy of the item
     user.inventory.splice(itemIndex, 1);
-
-    // 🛡️ Tell Mongoose the array changed
     user.markModified("inventory");
     await user.save();
 
@@ -326,6 +322,7 @@ app.post("/api/user/consume-item", async (req, res) => {
     res.status(500).json({ error: "CONSUME_FAILED", details: err.message });
   }
 });
+
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const leaders = await User.find()

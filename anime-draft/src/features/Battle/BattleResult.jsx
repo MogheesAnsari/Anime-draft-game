@@ -11,6 +11,7 @@ import {
   Coins,
   Gem,
   Activity,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -31,6 +32,9 @@ export default function BattleResult({ user, setUser }) {
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
+
+  // 🚀 FIXED: Grab the Double XP flag from the state passed by the Draft Manager
+  const hasDoubleXp = state?.hasDoubleXp || false;
 
   const SLOTS = [
     "captain",
@@ -101,7 +105,6 @@ export default function BattleResult({ user, setUser }) {
     let builtCards = [];
     let status = "MATCH OVER";
     const isTeamMode = mode.includes("2v2") || mode.includes("team");
-    // 🚀 FIXED: Ensure Auction triggers Battle Royale scoring logic
     const isRoyaleMode =
       mode.includes("royale") ||
       mode.includes("ffa") ||
@@ -197,12 +200,17 @@ export default function BattleResult({ user, setUser }) {
           {
             username: cmd.username,
             isWin: isWin,
+            hasDoubleXp: hasDoubleXp, // 🚀 FIXED: Passed flag to API
           },
         );
 
         if (res.data) {
+          // Calculate frontend display based on response or manually double it
+          const rawCoins = res.data.coinsWon || 0;
+          const displayCoins = hasDoubleXp ? rawCoins * 2 : rawCoins;
+
           setEarnedLoot({
-            coins: res.data.coinsWon || 0,
+            coins: displayCoins,
             gems: res.data.gemsWon || 0,
           });
 
@@ -222,7 +230,15 @@ export default function BattleResult({ user, setUser }) {
       }
     };
     syncResultToDatabase();
-  }, [displayCards, winnerCard, state, navigate, location.pathname, setUser]);
+  }, [
+    displayCards,
+    winnerCard,
+    state,
+    navigate,
+    location.pathname,
+    setUser,
+    hasDoubleXp,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowStats(true), 400);
@@ -297,6 +313,12 @@ export default function BattleResult({ user, setUser }) {
             >
               <div className="bg-yellow-500/10 border border-yellow-500/50 px-6 py-2.5 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                 <Coins size={18} /> +{earnedLoot.coins} COINS
+                {/* 🚀 FIXED: Shows visually that they got a 2X bonus! */}
+                {hasDoubleXp && (
+                  <span className="ml-2 bg-orange-500 text-black px-2 py-0.5 rounded text-[8px] animate-pulse">
+                    2X BONUS
+                  </span>
+                )}
               </div>
               {earnedLoot.gems > 0 && (
                 <div className="bg-purple-500/10 border border-purple-500/50 px-6 py-2.5 rounded-full flex items-center gap-2 text-purple-400 font-black shadow-[0_0_30px_rgba(168,85,247,0.2)]">
@@ -481,7 +503,6 @@ export default function BattleResult({ user, setUser }) {
         <div className="flex flex-wrap justify-center gap-3 md:gap-4 max-w-3xl w-full">
           <button
             onClick={() => {
-              // 🛡️ RE-ROUTE TO AUCTION IF AUCTION MODE WAS ACTIVE
               localStorage.removeItem("animeDraft_lastBattle");
               if (mode.includes("auction")) {
                 navigate("/auction-difficulty", {

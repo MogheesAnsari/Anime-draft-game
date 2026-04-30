@@ -56,6 +56,11 @@ export default function SportsDraftManager({ user, setUser }) {
   });
   const [boostOverlay, setBoostOverlay] = useState(null);
 
+  // 🚀 FIXED: Finds the exact Double XP pass object so we can pass it to the HUD
+  const xpPassObject = user?.inventory?.find(
+    (item) => item.id === "pass_xp" || item.type === "PASS",
+  );
+
   const getGlobalNames = () => {
     const names = new Set();
     finishedTeams.forEach((t) =>
@@ -95,23 +100,22 @@ export default function SportsDraftManager({ user, setUser }) {
     const newTeam = { ...team };
     Object.keys(newTeam).forEach((slot) => {
       if (newTeam[slot]) {
-        newTeam[slot] = { ...newTeam[slot] };
-        let statsObj = {};
-        if (newTeam[slot].stats instanceof Map) {
-          newTeam[slot].stats.forEach((v, k) => {
-            statsObj[k] = v;
-          });
-        } else {
-          statsObj = { ...newTeam[slot].stats };
-        }
+        // 🚀 FIXED: Deep Cloning forces the React UI to visually register the changes
+        newTeam[slot] = JSON.parse(JSON.stringify(newTeam[slot]));
+
+        let statsObj = newTeam[slot].stats || {};
+
         if (activeBoosts.atk > 0) {
-          if (statsObj["POWER"]) statsObj["POWER"] += 10;
-          if (statsObj["SHOOTING"]) statsObj["SHOOTING"] += 10;
-          if (statsObj["BATTING"]) statsObj["BATTING"] += 10;
+          if (statsObj["POWER"])
+            statsObj["POWER"] = Number(statsObj["POWER"]) + 10;
+          if (statsObj["SHOOTING"])
+            statsObj["SHOOTING"] = Number(statsObj["SHOOTING"]) + 10;
+          if (statsObj["BATTING"])
+            statsObj["BATTING"] = Number(statsObj["BATTING"]) + 10;
         }
         if (activeBoosts.iq) {
-          statsObj["IQ"] = 250;
-          statsObj["TACTICS"] = 250;
+          if (statsObj["IQ"] !== undefined) statsObj["IQ"] = 250;
+          if (statsObj["TACTICS"] !== undefined) statsObj["TACTICS"] = 250;
         }
         newTeam[slot].stats = statsObj;
       }
@@ -163,12 +167,15 @@ export default function SportsDraftManager({ user, setUser }) {
           );
         }
 
+        const hasDoubleXp = !!xpPassObject;
+
         setBattleData({
           teams: allSquads,
           result: { scores: allSquads.map(() => 0) },
           mode,
           universe,
           domain: "sports",
+          hasDoubleXp,
         });
         setLoading(false);
       } catch (err) {
@@ -178,10 +185,9 @@ export default function SportsDraftManager({ user, setUser }) {
     }
   };
 
-  // 🚀 CRITICAL FIX: Fast & Explosive Pack Opening
   const openPack = () => {
     setPackState("opening");
-    setTimeout(() => setPackState("open"), 400); // ⚡ 1200ms se 400ms kar diya!
+    setTimeout(() => setPackState("open"), 400);
   };
 
   if (dbLoading)
@@ -228,6 +234,7 @@ export default function SportsDraftManager({ user, setUser }) {
           onAbort={() => navigate("/modes")}
           rosterCount={Object.keys(boostedTeam).length}
           maxRoster={slots.length}
+          xpPassObject={xpPassObject} // 🚀 Passed to HUD
         />
       )}
       {!battleData && (
@@ -235,6 +242,7 @@ export default function SportsDraftManager({ user, setUser }) {
           user={user}
           setUser={setUser}
           onDeployBoost={handleDeployBoost}
+          activeDomain="sports" // 🚀 FIXED: Tells inventory to only show Sports items!
         />
       )}
 
@@ -287,7 +295,6 @@ export default function SportsDraftManager({ user, setUser }) {
         </div>
       )}
 
-      {/* 🚀 NEW: FAST & MOBILE RESPONSIVE PACK OPENING */}
       <AnimatePresence>
         {draftOptions.length > 0 && !battleData && (
           <motion.div
@@ -337,7 +344,6 @@ export default function SportsDraftManager({ user, setUser }) {
                   </h2>
                 </div>
 
-                {/* 📱 MOBILE FIX: `flex-col sm:flex-row` ki wajah se cards uper-niche aayenge aur bade dikhenge! */}
                 <div className="flex flex-col sm:flex-row justify-center items-center gap-6 w-full max-w-5xl mb-8 px-4 overflow-y-auto max-h-[75vh] pb-10 custom-scrollbar">
                   {draftOptions.map((option, idx) => (
                     <SportsCardDisplay

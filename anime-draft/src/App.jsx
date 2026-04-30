@@ -66,16 +66,14 @@ const AppContent = ({ user, setUser }) => {
           element={<AuctionSquadBuilder user={user} />}
         />
 
-        {/* Standard Drafts */}
         <Route
-          path="/draft"
-          element={
-            location.state?.domain === "sports" ? (
-              <SportsDraftManager user={user} setUser={setUser} />
-            ) : (
-              <AnimeDraftManager user={user} setUser={setUser} />
-            )
-          }
+          path="/draft/anime"
+          element={<AnimeDraftManager user={user} setUser={setUser} />}
+        />
+
+        <Route
+          path="/draft/sports"
+          element={<SportsDraftManager user={user} setUser={setUser} />}
         />
 
         {/* Shared Systems */}

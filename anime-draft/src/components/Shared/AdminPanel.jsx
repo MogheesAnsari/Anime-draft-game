@@ -13,7 +13,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import api from "../../services/api"; // 🛡️ SECURE API IMPORT
+import api from "../../services/api";
 import { getRoleStats } from "../../features/Draft/Sports/utils/sportsConfig";
 
 export default function AdminPanel() {
@@ -45,8 +45,6 @@ export default function AdminPanel() {
     "tokyo_ghoul",
   ];
   const sportsLeagues = ["football", "cricket"];
-
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "zoro";
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -91,7 +89,19 @@ export default function AdminPanel() {
       prev.map((char) => {
         if (char.id === id) {
           if (domain === "anime") return { ...char, [stat]: Number(value) };
-          return { ...char, stats: { ...char.stats, [stat]: Number(value) } };
+
+          // 🚀 FIXED: Bind to the exact existing key name so case sensitivity doesn't erase it
+          let actualKey = stat;
+          if (char.stats) {
+            const existingKey = Object.keys(char.stats).find(
+              (k) => k.toLowerCase() === stat.toLowerCase(),
+            );
+            if (existingKey) actualKey = existingKey;
+          }
+          return {
+            ...char,
+            stats: { ...char.stats, [actualKey]: Number(value) },
+          };
         }
         return char;
       }),
@@ -182,19 +192,43 @@ export default function AdminPanel() {
     );
   }
 
+  // 🚀 FIXED: Dynamic Key Extraction completely ignores role mismatches (e.g. ATT vs FW)
+  const getStatKeysToRender = (char) => {
+    if (domain === "anime") return ["atk", "def", "spd", "iq"];
+
+    // If the DB explicitly has its own keys mapped (e.g. from JSON), render them!
+    if (char.stats && Object.keys(char.stats).length > 0) {
+      return Object.keys(char.stats);
+    }
+
+    // If empty, guess based on config
+    return getRoleStats(subSelection, char.role);
+  };
+
+  const getSafeStat = (char, stat) => {
+    if (domain === "anime") return char[stat] || 0;
+    if (!char.stats) return 0;
+
+    // Checks for exact match, then falls back to case-insensitive match
+    if (char.stats[stat] !== undefined) return char.stats[stat];
+    const foundKey = Object.keys(char.stats).find(
+      (k) => k.toLowerCase() === stat.toLowerCase(),
+    );
+    return foundKey ? char.stats[foundKey] : 0;
+  };
+
   const getFilteredCharacters = () => {
     if (!hideZeros) return characters;
     return characters.filter((char) => {
-      if (domain === "anime")
+      if (domain === "anime") {
         return (
           char.atk === 0 || char.def === 0 || char.spd === 0 || char.iq === 0
         );
+      }
       if (domain === "sports") {
-        const reqStats = getRoleStats(subSelection, char.role);
-        return reqStats.some(
-          (s) =>
-            !char.stats || char.stats[s] === 0 || char.stats[s] === undefined,
-        );
+        if (!char.stats || Object.keys(char.stats).length === 0) return true;
+        // 🚀 FIXED: Accurately checks if ANY of the values inside the stats object are 0
+        return Object.values(char.stats).some((val) => Number(val) === 0);
       }
       return false;
     });
@@ -281,9 +315,17 @@ export default function AdminPanel() {
                 <span className="text-red-400">MISSING STATS</span>
                 <span className="text-red-500">
                   {
-                    characters.filter((c) =>
-                      domain === "anime" ? c.atk === 0 || c.def === 0 : false,
-                    ).length
+                    characters.filter((c) => {
+                      if (domain === "anime") return c.atk === 0 || c.def === 0;
+                      if (domain === "sports") {
+                        if (!c.stats || Object.keys(c.stats).length === 0)
+                          return true;
+                        return Object.values(c.stats).some(
+                          (val) => Number(val) === 0,
+                        );
+                      }
+                      return false;
+                    }).length
                   }
                 </span>
               </div>
@@ -344,18 +386,19 @@ export default function AdminPanel() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-6">
-                      {(domain === "anime"
-                        ? ["atk", "def", "spd", "iq"]
-                        : getRoleStats(subSelection, char.role)
-                      ).map((stat) => (
+                      {getStatKeysToRender(char).map((stat) => (
                         <div
                           key={stat}
                           className="bg-black/50 border border-white/5 rounded-xl p-2 flex flex-col"
                         >
-                          <span className="text-[8px] text-gray-500 mb-1 flex items-center gap-1">
-                            {stat === "atk" || stat === "SHOOTING" ? (
+                          <span className="text-[8px] text-gray-500 mb-1 flex items-center gap-1 truncate w-full">
+                            {stat === "atk" ||
+                            stat === "SHOOTING" ||
+                            stat === "POWER" ? (
                               <Zap size={8} className="text-red-400" />
-                            ) : stat === "iq" || stat === "IQ" ? (
+                            ) : stat === "iq" ||
+                              stat === "IQ" ||
+                              stat === "TACTICS" ? (
                               <Brain size={8} className="text-blue-400" />
                             ) : (
                               <Trophy size={8} className="text-yellow-400" />
@@ -364,11 +407,7 @@ export default function AdminPanel() {
                           </span>
                           <input
                             type="number"
-                            value={
-                              domain === "anime"
-                                ? char[stat]
-                                : char.stats?.[stat] || 0
-                            }
+                            value={getSafeStat(char, stat)}
                             onChange={(e) =>
                               handleStatChange(char.id, stat, e.target.value)
                             }
