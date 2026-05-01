@@ -1,31 +1,62 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
+import BackgroundManager from "./BackgroundManager";
+
+const animeMediaDesktop = [
+  "/satoru-gojo-shattered-sky.3840x2160.mp4",
+  "/shadows-army-solo-leveling.3840x2160.mp4",
+  "/madara-uchiha2.3840x2160.mp4",
+  "/itachi-uchiha-collage.3840x2160.mp4",
+  "/obito-uchiha-jutsu.1920x1080.mp4",
+  "/naruto-luffy-and-son-goku-in-the-ruined-city.1920x1080.mp4",
+  "/tanjiro-and-nezuko-kamado.3840x2160.mp4",
+  "/sakura-ronin-frostlit-blossom.3840x2160.mp4",
+  "/anime-girls-holding-hands.3840x2160.mp4",
+];
+
+const animeMediaMobile = [
+  "/luffy-gear-5th.720x1280.mp4",
+  "/golden-zenitsu.720x1280.mp4",
+  "/super-saiyan-goku-dragon-ball.720x1280.mp4",
+  "/naruto-in-fall.720x1280.mp4",
+];
+
+const sportsMedia = ["/cricket_hero.png", "/football_hero.png"];
 
 export default function Layout({ user, setUser, children }) {
   const location = useLocation();
 
-  // 🛡️ Hide Navbar on fully immersive screens & login
-  const immersiveScreens = ["/draft", "/result", "/login"];
+  // 🚀 FIXED: Instantly checks window width to prevent rendering desktop videos on mobile first
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") return window.innerWidth < 768;
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const lastDomain = localStorage.getItem("animeDraft_lastDomain") || "anime";
+  const isAnime = lastDomain === "anime";
+  const activeAnimeMedia = isMobile ? animeMediaMobile : animeMediaDesktop;
+  const globalMedia = isAnime ? activeAnimeMedia : sportsMedia;
+
+  const immersiveScreens = ["/hub", "/draft", "/battle", "/result", "/login"];
   const hideNavbar = immersiveScreens.some((path) =>
     location.pathname.startsWith(path),
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#050505] text-white flex flex-col font-sans uppercase relative">
-      {/* 🌌 Background Atmosphere */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-[#ff8c32]/5 blur-[100px] md:blur-[150px] rounded-full mix-blend-screen" />
-        <div className="absolute bottom-0 left-0 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-blue-500/5 blur-[100px] md:blur-[150px] rounded-full mix-blend-screen" />
-      </div>
+    <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col font-sans uppercase relative overflow-hidden">
+      <BackgroundManager images={globalMedia} intervalDuration={10000} />
 
-      {/* 🛰️ FIXED Navbar */}
       {!hideNavbar && <Navbar user={user} setUser={setUser} />}
 
-      {/* 🕹️ Mission Content Container */}
-      {/* CRITICAL: If Navbar is visible, add pt-16 (mobile) or pt-20 (PC) so content doesn't hide under it! */}
       <main
-        className={`flex-1 relative flex flex-col z-10 ${!hideNavbar ? "pt-16 md:pt-20" : ""}`}
+        className={`flex-1 w-full flex flex-col relative z-10 overflow-x-hidden overflow-y-auto ${!hideNavbar ? "pt-16 md:pt-20" : ""}`}
       >
         {children}
       </main>

@@ -23,15 +23,26 @@ export default function TacticalInventory({
 
   const isProcessing = useRef(false);
 
+  // 🚀 Dynamically determine theme based on active domain or fallback to localStorage
+  const fallbackDomain =
+    localStorage.getItem("animeDraft_lastDomain") || "anime";
+  const currentDomain = activeDomain || fallbackDomain;
+  const isSports = currentDomain === "sports";
+
+  const themeBorder = isSports
+    ? "border-emerald-500/50"
+    : "border-[#ff8c32]/50";
+  const themeText = isSports ? "text-emerald-400" : "text-[#ff8c32]";
+  const themeShadow = isSports
+    ? "shadow-[0_0_30px_rgba(52,211,153,0.3)]"
+    : "shadow-[0_0_30px_rgba(255,140,50,0.3)]";
+  const themeBg = isSports ? "bg-emerald-500" : "bg-[#ff8c32]";
+
   const groupedBoosts = useMemo(() => {
-    // 🚀 FIXED: Aggressively filter out items that don't belong to the active domain (anime vs sports)
     const combatBoosts =
       user?.inventory?.filter((item) => {
         const isBoost = item?.id?.includes("boost") || item?.type === "BOOST";
-        // If the component passed an activeDomain prop, strictly filter it. Fallback is true.
-        const matchesDomain = activeDomain
-          ? item?.domain === activeDomain
-          : true;
+        const matchesDomain = item?.domain === currentDomain;
         return isBoost && matchesDomain;
       }) || [];
 
@@ -41,7 +52,7 @@ export default function TacticalInventory({
       return acc;
     }, {});
     return Object.values(grouped);
-  }, [user?.inventory, activeDomain]);
+  }, [user?.inventory, currentDomain]);
 
   const handleConsumeItem = async (item) => {
     if (isProcessing.current) return;
@@ -96,14 +107,14 @@ export default function TacticalInventory({
       return <Brain size={16} className="text-cyan-400" />;
     if (id.includes("atk") || id.includes("power"))
       return <Zap size={16} className="text-red-400" />;
-    return <ShieldCheck size={16} className="text-emerald-400" />;
+    return <ShieldCheck size={16} className={themeText} />;
   };
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed right-0 top-1/3 md:top-1/2 -translate-y-1/2 bg-[#0a0a0c]/90 backdrop-blur-xl border-y-2 border-l-2 ${activeDomain === "sports" ? "border-emerald-500/50 text-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.3)]" : "border-[#ff8c32]/50 text-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.3)]"} p-2 md:p-3 rounded-l-2xl transition-all z-[8000] flex flex-col items-center gap-2 group hover:pr-6`}
+        className={`fixed right-0 top-1/3 md:top-1/2 -translate-y-1/2 bg-[#0a0a0c]/90 backdrop-blur-xl border-y-2 border-l-2 ${themeBorder} ${themeText} ${themeShadow} p-2 md:p-3 rounded-l-2xl transition-all z-[8000] flex flex-col items-center gap-2 group hover:pr-6`}
       >
         <Briefcase
           size={24}
@@ -126,28 +137,14 @@ export default function TacticalInventory({
               initial={{ scale: 0.9, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 50 }}
-              className={`w-full max-w-md bg-[#0a0a0c] border ${activeDomain === "sports" ? "border-emerald-500/30" : "border-white/10"} rounded-[32px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative flex flex-col max-h-[85vh]`}
+              className={`w-full max-w-md bg-[#0a0a0c] border ${themeBorder} rounded-[32px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9)] relative flex flex-col max-h-[85vh]`}
             >
               <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 shrink-0 uppercase">
-                <h2 className="text-lg md:text-xl font-black italic text-white flex items-center gap-2 tracking-tighter">
-                  <Briefcase
-                    size={20}
-                    className={
-                      activeDomain === "sports"
-                        ? "text-emerald-500"
-                        : "text-[#ff8c32]"
-                    }
-                  />{" "}
-                  TACTICAL{" "}
-                  <span
-                    className={
-                      activeDomain === "sports"
-                        ? "text-emerald-500"
-                        : "text-[#ff8c32]"
-                    }
-                  >
-                    ARMORY
-                  </span>
+                <h2
+                  className={`text-lg md:text-xl font-black italic text-white flex items-center gap-2 tracking-tighter`}
+                >
+                  <Briefcase size={20} className={themeText} /> TACTICAL{" "}
+                  <span className={themeText}>ARMORY</span>
                 </h2>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -183,7 +180,7 @@ export default function TacticalInventory({
                       NO TACTICAL BOOSTS DETECTED.
                     </p>
                     <p className="text-[8px] mt-2 opacity-50 uppercase">
-                      Verify you purchased items for the {activeDomain} sector.
+                      Verify you purchased items for the {currentDomain} sector.
                     </p>
                   </div>
                 ) : (
@@ -199,7 +196,7 @@ export default function TacticalInventory({
                             {item.name}
                           </h3>
                           <span
-                            className={`${activeDomain === "sports" ? "bg-emerald-500" : "bg-[#ff8c32]"} text-black text-[8px] px-2 py-0.5 rounded-full font-black`}
+                            className={`${themeBg} text-black text-[8px] px-2 py-0.5 rounded-full font-black`}
                           >
                             x{item.count}
                           </span>
@@ -214,7 +211,7 @@ export default function TacticalInventory({
                         disabled={
                           consumingItem === item.id || isProcessing.current
                         }
-                        className={`w-full md:w-auto px-6 py-3 rounded-xl text-[10px] font-black tracking-[0.2em] transition-all ${activeDomain === "sports" ? "bg-emerald-500" : "bg-[#ff8c32]"} text-black hover:bg-white hover:text-black disabled:opacity-50 disabled:scale-100 active:scale-95 shrink-0 flex items-center justify-center gap-2 uppercase`}
+                        className={`w-full md:w-auto px-6 py-3 rounded-xl text-[10px] font-black tracking-[0.2em] transition-all ${themeBg} text-black hover:bg-white hover:text-black disabled:opacity-50 disabled:scale-100 active:scale-95 shrink-0 flex items-center justify-center gap-2 uppercase`}
                       >
                         {consumingItem === item.id ? (
                           <Loader2 size={14} className="animate-spin" />

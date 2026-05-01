@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   LogOut,
   Swords,
-  Settings,
-  ChevronDown,
   Trophy,
   Database,
   ShoppingCart,
   Coins,
   Gem,
-  Sparkles,
+  Menu,
+  X,
+  LayoutDashboard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -20,23 +20,22 @@ export default function Navbar({ user, setUser }) {
     import.meta.env.VITE_API_URL || "https://anime-draft-game-1.onrender.com";
   const navigate = useNavigate();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // 🔮 COSMETIC DETECTION
-  const hasGlow = user?.inventory?.some((item) => item.id === "cosmetic_glow");
-  const hasFrame = user?.inventory?.some(
+  const safeUser = user || {
+    username: "GUEST",
+    coins: 0,
+    gems: 0,
+    avatar: "/zoro.svg",
+    inventory: [],
+    wins: 0,
+  };
+  const hasGlow = safeUser.inventory?.some(
+    (item) => item.id === "cosmetic_glow",
+  );
+  const hasFrame = safeUser.inventory?.some(
     (item) => item.id === "cosmetic_frame",
   );
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
-        setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -57,22 +56,63 @@ export default function Navbar({ user, setUser }) {
     return () => clearInterval(interval);
   }, [user, setUser, API_URL]);
 
-  if (!user || location.pathname === "/login") return null;
+  if (location.pathname === "/login") return null;
 
   const handleLogout = () => {
     if (window.confirm("TERMINATE SESSION AND DISCONNECT?")) {
       localStorage.removeItem("commander");
       setUser(null);
-      setIsOpen(false);
-      window.location.href = "/login";
+      navigate("/login");
     }
   };
 
+  const NavLinks = () => (
+    <>
+      <button
+        onClick={() => {
+          navigate("/dashboard");
+          setIsMobileMenuOpen(false);
+        }}
+        className="flex items-center gap-3 text-[12px] md:text-xs font-black tracking-widest hover:text-blue-400 transition-colors"
+      >
+        <LayoutDashboard size={16} /> DASHBOARD
+      </button>
+      <button
+        onClick={() => {
+          navigate("/shop");
+          setIsMobileMenuOpen(false);
+        }}
+        className="flex items-center gap-3 text-[12px] md:text-xs font-black tracking-widest hover:text-yellow-500 transition-colors"
+      >
+        <ShoppingCart size={16} /> MARKET
+      </button>
+      <button
+        onClick={() => {
+          navigate("/leaderboard");
+          setIsMobileMenuOpen(false);
+        }}
+        className="flex items-center gap-3 text-[12px] md:text-xs font-black tracking-widest hover:text-[#ff8c32] transition-colors"
+      >
+        <Trophy size={16} /> RANKINGS
+      </button>
+      <button
+        onClick={() => {
+          navigate("/admin");
+          setIsMobileMenuOpen(false);
+        }}
+        className="flex items-center gap-3 text-[12px] md:text-xs font-black tracking-widest hover:text-red-500 transition-colors"
+      >
+        <Database size={16} /> ADMIN
+      </button>
+    </>
+  );
+
   return (
-    <nav className="fixed top-0 left-0 w-full h-16 md:h-20 bg-[#050505]/95 backdrop-blur-2xl border-b border-white/5 flex items-center justify-between px-4 md:px-8 uppercase z-[9000]">
+    // 🚀 FIXED: Added bg-black/80 and backdrop-blur-sm for a lightweight, transparent glass effect
+    <nav className="fixed top-0 left-0 w-full h-16 md:h-20 bg-black/80 backdrop-blur-sm border-b border-white/10 flex items-center justify-between px-4 md:px-8 uppercase z-[9000]">
       <div
         className="flex items-center gap-2 cursor-pointer group"
-        onClick={() => navigate("/modes")}
+        onClick={() => navigate("/")}
       >
         <div className="p-1.5 md:p-2 bg-[#ff8c32]/10 rounded-xl group-hover:rotate-12 transition-all duration-500 hidden sm:block">
           <Swords size={20} className="text-[#ff8c32]" />
@@ -82,132 +122,107 @@ export default function Navbar({ user, setUser }) {
         </span>
       </div>
 
+      <div className="hidden lg:flex items-center gap-8 text-gray-300">
+        <NavLinks />
+      </div>
+
       <div className="flex items-center gap-3 md:gap-6">
-        {/* ECONOMY BAR */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate("/shop")}
-            className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5 rounded-full hover:bg-yellow-500/20 transition-all"
-          >
+        <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5 rounded-full">
             <Coins size={14} className="text-yellow-500" />
             <span className="text-xs font-black text-yellow-500 tracking-widest">
-              {user?.coins || 0}
+              {safeUser.coins}
             </span>
-          </button>
-          <button
-            onClick={() => navigate("/shop")}
-            className="hidden sm:flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full hover:bg-purple-500/20 transition-all"
-          >
+          </div>
+          <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full">
             <Gem size={14} className="text-purple-500" />
             <span className="text-xs font-black text-purple-500 tracking-widest">
-              {user?.gems || 0}
+              {safeUser.gems}
             </span>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-4">
+          <div
+            className={`relative rounded-full ${hasFrame ? "p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500" : ""}`}
+          >
+            <img
+              src={safeUser.avatar}
+              className={`w-9 h-9 rounded-full object-cover bg-black ${!hasFrame ? "border border-[#ff8c32]/50" : ""}`}
+              alt=""
+            />
+          </div>
+          <button
+            onClick={handleLogout}
+            className="p-2 hover:bg-red-500/10 rounded-xl text-gray-500 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={18} />
           </button>
         </div>
 
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={`flex items-center gap-2 bg-[#111113] border ${isOpen ? "border-[#ff8c32]" : "border-white/10"} pl-1.5 pr-3 md:pr-4 py-1.5 rounded-full md:rounded-2xl transition-all`}
-          >
-            {/* AVATAR & ABYSSAL FRAME */}
-            <div
-              className={`relative rounded-full ${hasFrame ? "p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500" : ""}`}
-            >
-              <img
-                src={user.avatar || "/zoro.svg"}
-                className={`w-8 h-8 md:w-9 md:h-9 rounded-full md:rounded-xl object-cover bg-black ${!hasFrame ? "border border-[#ff8c32]/50" : ""}`}
-                alt=""
-              />
-            </div>
+        <button
+          className="lg:hidden p-2 text-white"
+          onClick={() => setIsMobileMenuOpen(true)}
+        >
+          <Menu size={24} />
+        </button>
+      </div>
 
-            {/* NAME & NEON GLOW */}
-            <div className="hidden md:block text-left">
-              <p
-                className={`text-[10px] font-black leading-none truncate max-w-[100px] ${hasGlow ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "text-white"}`}
-              >
-                {user.username}
-              </p>
-              <p className="text-[8px] font-bold text-[#ff8c32] tracking-widest uppercase mt-0.5">
-                LVL {Math.floor((user.wins || 0) / 5) + 1}
-              </p>
-            </div>
-            <ChevronDown
-              size={14}
-              className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            {/* 🚀 FIXED: Reduced transition duration to 0.15s for instant snappy feel */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/90 z-[9998] lg:hidden"
             />
-          </button>
 
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute top-full right-0 mt-3 w-56 bg-[#0c0c0e]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] p-2 z-[9999] origin-top-right"
-              >
-                <div className="md:hidden px-4 py-3 border-b border-white/5 mb-2">
-                  <p
-                    className={`text-xs font-black truncate ${hasGlow ? "text-emerald-400" : "text-white"}`}
-                  >
-                    {user.username}
-                  </p>
-                  <p className="text-[10px] font-bold text-[#ff8c32]">
-                    LEVEL {Math.floor((user.wins || 0) / 5) + 1}
-                  </p>
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.15, ease: "easeOut" }} // 🚀 FAST ANIMATION
+              className="fixed top-0 right-0 w-64 h-[100dvh] bg-[#0c0c0e] border-l border-white/10 z-[9999] flex flex-col p-6 lg:hidden"
+            >
+              <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={safeUser.avatar}
+                    className="w-10 h-10 rounded-full object-cover bg-black"
+                    alt=""
+                  />
+                  <div>
+                    <p
+                      className={`text-xs font-black truncate max-w-[100px] ${hasGlow ? "text-emerald-400" : "text-white"}`}
+                    >
+                      {safeUser.username}
+                    </p>
+                  </div>
                 </div>
                 <button
-                  onClick={() => {
-                    navigate("/shop");
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-yellow-500/10 text-gray-400 hover:text-yellow-500 transition-all text-[10px] font-black tracking-widest"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-500 hover:text-white"
                 >
-                  <ShoppingCart size={16} className="text-yellow-500" />{" "}
-                  BLACK_MARKET
+                  <X size={24} />
                 </button>
-                <button
-                  onClick={() => {
-                    navigate("/leaderboard");
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-[#ff8c32]/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
-                >
-                  <Trophy size={16} className="text-[#ff8c32]" /> HALL_OF_FAME
-                </button>
-                <button
-                  onClick={() => {
-                    navigate("/dashboard");
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-blue-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
-                >
-                  <Settings size={16} className="text-blue-500" />{" "}
-                  PROFILE_ARMORY
-                </button>
-                <button
-                  onClick={() => {
-                    navigate("/admin");
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-orange-500/10 text-gray-400 hover:text-white transition-all text-[10px] font-black tracking-widest"
-                >
-                  <Database size={16} className="text-orange-500" />{" "}
-                  KERNEL_ADMIN
-                </button>
-                <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 md:p-4 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all text-[10px] font-black tracking-widest"
-                >
-                  <LogOut size={16} /> DISCONNECT
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+              </div>
+              <div className="flex flex-col gap-6 text-gray-400 flex-1">
+                <NavLinks />
+              </div>
+              <button
+                onClick={handleLogout}
+                className="mt-auto flex items-center gap-3 p-4 rounded-xl bg-red-500/10 text-red-500 font-black tracking-widest text-xs justify-center hover:bg-red-500 hover:text-white transition-all"
+              >
+                <LogOut size={16} /> DISCONNECT
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
