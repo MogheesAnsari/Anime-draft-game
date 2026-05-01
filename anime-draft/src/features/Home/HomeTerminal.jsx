@@ -9,13 +9,12 @@ export default function HomeTerminal() {
   const isAnime = lastDomain === "anime";
 
   return (
-    // 🚀 FIXED: h-full and overflow-hidden completely disables scrolling. bg-transparent lets video show.
-    <div className="h-full w-full bg-transparent flex flex-col items-center justify-center p-4 relative overflow-hidden font-black uppercase italic text-white">
+    // 🚀 SCROLL FIX: 'absolute inset-0' perfectly clamps the screen within the Layout bounds
+    <div className="absolute inset-0 w-full h-full bg-transparent flex flex-col items-center justify-center p-4 overflow-hidden font-black uppercase italic text-white">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         onClick={() => navigate("/domain")}
-        // 🚀 FIXED: Significantly smaller max-width (max-w-[280px] on mobile, max-w-md on PC)
         className="relative z-10 w-full max-w-[280px] md:max-w-md bg-black/50 backdrop-blur-xl border border-white/10 rounded-[28px] md:rounded-[40px] p-6 md:p-10 flex flex-col items-center justify-center text-center shadow-[0_0_50px_rgba(0,0,0,0.5)] cursor-pointer group transition-all hover:border-white/30 hover:bg-black/70"
       >
         <div

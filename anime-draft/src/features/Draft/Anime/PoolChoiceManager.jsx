@@ -1,342 +1,282 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldAlert, Zap, Swords, UserX, Loader2 } from "lucide-react";
+import { ChevronLeft, Zap, ShieldCheck } from "lucide-react";
 import api from "../../../services/api";
-import BattleArena from "../../Battle/BattleArena";
 
-export default function PoolChoiceManager({ user, setUser }) {
+export default function PoolChoiceManager({ user }) {
   const { state } = useLocation();
   const navigate = useNavigate();
   const universe = state?.universe || "all";
-  const mode = state?.mode || "Pool Choice";
-  const isCpuMatch = mode.toLowerCase().includes("cpu");
+  const domain = state?.domain || "anime";
 
-  const [characterPool, setCharacterPool] = useState([]);
-  const [grid, setGrid] = useState([]);
-  const [team1, setTeam1] = useState([]);
-  const [team2, setTeam2] = useState([]);
+  const [deck, setDeck] = useState([]);
+  const [pool, setPool] = useState([]);
+  const [p1Squad, setP1Squad] = useState([]);
+  const [p2Squad, setP2Squad] = useState([]);
+
   const [turn, setTurn] = useState(1);
-  const [phase, setPhase] = useState("DRAFTING");
-  const [revealAlert, setRevealAlert] = useState(null);
+  const [phase, setPhase] = useState("drafting");
+  const [loading, setLoading] = useState(true);
 
+  // 1️⃣ INITIALIZATION & BULLETPROOF FILTERING
   useEffect(() => {
-    const fetchCharacters = async () => {
+    const fetchRoster = async () => {
       try {
-        const res = await api.get(`/characters?universe=${universe}`);
-        if (res.data && res.data.length > 0) {
-          setCharacterPool(res.data);
-        } else {
-          alert("No characters found for this universe!");
-          navigate("/hub");
+        let endpoint = domain === "anime" ? "/characters" : "/players";
+        if (universe !== "all") {
+          endpoint +=
+            domain === "anime" ? `?universe=${universe}` : `?sport=${universe}`;
         }
-      } catch (error) {
-        alert("Database connection failed.");
-        navigate("/hub");
+
+        const res = await api.get(endpoint);
+        let validData = res.data;
+
+        // 🚀 BULLETPROOF DOMAIN FILTER: Absolutely bans sports players from Anime and vice-versa
+        validData = validData.filter((c) => {
+          const isSport =
+            c.sport === "football" ||
+            c.sport === "cricket" ||
+            c.universe === "football" ||
+            c.universe === "cricket" ||
+            !!c.role;
+
+          if (domain === "anime") {
+            return !isSport; // If in Anime realm, KEEP only non-sports
+          } else {
+            return isSport; // If in Sports realm, KEEP only sports
+          }
+        });
+
+        if (!validData || validData.length < 12) {
+          alert("Not enough characters in this universe to play a 6v6 match!");
+          navigate(-1);
+          return;
+        }
+
+        const shuffled = [...validData].sort(() => 0.5 - Math.random());
+
+        setPool(shuffled.slice(0, 6));
+        setDeck(shuffled.slice(6));
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch roster", err);
+        navigate(-1);
       }
     };
-    fetchCharacters();
-  }, [universe, navigate]);
+    fetchRoster();
+  }, [universe, domain, navigate]);
 
-  const replenishGrid = () => {
-    if (characterPool.length === 0) return;
-    const newGrid = [];
-    const poolCopy = [...characterPool];
+  // 2️⃣ PLAYER 1 DRAFT LOGIC
+  const handlePick = (char) => {
+    if (turn !== 1 || phase !== "drafting" || p1Squad.length >= 6 || !char)
+      return;
 
-    for (let i = 0; i < 6; i++) {
-      if (poolCopy.length === 0) break;
-      const randIdx = Math.floor(Math.random() * poolCopy.length);
-      const char = poolCopy.splice(randIdx, 1)[0];
+    const newP1Squad = [...p1Squad, char];
+    setP1Squad(newP1Squad);
 
-      // 🚨 THE IMPOSTER MECHANIC: 10% chance an S or S+ card is Demaro Black!
-      const isImposter =
-        (char.tier === "S+" || char.tier === "S") && Math.random() < 0.1;
+    const poolIndex = pool.findIndex(
+      (c) => c && (c._id === char._id || c.id === char.id),
+    );
+    if (poolIndex !== -1) {
+      const nextChar = deck.length > 0 ? deck[0] : null;
 
-      newGrid.push({
-        ...char,
-        isImposter,
-        gridId: `${char.id}-${Date.now()}-${i}`,
+      setDeck((prevDeck) => prevDeck.slice(1));
+
+      setPool((prevPool) => {
+        const newPool = [...prevPool];
+        newPool[poolIndex] = nextChar;
+        return newPool;
       });
     }
-    setGrid(newGrid);
-  };
 
-  useEffect(() => {
-    if (characterPool.length > 0 && grid.length === 0) {
-      replenishGrid();
-    }
-  }, [characterPool]);
-
-  const handlePick = async (pickedChar) => {
-    if (turn !== 1 && isCpuMatch) return;
-    await processSelection(pickedChar, turn);
-  };
-
-  const processSelection = async (char, currentTurn) => {
-    let finalChar = { ...char };
-
-    setGrid((prev) => prev.filter((c) => c.gridId !== char.gridId));
-
-    // Reveal Imposter
-    if (char.isImposter) {
-      setRevealAlert({
-        title: "IMPOSTER REVEALED!",
-        msg: `That wasn't ${char.name}... It was Demaro Black in disguise!`,
-      });
-      finalChar = {
-        ...char,
-        name: `Demaro (${char.name})`,
-        tier: "C",
-        atk: 15,
-        def: 15,
-        spd: 15,
-        iq: 10,
-        img: "/demaro.jpg",
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setRevealAlert(null);
-    }
-
-    if (currentTurn === 1) {
-      setTeam1((prev) => [...prev, finalChar]);
+    if (newP1Squad.length === 6) {
       setTurn(2);
-    } else {
-      setTeam2((prev) => [...prev, finalChar]);
-      setTurn(1);
     }
   };
 
-  // CPU & Round Logic
+  // 3️⃣ CPU DRAFT LOGIC
   useEffect(() => {
-    const runCpuAndRounds = async () => {
-      if (team1.length === 6 && team2.length === 6) {
-        setTimeout(() => setPhase("BATTLE"), 1000);
-        return;
-      }
+    if (turn === 2 && phase === "drafting" && p2Squad.length < 6) {
+      const timer = setTimeout(() => {
+        const validPoolIndices = pool
+          .map((c, i) => (c !== null ? i : -1))
+          .filter((i) => i !== -1);
+        if (validPoolIndices.length === 0) return;
 
-      if (grid.length === 4 && team1.length === team2.length) {
-        replenishGrid();
-        return;
-      }
+        const randomSlotIndex =
+          validPoolIndices[Math.floor(Math.random() * validPoolIndices.length)];
+        const cpuPick = pool[randomSlotIndex];
 
-      if (turn === 2 && isCpuMatch && grid.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const newP2Squad = [...p2Squad, cpuPick];
+        setP2Squad(newP2Squad);
 
-        // CPU Strategy: Picks highest base total (gets tricked by imposters too!)
-        const cpuPick = [...grid].sort((a, b) => {
-          const aTotal =
-            Number(a.atk) + Number(a.def) + Number(a.spd) + Number(a.iq);
-          const bTotal =
-            Number(b.atk) + Number(b.def) + Number(b.spd) + Number(b.iq);
-          return bTotal - aTotal;
-        })[0];
+        const nextChar = deck.length > 0 ? deck[0] : null;
+        setDeck((prevDeck) => prevDeck.slice(1));
 
-        await processSelection(cpuPick, 2);
-      }
-    };
-    runCpuAndRounds();
-  }, [turn, grid, team1, team2, isCpuMatch]);
+        setPool((prevPool) => {
+          const newPool = [...prevPool];
+          newPool[randomSlotIndex] = nextChar;
+          return newPool;
+        });
 
-  const battleData = useMemo(() => {
-    if (phase !== "BATTLE") return null;
+        if (newP2Squad.length === 6) {
+          triggerBattle(p1Squad, newP2Squad);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [turn, phase, pool, deck, p1Squad, p2Squad]);
 
-    const slots = [
-      "captain",
-      "vice_cap",
-      "speedster",
-      "tank",
-      "support",
-      "raw_power",
-    ];
-    const formatTeam = (teamArr) => {
-      const formatted = {};
-      teamArr.forEach((char, i) => {
-        formatted[slots[i]] = char;
-      });
-      return formatted;
-    };
+  const triggerBattle = (squad1, squad2) => {
+    setPhase("battle");
+    setTimeout(
+      () =>
+        navigate("/result", { state: { p1Squad: squad1, p2Squad: squad2 } }),
+      1500,
+    );
+  };
 
-    const t1 = formatTeam(team1);
-    const t2 = formatTeam(team2);
-
-    const hasDoubleXp =
-      user?.inventory?.some((i) => i.id === "pass_xp" || i.type === "PASS") ||
-      false;
-
-    return {
-      teams: [t1, t2],
-      result: { scores: [0, 0] },
-      mode,
-      universe,
-      domain: "anime",
-      hasDoubleXp,
-      artifacts: [null, null],
-    };
-  }, [phase, team1, team2, mode, universe, user]);
-
-  if (characterPool.length === 0) {
+  if (loading)
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center text-[#ff8c32]">
-        <Loader2 className="animate-spin" size={48} />
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#050505] text-[#ff8c32] font-black italic text-xl md:text-2xl tracking-[0.3em] animate-pulse">
+        DEPLOYING MULTIVERSE...
       </div>
     );
-  }
 
-  if (phase === "BATTLE" && battleData) {
-    return (
-      <BattleArena
-        allTeams={battleData.teams}
-        artifacts={battleData.artifacts}
-        onComplete={(res) =>
-          navigate("/result", { state: { ...battleData, result: res } })
-        }
-      />
-    );
-  }
+  // 4️⃣ UI RENDER
+  const renderSquad = (squad, title, isP1) => (
+    <div className="flex lg:flex-col gap-2 w-full lg:w-32 shrink-0 p-2 items-center justify-center bg-black/40 border border-white/5 rounded-2xl lg:bg-transparent lg:border-none lg:rounded-none">
+      <div className="hidden lg:block text-[10px] text-gray-400 font-black tracking-widest text-center w-full mb-2">
+        {title}
+      </div>
+      <div className="flex lg:flex-col gap-2 md:gap-3 w-full justify-center">
+        {[...Array(6)].map((_, i) => {
+          const char = squad[i];
+          return (
+            <div
+              key={i}
+              className={`w-[14%] aspect-square lg:w-full lg:h-32 lg:aspect-auto shrink-0 rounded-lg lg:rounded-2xl border-2 flex items-center justify-center overflow-hidden bg-black/80 transition-all ${char ? (isP1 ? "border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" : "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]") : "border-white/10"}`}
+            >
+              {char ? (
+                <img
+                  src={char.img}
+                  className="w-full h-full object-cover"
+                  alt=""
+                />
+              ) : (
+                <span className="text-white/20 text-xs font-black">
+                  {i + 1}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#030305] text-white overflow-hidden relative flex flex-col uppercase italic font-black">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#ff8c32]/10 via-[#030305] to-[#030305] pointer-events-none" />
-
-      <AnimatePresence>
-        {revealAlert && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          >
-            <div className="bg-red-900/40 border-2 border-red-500 rounded-[40px] p-12 flex flex-col items-center shadow-[0_0_100px_rgba(239,68,68,0.5)] text-center max-w-2xl mx-4">
-              <UserX size={80} className="text-red-500 mb-6 animate-pulse" />
-              <h1 className="text-4xl md:text-7xl text-red-500 tracking-tighter mb-4">
-                {revealAlert.title}
-              </h1>
-              <p className="text-lg md:text-2xl text-white tracking-widest">
-                {revealAlert.msg}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex justify-between items-center p-4 md:p-6 border-b border-white/10 relative z-10 bg-black/40 backdrop-blur-md">
-        <div>
-          <div className="text-[8px] md:text-[10px] text-gray-500 tracking-[0.4em]">
-            TACTICAL PHASE
-          </div>
-          <div className="text-xl md:text-4xl text-[#ff8c32] flex items-center gap-2 md:gap-3">
-            <Swords className="w-6 h-6 md:w-8 md:h-8" /> POOL CHOICE
-          </div>
-        </div>
-
-        <div
-          className={`px-4 md:px-8 py-2 md:py-3 rounded-full border-2 text-[10px] md:text-sm tracking-widest flex items-center gap-2 transition-colors ${turn === 1 ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_20px_rgba(255,140,50,0.5)]" : "bg-black text-gray-400 border-white/20"}`}
-        >
-          {turn === 1 ? (
-            <>YOUR TURN TO DRAFT</>
-          ) : (
-            <>
-              <Loader2 size={14} className="animate-spin" />{" "}
-              {isCpuMatch ? "CPU THINKING" : "P2 DRAFTING"}
-            </>
-          )}
-        </div>
+    <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col font-sans uppercase overflow-hidden relative">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#ff8c32]/5 blur-[100px] rounded-full mix-blend-screen" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] rounded-full mix-blend-screen" />
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row relative z-10 p-4 max-w-[1600px] w-full mx-auto gap-4 md:gap-8 overflow-y-auto custom-scrollbar pb-32">
-        {/* P1 SQUAD */}
-        <div className="flex md:flex-col gap-2 md:gap-3 shrink-0 order-2 md:order-1 overflow-x-auto md:overflow-x-visible w-full md:w-32 justify-start md:justify-start">
-          <div className="hidden md:block text-[10px] text-center text-[#ff8c32] tracking-widest mb-2">
-            P1 SQUAD
+      <header className="flex justify-between items-center p-3 md:p-6 border-b border-white/10 bg-black/50 backdrop-blur-md shrink-0 z-20">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 md:p-2.5 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <div className="text-[8px] md:text-[10px] text-[#ff8c32] tracking-widest font-black">
+              TACTICAL PHASE
+            </div>
+            <h1 className="text-base md:text-2xl font-black italic tracking-tighter">
+              POOL CHOICE
+            </h1>
           </div>
-          {[...Array(6)].map((_, i) => {
-            const char = team1[i];
-            return (
-              <div
-                key={i}
-                className={`w-16 h-16 md:w-full md:aspect-square shrink-0 rounded-xl md:rounded-2xl border-2 flex items-center justify-center overflow-hidden transition-all ${char ? "border-[#ff8c32] shadow-[0_0_15px_rgba(255,140,50,0.2)] bg-black" : "border-white/10 bg-white/5"}`}
+        </div>
+        <div
+          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-[8px] md:text-[10px] font-black tracking-widest transition-all ${turn === 1 ? "bg-blue-500/20 border-blue-500 text-blue-400 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "bg-red-500/20 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]"}`}
+        >
+          {turn === 1 ? "YOUR DRAFT" : "CPU DRAFTING"}
+        </div>
+      </header>
+
+      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden relative z-10 p-2 md:p-6 lg:gap-6">
+        {renderSquad(p1Squad, "P1 SQUAD", true)}
+
+        <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center p-1 md:p-4 overflow-hidden relative">
+          <AnimatePresence mode="popLayout">
+            {phase === "battle" ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-3xl md:text-6xl font-black italic text-[#ff8c32] tracking-tighter drop-shadow-[0_0_30px_rgba(255,140,50,0.8)] absolute"
               >
-                {char ? (
-                  <img src={char.img} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-gray-600 text-[10px]">{i + 1}</div>
-                )}
+                BATTLE START
+              </motion.div>
+            ) : (
+              <div className="w-full h-full max-w-4xl grid grid-cols-3 gap-2 md:gap-4 p-2 items-center content-center">
+                {pool.map((char, idx) => {
+                  if (!char)
+                    return (
+                      <div
+                        key={`empty-${idx}`}
+                        className="aspect-[3/4] rounded-xl lg:rounded-2xl border border-white/5 bg-black/40"
+                      />
+                    );
+
+                  return (
+                    <motion.div
+                      key={char._id || char.id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: turn === 1 ? 1.03 : 1 }}
+                      onClick={() => handlePick(char)}
+                      className={`relative bg-black/80 rounded-xl lg:rounded-2xl border-2 overflow-hidden shadow-xl transition-all aspect-[3/4] flex flex-col ${turn === 1 ? "border-white/10 hover:border-[#ff8c32] cursor-pointer" : "border-white/5 opacity-60 grayscale-[30%] cursor-not-allowed"}`}
+                    >
+                      <img
+                        src={char.img}
+                        className="absolute inset-0 w-full h-full object-cover opacity-80"
+                        alt=""
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+
+                      <div className="absolute bottom-0 w-full p-2 md:p-4 flex flex-col items-center z-10">
+                        <div className="text-[10px] md:text-sm font-black italic text-white tracking-tighter mb-1 md:mb-2 truncate w-full text-center drop-shadow-lg">
+                          {char.name}
+                        </div>
+                        <div className="flex justify-between w-full px-1 text-[8px] md:text-[10px] font-black bg-black/60 backdrop-blur-md rounded-lg p-1.5 border border-white/10">
+                          <span className="text-red-400 flex items-center gap-1">
+                            <Zap size={10} />{" "}
+                            {char.atk ||
+                              char.stats?.SHOOTING ||
+                              char.stats?.BATTING ||
+                              0}
+                          </span>
+                          <span className="text-blue-400 flex items-center gap-1">
+                            <ShieldCheck size={10} />{" "}
+                            {char.def ||
+                              char.stats?.DEFENDING ||
+                              char.stats?.BOWLING ||
+                              0}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
-            );
-          })}
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* POOL GRID */}
-        <div className="flex-1 flex flex-col items-center justify-center order-1 md:order-2">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 w-full max-w-4xl">
-            <AnimatePresence mode="popLayout">
-              {grid.map((char) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                  key={char.gridId}
-                  onClick={() => handlePick(char)}
-                  className={`relative aspect-[3/4] bg-[#0a0a0c] border-2 border-white/10 rounded-2xl md:rounded-3xl overflow-hidden cursor-pointer group hover:border-[#ff8c32] hover:shadow-[0_0_30px_rgba(255,140,50,0.3)] transition-all ${turn !== 1 && isCpuMatch ? "pointer-events-none opacity-50" : ""}`}
-                >
-                  <img
-                    src={char.img}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                  <div className="absolute top-2 left-2 md:top-3 md:left-3 bg-black/80 px-2 md:px-3 py-1 rounded border border-white/10 text-[10px] md:text-xs text-yellow-400 backdrop-blur-md">
-                    {char.tier}
-                  </div>
-
-                  <div className="absolute bottom-0 w-full p-2 md:p-4 flex flex-col">
-                    <span className="text-sm md:text-2xl text-white truncate drop-shadow-lg mb-1 md:mb-2">
-                      {char.name}
-                    </span>
-                    <div className="grid grid-cols-2 gap-1 md:gap-2">
-                      <div className="bg-black/80 rounded px-1 md:px-2 py-0.5 md:py-1 text-[7px] md:text-[10px] text-red-400 flex justify-between border border-white/5">
-                        <span>ATK</span> <span>{char.atk}</span>
-                      </div>
-                      <div className="bg-black/80 rounded px-1 md:px-2 py-0.5 md:py-1 text-[7px] md:text-[10px] text-blue-400 flex justify-between border border-white/5">
-                        <span>DEF</span> <span>{char.def}</span>
-                      </div>
-                      <div className="bg-black/80 rounded px-1 md:px-2 py-0.5 md:py-1 text-[7px] md:text-[10px] text-green-400 flex justify-between border border-white/5">
-                        <span>SPD</span> <span>{char.spd}</span>
-                      </div>
-                      <div className="bg-black/80 rounded px-1 md:px-2 py-0.5 md:py-1 text-[7px] md:text-[10px] text-cyan-400 flex justify-between border border-white/5">
-                        <span>IQ</span> <span>{char.iq}</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* RIGHT DOCK: PLAYER 2 */}
-        <div className="flex md:flex-col gap-2 md:gap-3 shrink-0 order-3 overflow-x-auto md:overflow-x-visible w-full md:w-32 justify-start md:justify-start">
-          <div className="hidden md:block text-[10px] text-center text-gray-400 tracking-widest mb-2">
-            P2 SQUAD
-          </div>
-          {[...Array(6)].map((_, i) => {
-            const char = team2[i];
-            return (
-              <div
-                key={i}
-                className={`w-16 h-16 md:w-full md:aspect-square shrink-0 rounded-xl md:rounded-2xl border-2 flex items-center justify-center overflow-hidden transition-all ${char ? "border-gray-500 shadow-[0_0_15px_rgba(156,163,175,0.2)] bg-black" : "border-white/10 bg-white/5"}`}
-              >
-                {char ? (
-                  <img src={char.img} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-gray-600 text-[10px]">{i + 1}</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {renderSquad(p2Squad, "CPU SQUAD", false)}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,8 +12,8 @@ import {
   Gavel,
   ShieldCheck,
 } from "lucide-react";
-import BackgroundManager from "../../components/Shared/BackgroundManager";
 
+// 🚀 FIXED: Removed DC, Marvel, OPM, Tokyo Ghoul from the array
 const animeUniverses = [
   { id: "all", name: "ALL MULTIVERSE" },
   { id: "naruto", name: "NARUTO" },
@@ -27,26 +27,11 @@ const animeUniverses = [
   { id: "demon_slayer", name: "DEMON SLAYER" },
   { id: "bleach", name: "BLEACH" },
   { id: "black_clover", name: "BLACK CLOVER" },
-  { id: "marvel", name: "MARVEL" },
-  { id: "dc", name: "DC COMICS" },
-  { id: "opm", name: "ONE PUNCH MAN" },
-  { id: "tokyo_ghoul", name: "TOKYO GHOUL" },
 ];
 
 const sportsUniverses = [
   { id: "football", name: "FOOTBALL" },
   { id: "cricket", name: "CRICKET" },
-];
-
-const animeMediaDesktop = [
-  "/obito-uchiha-jutsu.1920x1080.mp4",
-  "/sakura-ronin-frostlit-blossom.3840x2160.mp4",
-  "/madara-uchiha2.3840x2160.mp4",
-];
-
-const animeMediaMobile = [
-  "/luffy-gear-5th.720x1280.mp4",
-  "/naruto-in-fall.720x1280.mp4",
 ];
 
 export default function CombatHub() {
@@ -55,13 +40,6 @@ export default function CombatHub() {
   const domain =
     state?.domain || localStorage.getItem("animeDraft_lastDomain") || "anime";
   const isAnime = domain === "anime";
-
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const [selectedUniverse, setSelectedUniverse] = useState("all");
   const [selectedMode, setSelectedMode] = useState("Player vs CPU");
@@ -95,8 +73,6 @@ export default function CombatHub() {
     });
   }
 
-  const backgroundMedia = isMobile ? animeMediaMobile : animeMediaDesktop;
-
   const handleInitiate = () => {
     if (!selectedUniverse || !selectedMode) return;
     if (isAnime) {
@@ -120,18 +96,11 @@ export default function CombatHub() {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col font-black uppercase italic p-4 md:p-8 relative">
-      <BackgroundManager
-        images={backgroundMedia}
-        intervalDuration={10000}
-        overlayOpacity="opacity-80 bg-black/60"
-        blurAmount="backdrop-blur-[20px] md:backdrop-blur-[30px]"
-      />
-
-      <header className="flex items-center gap-3 md:gap-4 mb-6 relative z-10 w-full max-w-7xl mx-auto mt-4">
+    <div className="absolute inset-0 w-full h-full flex flex-col font-black uppercase italic p-4 md:p-8 overflow-hidden bg-transparent">
+      <header className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 relative z-10 w-full max-w-7xl mx-auto shrink-0">
         <button
           onClick={() => navigate("/domain")}
-          className="p-2.5 md:p-4 bg-black/50 border border-white/10 rounded-xl md:rounded-2xl hover:bg-white/10 transition-all backdrop-blur-md shadow-lg"
+          className="p-2.5 bg-black/50 border border-white/10 rounded-xl hover:bg-white/10 transition-all backdrop-blur-md"
         >
           <ChevronLeft size={20} className="text-white" />
         </button>
@@ -147,25 +116,17 @@ export default function CombatHub() {
         </div>
       </header>
 
-      {/* 🚀 FIXED: Removed internal scrolling. Added pb-32 to allow whole page to scroll over the sticky button */}
-      <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 pb-32">
-        {/* UNIVERSE SELECTION (No max-height, no internal scroll) */}
-        <section className="lg:col-span-7 bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] md:rounded-[32px] p-5 md:p-6 flex flex-col">
-          <h3 className="text-[10px] text-gray-400 tracking-widest mb-4 flex items-center gap-2">
-            <Globe
-              size={14}
-              className={isAnime ? "text-[#ff8c32]" : "text-emerald-400"}
-            />{" "}
-            01. SELECT BATTLEGROUND
+      <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10 min-h-0 pb-16">
+        <section className="lg:col-span-7 flex flex-col bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 min-h-0 overflow-hidden">
+          <h3 className="text-[10px] text-gray-400 tracking-widest mb-3 shrink-0">
+            <Globe size={14} className="inline mr-1" /> 01. BATTLEGROUND
           </h3>
-
-          {/* Tighter Grid to save space */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 gap-2 md:gap-3">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {universes.map((u) => (
               <button
                 key={u.id}
                 onClick={() => setSelectedUniverse(u.id)}
-                className={`px-2 py-3 md:py-4 rounded-xl md:rounded-2xl border transition-all text-center flex flex-col items-center justify-center gap-1 ${selectedUniverse === u.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20 shadow-[0_0_15px_rgba(255,140,50,0.3)]" : "border-emerald-500 bg-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.3)]") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
+                className={`px-2 py-4 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-1 ${selectedUniverse === u.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20" : "border-emerald-500 bg-emerald-500/20") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
               >
                 <span
                   className={`text-[9px] md:text-[10px] tracking-tighter w-full truncate ${selectedUniverse === u.id ? "text-white" : "text-gray-400"}`}
@@ -177,37 +138,30 @@ export default function CombatHub() {
           </div>
         </section>
 
-        {/* MODE SELECTION (No max-height, no internal scroll) */}
-        <section className="lg:col-span-5 bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] md:rounded-[32px] p-5 md:p-6 flex flex-col">
-          <h3 className="text-[10px] text-gray-400 tracking-widest mb-4 flex items-center gap-2">
-            <Crosshair
-              size={14}
-              className={isAnime ? "text-[#ff8c32]" : "text-emerald-400"}
-            />{" "}
-            02. SELECT DIRECTIVE
+        <section className="lg:col-span-5 flex flex-col bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 min-h-0 overflow-hidden">
+          <h3 className="text-[10px] text-gray-400 tracking-widest mb-3 shrink-0">
+            <Crosshair size={14} className="inline mr-1" /> 02. DIRECTIVE
           </h3>
-          <div className="flex flex-col gap-2 md:gap-3">
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2">
             {modes.map((m) => (
               <button
                 key={m.id}
                 onClick={() => setSelectedMode(m.id)}
-                className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all flex items-center justify-between ${selectedMode === m.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20" : "border-emerald-500 bg-emerald-500/20") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
+                className={`p-3 rounded-xl border transition-all flex items-center gap-3 ${selectedMode === m.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20" : "border-emerald-500 bg-emerald-500/20") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
               >
-                <div className="flex items-center gap-3 md:gap-4">
+                <div
+                  className={`p-2 rounded-lg ${selectedMode === m.id ? (isAnime ? "bg-[#ff8c32] text-black" : "bg-emerald-500 text-black") : "bg-white/10 text-gray-400"}`}
+                >
+                  {m.icon}
+                </div>
+                <div className="text-left">
                   <div
-                    className={`p-2 rounded-lg md:rounded-xl ${selectedMode === m.id ? (isAnime ? "bg-[#ff8c32] text-black" : "bg-emerald-500 text-black") : "bg-white/10 text-gray-400"}`}
+                    className={`text-xs md:text-sm tracking-tighter ${selectedMode === m.id ? "text-white" : "text-gray-400"}`}
                   >
-                    {m.icon}
+                    {m.id}
                   </div>
-                  <div className="text-left">
-                    <div
-                      className={`text-xs md:text-sm tracking-tighter ${selectedMode === m.id ? "text-white" : "text-gray-400"}`}
-                    >
-                      {m.id}
-                    </div>
-                    <div className="text-[8px] md:text-[9px] text-gray-500 normal-case font-bold mt-0.5">
-                      {m.desc}
-                    </div>
+                  <div className="text-[8px] text-gray-500 normal-case font-bold mt-0.5">
+                    {m.desc}
                   </div>
                 </div>
               </button>
@@ -216,16 +170,15 @@ export default function CombatHub() {
         </section>
       </div>
 
-      {/* START BUTTON */}
-      <div className="fixed bottom-0 left-0 w-full p-4 md:p-6 bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent flex justify-center z-20 pointer-events-none">
+      <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-[#050505] to-transparent flex justify-center z-20 shrink-0 pointer-events-none">
         <motion.button
+          onClick={handleInitiate}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={handleInitiate}
-          className={`pointer-events-auto w-full max-w-xl py-4 md:py-5 rounded-full flex items-center justify-center gap-3 transition-all ${isAnime ? "bg-[#ff8c32] text-black hover:bg-white shadow-[0_0_30px_rgba(255,140,50,0.3)]" : "bg-emerald-500 text-black hover:bg-white shadow-[0_0_30px_rgba(52,211,153,0.3)]"}`}
+          className={`pointer-events-auto w-full max-w-xl py-4 rounded-full flex items-center justify-center gap-3 transition-all ${isAnime ? "bg-[#ff8c32] text-black" : "bg-emerald-500 text-black"}`}
         >
           <Play size={16} fill="currentColor" />{" "}
-          <span className="text-base md:text-lg tracking-widest">
+          <span className="text-sm md:text-lg tracking-widest">
             START MISSION
           </span>
         </motion.button>

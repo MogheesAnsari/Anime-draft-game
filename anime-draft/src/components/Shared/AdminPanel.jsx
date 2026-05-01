@@ -27,6 +27,8 @@ export default function AdminPanel() {
   const [hideZeros, setHideZeros] = useState(true);
 
   const tierOrder = { "S+": 0, S: 1, A: 2, B: 3, C: 4 };
+
+  // 🚀 FIXED: Removed DC, Marvel, OPM, Tokyo Ghoul from the dropdown
   const animeUniverses = [
     "naruto",
     "one_piece",
@@ -39,10 +41,6 @@ export default function AdminPanel() {
     "demon_slayer",
     "bleach",
     "black_clover",
-    "marvel",
-    "dc",
-    "opm",
-    "tokyo_ghoul",
   ];
   const sportsLeagues = ["football", "cricket"];
 
@@ -166,7 +164,6 @@ export default function AdminPanel() {
 
   if (!isLoggedIn) {
     return (
-      // 🚀 FIXED: bg-transparent for login screen
       <div className="h-full w-full bg-transparent flex items-center justify-center text-white font-sans relative z-10">
         <form
           onSubmit={handleLogin}
@@ -212,7 +209,6 @@ export default function AdminPanel() {
     : characters;
 
   return (
-    // 🚀 FIXED: bg-transparent for main dashboard
     <div className="h-full w-full bg-transparent text-white p-4 md:p-8 uppercase font-sans italic font-black relative z-10 overflow-y-auto">
       <div className="max-w-[1600px] mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-white/10 pb-4 backdrop-blur-md bg-black/40 p-4 rounded-2xl">

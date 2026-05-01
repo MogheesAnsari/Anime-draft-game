@@ -27,7 +27,6 @@ const sportsMedia = ["/cricket_hero.png", "/football_hero.png"];
 export default function Layout({ user, setUser, children }) {
   const location = useLocation();
 
-  // 🚀 FIXED: Instantly checks window width to prevent rendering desktop videos on mobile first
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== "undefined") return window.innerWidth < 768;
     return false;
@@ -50,13 +49,15 @@ export default function Layout({ user, setUser, children }) {
   );
 
   return (
+    // 🚀 SCROLL FIX: h-[100dvh] locked with overflow-hidden
     <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col font-sans uppercase relative overflow-hidden">
       <BackgroundManager images={globalMedia} intervalDuration={10000} />
 
       {!hideNavbar && <Navbar user={user} setUser={setUser} />}
 
+      {/* 🚀 SCROLL FIX: Removed overflow-y-auto. The children will dictate their own strict bounds now */}
       <main
-        className={`flex-1 w-full flex flex-col relative z-10 overflow-x-hidden overflow-y-auto ${!hideNavbar ? "pt-16 md:pt-20" : ""}`}
+        className={`flex-1 w-full relative z-10 overflow-hidden ${!hideNavbar ? "pt-16 md:pt-20" : ""}`}
       >
         {children}
       </main>

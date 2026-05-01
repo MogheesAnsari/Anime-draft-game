@@ -5,15 +5,14 @@ import { Swords, Trophy, ChevronLeft, ShieldAlert } from "lucide-react";
 
 export default function DomainSelection() {
   const navigate = useNavigate();
-
   const handleSelectDomain = (domain) => {
     localStorage.setItem("animeDraft_lastDomain", domain);
     navigate("/hub", { state: { domain } });
   };
 
   return (
-    // 🚀 FIXED: No scrollbars, transparent background
-    <div className="h-full w-full bg-transparent flex flex-col items-center justify-center p-4 md:p-8 relative overflow-hidden uppercase font-black italic text-white">
+    // 🚀 SCROLL FIX: 'absolute inset-0'
+    <div className="absolute inset-0 w-full h-full bg-transparent flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden uppercase font-black italic text-white">
       <button
         onClick={() => navigate("/")}
         className="absolute top-4 left-4 z-50 p-2.5 bg-black/50 hover:bg-white/10 border border-white/10 rounded-xl transition-all backdrop-blur-md shadow-xl"
@@ -21,7 +20,7 @@ export default function DomainSelection() {
         <ChevronLeft size={20} />
       </button>
 
-      <div className="text-center mb-6 md:mb-8 relative z-10 w-full">
+      <div className="text-center mb-6 md:mb-8 relative z-10 w-full shrink-0">
         <h2 className="text-[9px] md:text-[10px] text-gray-400 tracking-[0.4em] mb-2 flex items-center justify-center gap-2 drop-shadow-md">
           <ShieldAlert size={12} className="text-blue-400" /> DIRECTIVE REQUIRED
         </h2>
@@ -30,8 +29,7 @@ export default function DomainSelection() {
         </h1>
       </div>
 
-      {/* 🚀 FIXED: Cards are now much smaller (h-[180px] mobile, max-w-3xl overall) */}
-      <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-10">
+      <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-10 shrink-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -44,7 +42,6 @@ export default function DomainSelection() {
             size={100}
             className="absolute -right-4 -bottom-4 md:-right-6 md:-bottom-6 text-[#ff8c32] opacity-10 group-hover:opacity-30 transition-all duration-700 pointer-events-none"
           />
-
           <div className="relative h-full p-5 md:p-6 flex flex-col justify-end">
             <div className="text-[8px] md:text-[9px] text-[#ff8c32] tracking-widest border border-[#ff8c32]/30 bg-[#ff8c32]/10 px-2 py-1 rounded-full w-fit mb-2 backdrop-blur-md">
               SECTOR 01
@@ -72,7 +69,6 @@ export default function DomainSelection() {
             size={100}
             className="absolute -right-4 -bottom-4 md:-right-6 md:-bottom-6 text-emerald-500 opacity-10 group-hover:opacity-30 transition-all duration-700 pointer-events-none"
           />
-
           <div className="relative h-full p-5 md:p-6 flex flex-col justify-end">
             <div className="text-[8px] md:text-[9px] text-emerald-400 tracking-widest border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 rounded-full w-fit mb-2 backdrop-blur-md">
               SECTOR 02
