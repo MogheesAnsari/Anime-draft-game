@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -13,7 +13,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-// 🚀 FIXED: Removed DC, Marvel, OPM, Tokyo Ghoul from the array
 const animeUniverses = [
   { id: "all", name: "ALL MULTIVERSE" },
   { id: "naruto", name: "NARUTO" },
@@ -44,23 +43,32 @@ export default function CombatHub() {
   const [selectedUniverse, setSelectedUniverse] = useState("all");
   const [selectedMode, setSelectedMode] = useState("Player vs CPU");
 
+  // Set default selection based on domain
+  useEffect(() => {
+    setSelectedUniverse(isAnime ? "all" : "football");
+  }, [isAnime]);
+
   const universes = isAnime ? animeUniverses : sportsUniverses;
 
   const modes = [
-    { id: "Player vs CPU", icon: <Cpu size={18} />, desc: "Play vs Bot" },
+    {
+      id: "Player vs CPU",
+      icon: <Cpu size={20} />,
+      desc: "Tactical match against AI",
+    },
     {
       id: "Player vs Player",
-      icon: <Users size={18} />,
+      icon: <Users size={20} />,
       desc: "Local 1v1 Clash",
     },
     {
       id: "Pool Choice",
-      icon: <LayoutGrid size={18} />,
+      icon: <LayoutGrid size={20} />,
       desc: "6v6 Grid Draft",
     },
     {
       id: "Team Battle",
-      icon: <ShieldCheck size={18} />,
+      icon: <ShieldCheck size={20} />,
       desc: "2v2 Co-op Mode",
     },
   ];
@@ -68,13 +76,14 @@ export default function CombatHub() {
   if (isAnime) {
     modes.splice(2, 0, {
       id: "Anime Auction",
-      icon: <Gavel size={18} />,
-      desc: "Bid on warriors",
+      icon: <Gavel size={20} />,
+      desc: "Bid coins on premium warriors",
     });
   }
 
   const handleInitiate = () => {
     if (!selectedUniverse || !selectedMode) return;
+
     if (isAnime) {
       if (selectedMode === "Anime Auction")
         navigate("/auction-difficulty", {
@@ -95,91 +104,174 @@ export default function CombatHub() {
     }
   };
 
+  const themeColor = isAnime ? "text-[#ff8c32]" : "text-emerald-400";
+  const themeBg = isAnime ? "bg-[#ff8c32]" : "bg-emerald-500";
+  const themeBorder = isAnime ? "border-[#ff8c32]" : "border-emerald-500";
+  const themeGlow = isAnime
+    ? "shadow-[0_0_20px_rgba(255,140,50,0.3)]"
+    : "shadow-[0_0_20px_rgba(16,185,129,0.3)]";
+
+  // Animation variants
+  const containerVars = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } },
+  };
+  const itemVars = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="absolute inset-0 w-full h-full flex flex-col font-black uppercase italic p-4 md:p-8 overflow-hidden bg-transparent">
-      <header className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 relative z-10 w-full max-w-7xl mx-auto shrink-0">
+    <div className="absolute inset-0 w-full h-full flex flex-col font-sans uppercase p-4 md:p-8 overflow-hidden bg-[#030305]/45 backdrop-blur-sm z-10">
+      {/* HEADER */}
+      <header className="flex items-center gap-4 mb-6 relative z-10 w-full max-w-6xl mx-auto shrink-0 border-b border-white/10 pb-4">
         <button
           onClick={() => navigate("/domain")}
-          className="p-2.5 bg-black/50 border border-white/10 rounded-xl hover:bg-white/10 transition-all backdrop-blur-md"
+          className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all backdrop-blur-md text-gray-300 hover:text-white"
         >
-          <ChevronLeft size={20} className="text-white" />
+          <ChevronLeft size={24} />
         </button>
         <div>
-          <span className="text-[8px] md:text-[10px] text-gray-400 tracking-[0.4em] drop-shadow-md">
+          <span className="text-[10px] md:text-xs text-gray-400 font-mono tracking-[0.4em] drop-shadow-md">
             SECTOR SECURED
           </span>
           <h1
-            className={`text-xl md:text-3xl tracking-tighter drop-shadow-lg ${isAnime ? "text-[#ff8c32]" : "text-emerald-400"}`}
+            className={`text-2xl md:text-4xl font-black italic tracking-tighter drop-shadow-lg ${themeColor}`}
           >
             {domain} REALM
           </h1>
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10 min-h-0 pb-16">
-        <section className="lg:col-span-7 flex flex-col bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 min-h-0 overflow-hidden">
-          <h3 className="text-[10px] text-gray-400 tracking-widest mb-3 shrink-0">
-            <Globe size={14} className="inline mr-1" /> 01. BATTLEGROUND
-          </h3>
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {universes.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => setSelectedUniverse(u.id)}
-                className={`px-2 py-4 rounded-xl border transition-all text-center flex flex-col items-center justify-center gap-1 ${selectedUniverse === u.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20" : "border-emerald-500 bg-emerald-500/20") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
-              >
-                <span
-                  className={`text-[9px] md:text-[10px] tracking-tighter w-full truncate ${selectedUniverse === u.id ? "text-white" : "text-gray-400"}`}
-                >
-                  {u.name}
-                </span>
-              </button>
-            ))}
+      {/* Mobile-First Flex Column that becomes a Grid on Desktop */}
+      <div className="flex-1 w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 relative z-10 min-h-0 pb-[100px] overflow-y-auto custom-scrollbar">
+        {/* PANEL 1: UNIVERSE SELECTION */}
+        <section className="flex-1 lg:flex-[1.2] flex flex-col bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 md:p-8 shrink-0 lg:min-h-0">
+          <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
+            <div className={`p-2 rounded-xl bg-white/5 ${themeColor}`}>
+              <Globe size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm md:text-base font-black italic tracking-widest text-white">
+                01. BATTLEGROUND
+              </h3>
+              <p className="text-[9px] md:text-[10px] text-gray-500 font-bold tracking-widest">
+                SELECT COMBAT ZONE
+              </p>
+            </div>
           </div>
+
+          <motion.div
+            variants={containerVars}
+            initial="hidden"
+            animate="show"
+            className={`grid gap-3 md:gap-4 lg:overflow-y-auto custom-scrollbar pr-2 pb-2 ${
+              universes.length <= 2
+                ? "grid-cols-1 sm:grid-cols-2" // Sports uses fat, beautiful premium cards
+                : "grid-cols-2 sm:grid-cols-3" // Anime uses a tighter grid
+            }`}
+          >
+            {universes.map((u) => {
+              const isSelected = selectedUniverse === u.id;
+              return (
+                <motion.button
+                  variants={itemVars}
+                  key={u.id}
+                  onClick={() => setSelectedUniverse(u.id)}
+                  className={`relative p-4 md:p-6 rounded-2xl md:rounded-[24px] border-2 transition-all duration-300 flex flex-col items-center justify-center text-center overflow-hidden group ${
+                    isSelected
+                      ? `${themeBorder} ${isAnime ? "bg-[#ff8c32]/10" : "bg-emerald-500/10"} ${themeGlow}`
+                      : "border-white/5 bg-black hover:border-white/20 hover:bg-white/5"
+                  } ${universes.length <= 2 ? "h-32 md:h-48" : "h-24 md:h-32"}`}
+                >
+                  {/* Subtle active glow inside card */}
+                  <div
+                    className={`absolute inset-0 opacity-0 transition-opacity duration-500 ${isSelected ? "opacity-100" : "group-hover:opacity-50"}`}
+                  >
+                    <div
+                      className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${isAnime ? "from-[#ff8c32]/20" : "from-emerald-500/20"} to-transparent blur-2xl`}
+                    />
+                  </div>
+
+                  <span
+                    className={`relative z-10 font-black tracking-widest ${universes.length <= 2 ? "text-lg md:text-2xl" : "text-[10px] md:text-xs"} ${isSelected ? "text-white" : "text-gray-400 group-hover:text-gray-200"}`}
+                  >
+                    {u.name}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </motion.div>
         </section>
 
-        <section className="lg:col-span-5 flex flex-col bg-black/50 backdrop-blur-xl border border-white/10 rounded-[24px] p-4 min-h-0 overflow-hidden">
-          <h3 className="text-[10px] text-gray-400 tracking-widest mb-3 shrink-0">
-            <Crosshair size={14} className="inline mr-1" /> 02. DIRECTIVE
-          </h3>
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2">
-            {modes.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedMode(m.id)}
-                className={`p-3 rounded-xl border transition-all flex items-center gap-3 ${selectedMode === m.id ? (isAnime ? "border-[#ff8c32] bg-[#ff8c32]/20" : "border-emerald-500 bg-emerald-500/20") : "border-white/5 bg-black/40 hover:bg-white/10"}`}
-              >
-                <div
-                  className={`p-2 rounded-lg ${selectedMode === m.id ? (isAnime ? "bg-[#ff8c32] text-black" : "bg-emerald-500 text-black") : "bg-white/10 text-gray-400"}`}
-                >
-                  {m.icon}
-                </div>
-                <div className="text-left">
-                  <div
-                    className={`text-xs md:text-sm tracking-tighter ${selectedMode === m.id ? "text-white" : "text-gray-400"}`}
-                  >
-                    {m.id}
-                  </div>
-                  <div className="text-[8px] text-gray-500 normal-case font-bold mt-0.5">
-                    {m.desc}
-                  </div>
-                </div>
-              </button>
-            ))}
+        {/* PANEL 2: MODE SELECTION */}
+        <section className="flex-1 lg:flex-[0.8] flex flex-col bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 md:p-8 shrink-0 lg:min-h-0">
+          <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
+            <div className={`p-2 rounded-xl bg-white/5 ${themeColor}`}>
+              <Crosshair size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm md:text-base font-black italic tracking-widest text-white">
+                02. DIRECTIVE
+              </h3>
+              <p className="text-[9px] md:text-[10px] text-gray-500 font-bold tracking-widest">
+                SELECT ENGAGEMENT RULES
+              </p>
+            </div>
           </div>
+
+          <motion.div
+            variants={containerVars}
+            initial="hidden"
+            animate="show"
+            className="flex flex-col gap-3 lg:overflow-y-auto custom-scrollbar pr-2 pb-2"
+          >
+            {modes.map((m) => {
+              const isSelected = selectedMode === m.id;
+              return (
+                <motion.button
+                  variants={itemVars}
+                  key={m.id}
+                  onClick={() => setSelectedMode(m.id)}
+                  className={`p-4 md:p-5 rounded-2xl md:rounded-[24px] border-2 transition-all flex items-center gap-4 ${
+                    isSelected
+                      ? `${themeBorder} ${isAnime ? "bg-[#ff8c32]/10" : "bg-emerald-500/10"} ${themeGlow}`
+                      : "border-white/5 bg-black hover:bg-white/5 hover:border-white/20"
+                  }`}
+                >
+                  <div
+                    className={`p-3 md:p-4 rounded-xl md:rounded-2xl shrink-0 transition-colors ${isSelected ? `${themeBg} text-black` : "bg-white/5 text-gray-400"}`}
+                  >
+                    {m.icon}
+                  </div>
+                  <div className="text-left">
+                    <div
+                      className={`text-sm md:text-lg font-black tracking-widest italic leading-tight ${isSelected ? "text-white" : "text-gray-300"}`}
+                    >
+                      {m.id}
+                    </div>
+                    <div className="text-[10px] md:text-xs text-gray-500 font-bold tracking-wider mt-1">
+                      {m.desc}
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </motion.div>
         </section>
       </div>
 
-      <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-[#050505] to-transparent flex justify-center z-20 shrink-0 pointer-events-none">
+      {/* BOTTOM ACTION BAR */}
+      <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center justify-end z-20 pointer-events-none">
         <motion.button
           onClick={handleInitiate}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className={`pointer-events-auto w-full max-w-xl py-4 rounded-full flex items-center justify-center gap-3 transition-all ${isAnime ? "bg-[#ff8c32] text-black" : "bg-emerald-500 text-black"}`}
+          className={`pointer-events-auto w-full max-w-2xl py-5 md:py-6 rounded-2xl md:rounded-[24px] flex items-center justify-center gap-3 transition-all shadow-2xl ${themeBg} text-black hover:brightness-110`}
         >
-          <Play size={16} fill="currentColor" />{" "}
-          <span className="text-sm md:text-lg tracking-widest">
-            START MISSION
+          <Play size={20} fill="currentColor" />
+          <span className="text-base md:text-xl font-black tracking-[0.2em] italic">
+            INITIATE DEPLOYMENT
           </span>
         </motion.button>
       </div>

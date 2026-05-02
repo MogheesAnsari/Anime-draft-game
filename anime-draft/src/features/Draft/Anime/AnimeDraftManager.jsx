@@ -191,13 +191,90 @@ export default function AnimeDraftManager({ user, setUser }) {
 
   if (dbLoading)
     return (
-      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center overflow-hidden relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#ff8c3215_0%,_transparent_70%)] animate-pulse" />
-        <div className="mt-12 text-center z-10">
-          <h1 className="text-2xl md:text-3xl font-black italic text-white tracking-tighter">
-            SYNCING <span className="text-[#ff8c32]">MULTIVERSE</span>
-          </h1>
+      <div className="h-[100dvh] w-full bg-[#030303] flex flex-col items-center justify-center overflow-hidden relative font-sans uppercase italic">
+        {/* 🌌 DYNAMIC BACKGROUND HUD */}
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+          <motion.div
+            animate={{ y: ["-100%", "100%"] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+            className="w-full h-[10%] bg-gradient-to-b from-transparent via-[#ff8c32]/20 to-transparent"
+          />
         </div>
+
+        <div className="relative z-10 flex flex-col items-center">
+          {/* ⚛️ CORE REACTOR ANIMATION */}
+          <div className="relative w-24 h-24 mb-8">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+              className="absolute inset-0 border-2 border-dashed border-[#ff8c32]/30 rounded-full"
+            />
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="absolute inset-2 border-t-2 border-[#ff8c32] rounded-full shadow-[0_0_20px_#ff8c32]"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="w-4 h-4 bg-[#ff8c32] rounded-full shadow-[0_0_15px_#ff8c32]"
+              />
+            </div>
+          </div>
+
+          {/* 📟 GLITCH TEXT */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2">
+              SYNCING{" "}
+              <span className="text-[#ff8c32] animate-pulse">MULTIVERSE</span>
+            </h1>
+
+            <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 font-mono tracking-[0.5em] mb-6">
+              <span className="w-2 h-2 bg-red-600 rounded-full animate-ping" />
+              ESTABLISHING SECURE_LINK...
+            </div>
+          </motion.div>
+
+          {/* 🔋 TACTICAL PROGRESS BAR */}
+          <div className="w-64 h-1 bg-white/5 border border-white/10 relative overflow-hidden">
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: "100%" }}
+              transition={{
+                repeat: Infinity,
+                duration: 1.5,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-[#ff8c32] to-transparent shadow-[0_0_10px_#ff8c32]"
+            />
+          </div>
+
+          {/* 🤖 LOGS (Optional: Adds flavor) */}
+          <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-1 opacity-40">
+            {[
+              "ROSTER_SCAN: OK",
+              "AURA_CALC: ACTIVE",
+              "DOMAIN_SYNC: 98%",
+              "LATENCY: 12MS",
+            ].map((log, i) => (
+              <span
+                key={i}
+                className="text-[8px] font-mono text-white text-left tracking-widest"
+              >
+                {log}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* VIGNETTE OVERLAY */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)] pointer-events-none" />
       </div>
     );
 

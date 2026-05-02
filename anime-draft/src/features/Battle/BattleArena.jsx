@@ -10,7 +10,7 @@ import {
   Shield,
   Target,
   FastForward,
-  SkipForward, // 🚀 FIXED: Imported the skip icon
+  SkipForward,
 } from "lucide-react";
 import {
   calculateFinalBattleScore,
@@ -37,9 +37,11 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [currentActions, setCurrentActions] = useState([]);
   const [clashText, setClashText] = useState("");
 
-  // 🔥 SPEED CONTROLS
   const [isFastForward, setIsFastForward] = useState(false);
   const speedRef = useRef(false);
+
+  // 🚀 FIXED: The Kill-Switch. This instantly stops all visual timers when skipped.
+  const skipFired = useRef(false);
 
   const toggleSpeed = () => {
     setIsFastForward(!isFastForward);
@@ -55,75 +57,106 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     "raw_power",
   ];
 
-  // 🚀 FIXED: INSTANT SKIP LOGIC
-  // This calculates the remaining rounds instantly in the background without waiting for animations
-  const handleTotalSkip = () => {
-    let simGauges = [...gauges];
-    let simScores = [...capturedScores];
-
-    for (let s = currentSlot; s < SLOTS.length; s++) {
-      const roundResults = allTeams.map((team, idx) => {
-        const char = team[SLOTS[s]];
-        const isAwakened = SLOTS[s] === "raw_power" && simGauges[idx] >= 100;
-
-        if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
-
-        const rngAction = getRoleAction(char, SLOTS[s]);
-        return calculateFinalBattleScore(
-          char,
-          SLOTS[s],
-          battleDomain,
-          teamArtifacts[idx],
-          rngAction.boost,
-          rngAction.text,
-          isAwakened,
-        );
-      });
-
-      simScores = simScores.map((teamScores, idx) => ({
-        ...teamScores,
-        [SLOTS[s]]: roundResults[idx],
-      }));
-
-      const scores = roundResults.map((r) => r.final);
-      simGauges = simGauges.map((g, idx) => {
-        const performanceRatio = Math.min(1, scores[idx] / 800);
-        const earnedMana = 10 + Math.round(performanceRatio * 25);
-        return Math.min(100, g + earnedMana);
-      });
+  // 🚀 FIXED: Bulletproof Instant Skip Logic
+  const handleTotalSkip = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
 
-    localStorage.setItem(
-      "animeDraft_lastBattle",
-      JSON.stringify({
-        finalScores: simScores,
-        domain: battleDomain,
-        artifacts: teamArtifacts,
-      }),
-    );
+    if (skipFired.current) return;
+    skipFired.current = true; // Instantly lock out the useEffect timers
 
-    onComplete({ finalScores: simScores });
+    try {
+      let simGauges = [...gauges];
+      let simScores = [...capturedScores];
+
+      // Instantly calculate the math for all remaining rounds
+      for (let s = currentSlot; s < SLOTS.length; s++) {
+        const roundResults = allTeams.map((team, idx) => {
+          try {
+            const char = team[SLOTS[s]];
+            const isAwakened =
+              SLOTS[s] === "raw_power" && simGauges[idx] >= 100;
+
+            if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
+
+            const rngAction = getRoleAction(char, SLOTS[s]) || {
+              boost: 1,
+              text: "ATTACK",
+            };
+            return calculateFinalBattleScore(
+              char,
+              SLOTS[s],
+              battleDomain,
+              teamArtifacts[idx],
+              rngAction.boost || 1,
+              rngAction.text || "ATTACK",
+              isAwakened,
+            );
+          } catch (err) {
+            console.error("Skip math error on char", err);
+            return { final: 0, base: 0, text: "ERROR" };
+          }
+        });
+
+        simScores = simScores.map((teamScores, idx) => ({
+          ...teamScores,
+          [SLOTS[s]]: roundResults[idx],
+        }));
+
+        const scores = roundResults.map((r) => r.final || 0);
+        simGauges = simGauges.map((g, idx) => {
+          const performanceRatio = Math.min(1, scores[idx] / 800);
+          const earnedMana = 10 + Math.round(performanceRatio * 25);
+          return Math.min(100, g + earnedMana);
+        });
+      }
+
+      // Save instantly and send to the result screen
+      localStorage.setItem(
+        "animeDraft_lastBattle",
+        JSON.stringify({
+          finalScores: simScores,
+          domain: battleDomain,
+          artifacts: teamArtifacts,
+        }),
+      );
+
+      onComplete({ finalScores: simScores });
+    } catch (err) {
+      console.error("Critical Skip Error", err);
+      // Fallback: If anything fails, force complete with current scores so the player isn't stuck
+      onComplete({ finalScores: capturedScores });
+    }
   };
 
   useEffect(() => {
+    if (skipFired.current) return; // 🚀 Prevent timers from running if skipped
+
     let timer;
-
-    // Speed Multiplier: 0.25 means 4x faster!
     const getDelay = (ms) => (speedRef.current ? ms * 0.25 : ms);
-
     const hasAnyArtifact = teamArtifacts.some((art) => art !== null);
 
     if (phase === "INTRO")
-      timer = setTimeout(() => setPhase("DOMAIN_REVEAL"), getDelay(2500));
+      timer = setTimeout(
+        () => !skipFired.current && setPhase("DOMAIN_REVEAL"),
+        getDelay(2500),
+      );
 
     if (phase === "DOMAIN_REVEAL")
       timer = setTimeout(
-        () => setPhase(hasAnyArtifact ? "ARTIFACT_REVEAL" : "SKILL_FLASH"),
+        () =>
+          !skipFired.current &&
+          setPhase(hasAnyArtifact ? "ARTIFACT_REVEAL" : "SKILL_FLASH"),
         getDelay(3500),
       );
 
     if (phase === "ARTIFACT_REVEAL")
-      timer = setTimeout(() => setPhase("SKILL_FLASH"), getDelay(4000));
+      timer = setTimeout(
+        () => !skipFired.current && setPhase("SKILL_FLASH"),
+        getDelay(4000),
+      );
 
     if (phase === "SKILL_FLASH") {
       const winChar = allTeams[0]?.[SLOTS[currentSlot]];
@@ -136,7 +169,10 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         ),
       );
 
-      timer = setTimeout(() => setPhase("CLASH"), getDelay(2000));
+      timer = setTimeout(
+        () => !skipFired.current && setPhase("CLASH"),
+        getDelay(2000),
+      );
     }
 
     if (phase === "CLASH") {
@@ -175,6 +211,8 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       });
 
       timer = setTimeout(() => {
+        if (skipFired.current) return;
+
         const scores = roundResults.map((r) => r.final);
 
         setGauges((prev) =>
@@ -196,6 +234,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
     if (phase === "FINISHER") {
       timer = setTimeout(() => {
+        if (skipFired.current) return;
         localStorage.setItem(
           "animeDraft_lastBattle",
           JSON.stringify({
@@ -223,9 +262,7 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
-      {/* 🚀 FIXED: NEW BATTLE CONTROLS CONTAINER */}
       <div className="fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] flex flex-col items-end gap-3 md:gap-4">
-        {/* 2X SPEED BUTTON */}
         <button
           onClick={toggleSpeed}
           className={`p-3 md:p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -246,7 +283,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
           </span>
         </button>
 
-        {/* INSTANT SKIP BUTTON */}
         <button
           onClick={handleTotalSkip}
           className="p-3 md:p-4 rounded-full border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md group"

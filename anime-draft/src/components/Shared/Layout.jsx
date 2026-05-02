@@ -22,7 +22,7 @@ const animeMediaMobile = [
   "/naruto-in-fall.720x1280.mp4",
 ];
 
-const sportsMedia = ["/football_bg.mp4", "/cricket_bg.mp4"];
+const sportsMedia = ["/football.mp4"];
 
 export default function Layout({ user, setUser, children }) {
   const location = useLocation();
