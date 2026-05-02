@@ -58,7 +58,13 @@ export default function AnimeDraftManager({ user, setUser }) {
   let maxTurns = 1;
   if (safeMode.includes("1v1v1v1") || safeMode.includes("royale")) maxTurns = 4;
   else if (safeMode.includes("2v2") || safeMode.includes("team")) maxTurns = 4;
-  else if (safeMode.includes("pvp") || safeMode.includes("1v1")) maxTurns = 2;
+  // 🚀 FIXED: Added "player vs player" to the string checker so it successfully triggers 2 turns!
+  else if (
+    safeMode.includes("pvp") ||
+    safeMode.includes("1v1") ||
+    safeMode.includes("player vs player")
+  )
+    maxTurns = 2;
 
   const animeSlots = [
     { id: "captain", label: "CAPTAIN" },
@@ -69,7 +75,6 @@ export default function AnimeDraftManager({ user, setUser }) {
     { id: "raw_power", label: "RAW POWER" },
   ];
 
-  // 🚀 FIXED: Finds the exact Double XP pass object so we can read its acquiredAt timestamp
   const xpPassObject = user?.inventory?.find(
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
@@ -174,7 +179,7 @@ export default function AnimeDraftManager({ user, setUser }) {
         mode,
         universe,
         domain: "anime",
-        hasDoubleXp: !!xpPassObject, // Convert to boolean for the backend
+        hasDoubleXp: !!xpPassObject,
       };
 
       const emptyArtifacts = newBattleData.teams.map(() => null);
@@ -250,7 +255,7 @@ export default function AnimeDraftManager({ user, setUser }) {
           theme={currentTheme}
           onAbort={() => navigate("/modes")}
           onShowRules={() => setShowRules(true)}
-          xpPassObject={xpPassObject} // Passed the whole object for the timer
+          xpPassObject={xpPassObject}
         />
       </div>
 

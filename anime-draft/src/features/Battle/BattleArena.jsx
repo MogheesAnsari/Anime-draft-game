@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -11,6 +10,7 @@ import {
   Shield,
   Target,
   FastForward,
+  SkipForward, // 🚀 FIXED: Imported the skip icon
 } from "lucide-react";
 import {
   calculateFinalBattleScore,
@@ -55,6 +55,56 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     "raw_power",
   ];
 
+  // 🚀 FIXED: INSTANT SKIP LOGIC
+  // This calculates the remaining rounds instantly in the background without waiting for animations
+  const handleTotalSkip = () => {
+    let simGauges = [...gauges];
+    let simScores = [...capturedScores];
+
+    for (let s = currentSlot; s < SLOTS.length; s++) {
+      const roundResults = allTeams.map((team, idx) => {
+        const char = team[SLOTS[s]];
+        const isAwakened = SLOTS[s] === "raw_power" && simGauges[idx] >= 100;
+
+        if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
+
+        const rngAction = getRoleAction(char, SLOTS[s]);
+        return calculateFinalBattleScore(
+          char,
+          SLOTS[s],
+          battleDomain,
+          teamArtifacts[idx],
+          rngAction.boost,
+          rngAction.text,
+          isAwakened,
+        );
+      });
+
+      simScores = simScores.map((teamScores, idx) => ({
+        ...teamScores,
+        [SLOTS[s]]: roundResults[idx],
+      }));
+
+      const scores = roundResults.map((r) => r.final);
+      simGauges = simGauges.map((g, idx) => {
+        const performanceRatio = Math.min(1, scores[idx] / 800);
+        const earnedMana = 10 + Math.round(performanceRatio * 25);
+        return Math.min(100, g + earnedMana);
+      });
+    }
+
+    localStorage.setItem(
+      "animeDraft_lastBattle",
+      JSON.stringify({
+        finalScores: simScores,
+        domain: battleDomain,
+        artifacts: teamArtifacts,
+      }),
+    );
+
+    onComplete({ finalScores: simScores });
+  };
+
   useEffect(() => {
     let timer;
 
@@ -90,7 +140,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     }
 
     if (phase === "CLASH") {
-      // 🚀 FIXED: Added safety fallback to prevent crash if char is missing
       const actions = allTeams.map((team) => {
         const char = team[SLOTS[currentSlot]];
         return char
@@ -105,7 +154,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         const isAwakened =
           SLOTS[currentSlot] === "raw_power" && gauges[idx] >= 100;
 
-        // 🚀 FIXED: Skip calculation if character is completely missing
         if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
 
         return calculateFinalBattleScore(
@@ -119,7 +167,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
         );
       });
 
-      // 🚀 FIXED: Deep copy state mapping to prevent React UI freezing
       setCapturedScores((prev) => {
         return prev.map((teamScores, idx) => ({
           ...teamScores,
@@ -130,7 +177,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       timer = setTimeout(() => {
         const scores = roundResults.map((r) => r.final);
 
-        // TRUE AURA MATH: Mana based on raw performance
         setGauges((prev) =>
           prev.map((g, idx) => {
             const performanceRatio = Math.min(1, scores[idx] / 800);
@@ -177,27 +223,44 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
-      {/* ⏩ FAST FORWARD BUTTON */}
-      <button
-        onClick={toggleSpeed}
-        className={`fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
-          isFastForward
-            ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110"
-            : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"
-        }`}
-        title="Toggle 2x Speed"
-      >
-        <FastForward
-          size={24}
-          className={isFastForward ? "animate-pulse" : ""}
-        />
-
-        <span
-          className={`text-xs md:text-sm ${isFastForward ? "block" : "hidden md:block"}`}
+      {/* 🚀 FIXED: NEW BATTLE CONTROLS CONTAINER */}
+      <div className="fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] flex flex-col items-end gap-3 md:gap-4">
+        {/* 2X SPEED BUTTON */}
+        <button
+          onClick={toggleSpeed}
+          className={`p-3 md:p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
+            isFastForward
+              ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110"
+              : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"
+          }`}
+          title="Toggle 2x Speed"
         >
-          {isFastForward ? "SPEED: 2X" : "SKIP"}
-        </span>
-      </button>
+          <FastForward
+            size={20}
+            className={isFastForward ? "animate-pulse" : ""}
+          />
+          <span
+            className={`text-[10px] md:text-sm font-black tracking-widest ${isFastForward ? "block" : "hidden md:block"}`}
+          >
+            {isFastForward ? "2X SPEED" : "SPEED: 1X"}
+          </span>
+        </button>
+
+        {/* INSTANT SKIP BUTTON */}
+        <button
+          onClick={handleTotalSkip}
+          className="p-3 md:p-4 rounded-full border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md group"
+          title="Skip Battle"
+        >
+          <SkipForward
+            size={20}
+            className="group-hover:scale-110 transition-transform"
+          />
+          <span className="text-[10px] md:text-sm font-black tracking-widest hidden md:block">
+            INSTANT SKIP
+          </span>
+        </button>
+      </div>
 
       {phase === "INTRO" && (
         <motion.h1
@@ -302,7 +365,6 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
             <MapPin size={12} /> {battleDomain.name} ACTIVE
           </div>
 
-          {/* 🚀 FIXED: Responsive grid supports 4 teams cleanly across the screen */}
           <div
             className={`grid gap-4 md:gap-8 w-full max-w-[1600px] justify-center mt-6 ${isMultiplayer ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2"}`}
           >
@@ -415,7 +477,6 @@ const BattleSide = ({
         {score || "---"}
       </div>
 
-      {/* 🚀 FIXED: Responsive image sizing so 4 cards fit evenly without breaking the layout */}
       <img
         src={char?.img || "/zoro.svg"}
         className={`${isMultiplayer ? "w-16 h-16 sm:w-20 sm:h-20 md:w-32 md:h-32" : "w-20 h-20 sm:w-32 sm:h-32 md:w-48 md:h-48"} object-cover rounded-2xl md:rounded-3xl border-2 md:border-4 mb-2 md:mb-4 ${isAwakened ? "border-white shadow-[0_0_30px_#fff]" : "border-white/5"}`}

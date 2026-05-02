@@ -33,7 +33,6 @@ export default function BattleResult({ user, setUser }) {
   const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
 
-  // 🚀 FIXED: Grab the Double XP flag from the state passed by the Draft Manager
   const hasDoubleXp = state?.hasDoubleXp || false;
 
   const SLOTS = [
@@ -200,12 +199,11 @@ export default function BattleResult({ user, setUser }) {
           {
             username: cmd.username,
             isWin: isWin,
-            hasDoubleXp: hasDoubleXp, // 🚀 FIXED: Passed flag to API
+            hasDoubleXp: hasDoubleXp,
           },
         );
 
         if (res.data) {
-          // Calculate frontend display based on response or manually double it
           const rawCoins = res.data.coinsWon || 0;
           const displayCoins = hasDoubleXp ? rawCoins * 2 : rawCoins;
 
@@ -247,7 +245,8 @@ export default function BattleResult({ user, setUser }) {
 
   if (displayCards.length === 0) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center font-black italic text-white tracking-widest uppercase">
+      // 🚀 SCROLL FIX: Changed to h-full
+      <div className="h-full w-full bg-black flex items-center justify-center font-black italic text-white tracking-widest uppercase">
         BATTLE DATA LOST. RETURN TO HQ.
       </div>
     );
@@ -268,7 +267,8 @@ export default function BattleResult({ user, setUser }) {
         : "border-gray-600";
 
   return (
-    <div className="min-h-screen w-full bg-[#050505] text-white flex flex-col items-center pt-8 px-4 md:px-8 uppercase font-sans relative overflow-y-auto overflow-x-hidden custom-scrollbar pb-36">
+    // 🚀 SCROLL FIX: Changed min-h-screen to h-full so it perfectly handles its own scroll within the Layout
+    <div className="h-full w-full bg-[#050505] text-white flex flex-col items-center pt-8 px-4 md:px-8 uppercase font-sans relative overflow-y-auto overflow-x-hidden custom-scrollbar pb-36">
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
           className={`absolute inset-0 opacity-20 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#ea580c_0%,_transparent_60%)]" : isDefeat ? "bg-[radial-gradient(circle_at_top,_#2563eb_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#4b5563_0%,_transparent_60%)]"}`}
@@ -313,7 +313,6 @@ export default function BattleResult({ user, setUser }) {
             >
               <div className="bg-yellow-500/10 border border-yellow-500/50 px-6 py-2.5 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                 <Coins size={18} /> +{earnedLoot.coins} COINS
-                {/* 🚀 FIXED: Shows visually that they got a 2X bonus! */}
                 {hasDoubleXp && (
                   <span className="ml-2 bg-orange-500 text-black px-2 py-0.5 rounded text-[8px] animate-pulse">
                     2X BONUS
@@ -542,7 +541,7 @@ export default function BattleResult({ user, setUser }) {
             onClick={() => navigate("/modes")}
             className="flex-1 min-w-[120px] max-w-[180px] bg-black/80 backdrop-blur-xl px-3 py-3 rounded-xl text-[9px] md:text-[11px] font-black italic hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border border-white/20 active:scale-95"
           >
-            <Home size={14} /> COMMAND HQ
+            <Home size={14} /> RETURN TO HQ
           </button>
         </div>
       </motion.div>

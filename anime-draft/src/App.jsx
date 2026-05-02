@@ -17,6 +17,11 @@ import AnimeDraftManager from "./features/Draft/Anime/AnimeDraftManager";
 import PoolChoiceManager from "./features/Draft/Anime/PoolChoiceManager";
 import SportsDraftManager from "./features/Draft/Sports/SportsDraftManager";
 
+// 🔨 Auction Components (🚀 FIXED: Added Missing Imports)
+import AuctionDifficulty from "./features/Auction/AuctionDifficulty";
+import AuctionRoom from "./features/Auction/AuctionRoom";
+import AuctionSquadBuilder from "./features/Auction/AuctionSquadBuilder";
+
 // 🏟️ Battle & Economy
 import BattleResult from "./features/Battle/BattleResult";
 import Shop from "./features/Shop/Shop";
@@ -24,6 +29,7 @@ import Shop from "./features/Shop/Shop";
 // ⚙️ Shared Components
 import AdminPanel from "./components/Shared/AdminPanel";
 import Leaderboard from "./components/Shared/Leaderboard";
+import Dashboard from "./components/Shared/Dashboard";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -43,7 +49,6 @@ export default function App() {
 
   return (
     <Router>
-      {/* 🚀 CRITICAL FIX: Layout Wrapper added to ensure Navbar appears */}
       <Layout user={user} setUser={setUser}>
         <Routes>
           <Route
@@ -66,6 +71,14 @@ export default function App() {
             element={<PoolChoiceManager user={user} setUser={setUser} />}
           />
 
+          {/* 🚀 FIXED: Added Missing Auction Routes */}
+          <Route path="/auction-difficulty" element={<AuctionDifficulty />} />
+          <Route path="/auction-room" element={<AuctionRoom user={user} />} />
+          <Route
+            path="/auction-build"
+            element={<AuctionSquadBuilder user={user} />}
+          />
+
           <Route
             path="/result"
             element={<BattleResult user={user} setUser={setUser} />}
@@ -76,6 +89,10 @@ export default function App() {
           />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/leaderboard" element={<Leaderboard user={user} />} />
+          <Route
+            path="/dashboard"
+            element={<Dashboard user={user} setUser={setUser} />}
+          />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

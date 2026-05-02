@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Zap, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Zap, ShieldCheck, Lock } from "lucide-react";
 import api from "../../../services/api";
+
+// 🚀 IMPORT THE AUDIO HOOK
+import { useSFX } from "../../../hooks/useSFX";
 
 export default function PoolChoiceManager({ user }) {
   const { state } = useLocation();
@@ -10,8 +13,20 @@ export default function PoolChoiceManager({ user }) {
   const universe = state?.universe || "all";
   const domain = state?.domain || "anime";
 
+  // 🚀 INITIALIZE SFX
+  const playSFX = useSFX();
+
   const [deck, setDeck] = useState([]);
-  const [pool, setPool] = useState([]);
+  const [pool, setPool] = useState([null, null, null, null, null, null]);
+  const [lockedSlots, setLockedSlots] = useState([
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+
   const [p1Squad, setP1Squad] = useState([]);
   const [p2Squad, setP2Squad] = useState([]);
 
@@ -19,8 +34,12 @@ export default function PoolChoiceManager({ user }) {
   const [phase, setPhase] = useState("drafting");
   const [loading, setLoading] = useState(true);
 
-  // 1️⃣ INITIALIZATION & BULLETPROOF FILTERING
+  const hasFetched = useRef(false);
+
+  // 1️⃣ INITIALIZATION & ABSOLUTE ANIME QUARANTINE
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchRoster = async () => {
       try {
         let endpoint = domain === "anime" ? "/characters" : "/players";
@@ -32,251 +51,265 @@ export default function PoolChoiceManager({ user }) {
         const res = await api.get(endpoint);
         let validData = res.data;
 
-        // 🚀 BULLETPROOF DOMAIN FILTER: Absolutely bans sports players from Anime and vice-versa
         validData = validData.filter((c) => {
           const isSport =
-            c.sport === "football" ||
-            c.sport === "cricket" ||
-            c.universe === "football" ||
-            c.universe === "cricket" ||
-            !!c.role;
-
-          if (domain === "anime") {
-            return !isSport; // If in Anime realm, KEEP only non-sports
-          } else {
-            return isSport; // If in Sports realm, KEEP only sports
-          }
+            !!c.role ||
+            !!c.sport ||
+            (c.stats && (c.stats.SHOOTING || c.stats.BATTING));
+          return domain === "anime" ? !isSport : isSport;
         });
 
         if (!validData || validData.length < 12) {
-          alert("Not enough characters in this universe to play a 6v6 match!");
+          alert("Universe data insufficient. Return to HQ.");
           navigate(-1);
           return;
         }
 
         const shuffled = [...validData].sort(() => 0.5 - Math.random());
-
         setPool(shuffled.slice(0, 6));
         setDeck(shuffled.slice(6));
         setLoading(false);
+        hasFetched.current = true;
       } catch (err) {
-        console.error("Failed to fetch roster", err);
+        console.error("Fetch error:", err);
         navigate(-1);
       }
     };
     fetchRoster();
   }, [universe, domain, navigate]);
 
-  // 2️⃣ PLAYER 1 DRAFT LOGIC
-  const handlePick = (char) => {
-    if (turn !== 1 || phase !== "drafting" || p1Squad.length >= 6 || !char)
+  // 🚀 RECYCLE ENGINE
+  const refreshPool = (currentPool, currentDeck, currentLocks) => {
+    let nextPool = [...currentPool];
+    let nextDeck = [...currentDeck];
+    let discarded = [];
+
+    for (let i = 0; i < 6; i++) {
+      if (!currentLocks[i] && nextPool[i]) {
+        discarded.push(nextPool[i]);
+        nextPool[i] = nextDeck.length > 0 ? nextDeck.shift() : null;
+      }
+    }
+    nextDeck = [...nextDeck, ...discarded].filter(Boolean);
+    return { nextPool, nextDeck };
+  };
+
+  // 2️⃣ PLAYER 1 DRAFT
+  const handlePick = (char, slotIndex) => {
+    if (
+      turn !== 1 ||
+      phase !== "drafting" ||
+      p1Squad.length >= 6 ||
+      lockedSlots[slotIndex] ||
+      !char
+    )
       return;
+
+    // 🚀 SFX: Plays a heavy lock sound when you select a character
+    playSFX("/sfx/lock.mp3", 0.8);
 
     const newP1Squad = [...p1Squad, char];
     setP1Squad(newP1Squad);
 
-    const poolIndex = pool.findIndex(
-      (c) => c && (c._id === char._id || c.id === char.id),
-    );
-    if (poolIndex !== -1) {
-      const nextChar = deck.length > 0 ? deck[0] : null;
+    const newLocked = [...lockedSlots];
+    newLocked[slotIndex] = true;
+    setLockedSlots(newLocked);
 
-      setDeck((prevDeck) => prevDeck.slice(1));
-
-      setPool((prevPool) => {
-        const newPool = [...prevPool];
-        newPool[poolIndex] = nextChar;
-        return newPool;
-      });
-    }
-
-    if (newP1Squad.length === 6) {
+    if (newP1Squad.length < 6) {
+      const { nextPool, nextDeck } = refreshPool(pool, deck, newLocked);
+      setPool(nextPool);
+      setDeck(nextDeck);
+    } else {
       setTurn(2);
+
+      // 🚀 SFX: Plays an alert when it becomes the CPU's turn
+      playSFX("/sfx/turn_switch.mp3", 0.6);
+
+      const clearLocks = [false, false, false, false, false, false];
+      setLockedSlots(clearLocks);
+      const { nextPool, nextDeck } = refreshPool(pool, deck, clearLocks);
+      setPool(nextPool);
+      setDeck(nextDeck);
     }
   };
 
-  // 3️⃣ CPU DRAFT LOGIC
+  // 3️⃣ CPU DRAFT
   useEffect(() => {
     if (turn === 2 && phase === "drafting" && p2Squad.length < 6) {
       const timer = setTimeout(() => {
-        const validPoolIndices = pool
-          .map((c, i) => (c !== null ? i : -1))
+        const validIndices = pool
+          .map((c, i) => (!lockedSlots[i] && c !== null ? i : -1))
           .filter((i) => i !== -1);
-        if (validPoolIndices.length === 0) return;
+        if (validIndices.length === 0) return;
 
-        const randomSlotIndex =
-          validPoolIndices[Math.floor(Math.random() * validPoolIndices.length)];
-        const cpuPick = pool[randomSlotIndex];
+        const idx =
+          validIndices[Math.floor(Math.random() * validIndices.length)];
+        const cpuPick = pool[idx];
+
+        // 🚀 SFX: Plays a lighter digital tick when CPU picks
+        playSFX("/sfx/cpu_pick.mp3", 0.4);
 
         const newP2Squad = [...p2Squad, cpuPick];
         setP2Squad(newP2Squad);
 
-        const nextChar = deck.length > 0 ? deck[0] : null;
-        setDeck((prevDeck) => prevDeck.slice(1));
+        const newLocked = [...lockedSlots];
+        newLocked[idx] = true;
+        setLockedSlots(newLocked);
 
-        setPool((prevPool) => {
-          const newPool = [...prevPool];
-          newPool[randomSlotIndex] = nextChar;
-          return newPool;
-        });
-
-        if (newP2Squad.length === 6) {
+        if (newP2Squad.length < 6) {
+          const { nextPool, nextDeck } = refreshPool(pool, deck, newLocked);
+          setPool(nextPool);
+          setDeck(nextDeck);
+        } else {
           triggerBattle(p1Squad, newP2Squad);
         }
-      }, 500);
+      }, 700);
       return () => clearTimeout(timer);
     }
-  }, [turn, phase, pool, deck, p1Squad, p2Squad]);
+  }, [turn, phase, pool, deck, p1Squad, p2Squad, lockedSlots, playSFX]);
 
-  const triggerBattle = (squad1, squad2) => {
+  // 4️⃣ BATTLE TRIGGER
+  const triggerBattle = (s1, s2) => {
     setPhase("battle");
-    setTimeout(
-      () =>
-        navigate("/result", { state: { p1Squad: squad1, p2Squad: squad2 } }),
-      1500,
-    );
+
+    // 🚀 SFX: Plays an epic clash sound when the battle sequence initiates!
+    playSFX("/sfx/battle_start.mp3", 1.0);
+
+    setTimeout(() => {
+      const SLOTS = [
+        "captain",
+        "vice_cap",
+        "speedster",
+        "tank",
+        "support",
+        "raw_power",
+      ];
+      const team1Obj = {};
+      const team2Obj = {};
+      s1.forEach((char, i) => {
+        team1Obj[SLOTS[i]] = char;
+      });
+      s2.forEach((char, i) => {
+        team2Obj[SLOTS[i]] = char;
+      });
+
+      navigate("/result", {
+        state: {
+          teams: [team1Obj, team2Obj],
+          mode: "pool choice",
+          domain,
+        },
+      });
+    }, 1500);
   };
 
   if (loading)
     return (
-      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#050505] text-[#ff8c32] font-black italic text-xl md:text-2xl tracking-[0.3em] animate-pulse">
-        DEPLOYING MULTIVERSE...
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#050505] text-[#ff8c32] font-black italic text-xl animate-pulse">
+        SYNCING MULTIVERSE...
       </div>
     );
 
-  // 4️⃣ UI RENDER
-  const renderSquad = (squad, title, isP1) => (
-    <div className="flex lg:flex-col gap-2 w-full lg:w-32 shrink-0 p-2 items-center justify-center bg-black/40 border border-white/5 rounded-2xl lg:bg-transparent lg:border-none lg:rounded-none">
-      <div className="hidden lg:block text-[10px] text-gray-400 font-black tracking-widest text-center w-full mb-2">
-        {title}
-      </div>
-      <div className="flex lg:flex-col gap-2 md:gap-3 w-full justify-center">
-        {[...Array(6)].map((_, i) => {
-          const char = squad[i];
-          return (
-            <div
-              key={i}
-              className={`w-[14%] aspect-square lg:w-full lg:h-32 lg:aspect-auto shrink-0 rounded-lg lg:rounded-2xl border-2 flex items-center justify-center overflow-hidden bg-black/80 transition-all ${char ? (isP1 ? "border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" : "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]") : "border-white/10"}`}
-            >
-              {char ? (
-                <img
-                  src={char.img}
-                  className="w-full h-full object-cover"
-                  alt=""
-                />
-              ) : (
-                <span className="text-white/20 text-xs font-black">
-                  {i + 1}
-                </span>
-              )}
-            </div>
-          );
-        })}
+  const renderSquad = (squad, isP1) => (
+    <div className="flex lg:flex-col gap-2 w-full lg:w-32 shrink-0 p-2 items-center justify-center bg-black/40 border border-white/5 rounded-2xl lg:bg-transparent lg:border-none">
+      <div className="flex lg:flex-col gap-2 w-full justify-center">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className={`w-[14%] aspect-square lg:w-full lg:h-32 rounded-lg lg:rounded-2xl border-2 flex items-center justify-center overflow-hidden bg-black/80 ${squad[i] ? (isP1 ? "border-blue-500 shadow-[0_0_10px_#3b82f6]" : "border-red-500 shadow-[0_0_10px_#ef4444]") : "border-white/10"}`}
+          >
+            {squad[i] && (
+              <img
+                src={squad[i].img}
+                className="w-full h-full object-cover"
+                alt=""
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 
   return (
-    <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col font-sans uppercase overflow-hidden relative">
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#ff8c32]/5 blur-[100px] rounded-full mix-blend-screen" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] rounded-full mix-blend-screen" />
-      </div>
-
-      <header className="flex justify-between items-center p-3 md:p-6 border-b border-white/10 bg-black/50 backdrop-blur-md shrink-0 z-20">
+    <div className="absolute inset-0 w-full h-full bg-[#050505] text-white flex flex-col font-sans uppercase overflow-hidden">
+      <header className="flex justify-between items-center p-3 md:p-6 border-b border-white/10 bg-black/50 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 md:p-2.5 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+            className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
           >
             <ChevronLeft size={20} />
           </button>
-          <div>
-            <div className="text-[8px] md:text-[10px] text-[#ff8c32] tracking-widest font-black">
-              TACTICAL PHASE
-            </div>
-            <h1 className="text-base md:text-2xl font-black italic tracking-tighter">
-              POOL CHOICE
-            </h1>
-          </div>
+          <h1 className="text-base md:text-2xl font-black italic">
+            POOL CHOICE
+          </h1>
         </div>
         <div
-          className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-[8px] md:text-[10px] font-black tracking-widest transition-all ${turn === 1 ? "bg-blue-500/20 border-blue-500 text-blue-400 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "bg-red-500/20 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]"}`}
+          className={`px-4 py-2 rounded-full border text-[10px] font-black ${turn === 1 ? "border-blue-500 text-blue-400 animate-pulse" : "border-red-500 text-red-400"}`}
         >
           {turn === 1 ? "YOUR DRAFT" : "CPU DRAFTING"}
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden relative z-10 p-2 md:p-6 lg:gap-6">
-        {renderSquad(p1Squad, "P1 SQUAD", true)}
+      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden p-2 md:p-6 lg:gap-6">
+        {renderSquad(p1Squad, true)}
 
-        <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center p-1 md:p-4 overflow-hidden relative">
-          <AnimatePresence mode="popLayout">
-            {phase === "battle" ? (
+        <div className="flex-1 flex items-center justify-center relative w-full h-full">
+          <div
+            className={`w-full max-w-4xl grid grid-cols-3 gap-2 md:gap-4 content-center transition-opacity duration-500 ${phase === "battle" ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          >
+            {pool.map((char, idx) => (
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
+                key={`slot-${idx}`}
+                onClick={() => handlePick(char, idx)}
+                // 🚀 SFX: Plays hover sound if slot is available
+                onMouseEnter={() =>
+                  turn === 1 &&
+                  char &&
+                  !lockedSlots[idx] &&
+                  playSFX("/sfx/hover.mp3", 0.2)
+                }
+                className={`relative rounded-xl border-2 aspect-[3/4] overflow-hidden transition-all ${lockedSlots[idx] ? "border-[#ff8c32] opacity-40 grayscale" : turn === 1 ? "border-white/10 hover:border-[#ff8c32] cursor-pointer" : "border-white/5 opacity-60"}`}
+              >
+                {lockedSlots[idx] && (
+                  <div className="absolute inset-0 z-30 flex items-center justify-center">
+                    <Lock size={20} className="text-[#ff8c32]" />
+                  </div>
+                )}
+                {char && (
+                  <img
+                    src={char.img}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    alt=""
+                  />
+                )}
+                <div className="absolute bottom-0 w-full p-2 bg-black/60 backdrop-blur-sm border-t border-white/10">
+                  <div className="text-[10px] md:text-xs font-black truncate text-center mb-1">
+                    {char?.name}
+                  </div>
+                  <div className="flex justify-between text-[8px] md:text-[10px] px-1">
+                    <span className="text-red-400">ATK {char?.atk || 0}</span>
+                    <span className="text-blue-400">DEF {char?.def || 0}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {phase === "battle" && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="text-3xl md:text-6xl font-black italic text-[#ff8c32] tracking-tighter drop-shadow-[0_0_30px_rgba(255,140,50,0.8)] absolute"
+                className="absolute z-50 text-4xl md:text-7xl font-black italic text-[#ff8c32] drop-shadow-[0_0_30px_#ff8c32]"
               >
                 BATTLE START
               </motion.div>
-            ) : (
-              <div className="w-full h-full max-w-4xl grid grid-cols-3 gap-2 md:gap-4 p-2 items-center content-center">
-                {pool.map((char, idx) => {
-                  if (!char)
-                    return (
-                      <div
-                        key={`empty-${idx}`}
-                        className="aspect-[3/4] rounded-xl lg:rounded-2xl border border-white/5 bg-black/40"
-                      />
-                    );
-
-                  return (
-                    <motion.div
-                      key={char._id || char.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: turn === 1 ? 1.03 : 1 }}
-                      onClick={() => handlePick(char)}
-                      className={`relative bg-black/80 rounded-xl lg:rounded-2xl border-2 overflow-hidden shadow-xl transition-all aspect-[3/4] flex flex-col ${turn === 1 ? "border-white/10 hover:border-[#ff8c32] cursor-pointer" : "border-white/5 opacity-60 grayscale-[30%] cursor-not-allowed"}`}
-                    >
-                      <img
-                        src={char.img}
-                        className="absolute inset-0 w-full h-full object-cover opacity-80"
-                        alt=""
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-
-                      <div className="absolute bottom-0 w-full p-2 md:p-4 flex flex-col items-center z-10">
-                        <div className="text-[10px] md:text-sm font-black italic text-white tracking-tighter mb-1 md:mb-2 truncate w-full text-center drop-shadow-lg">
-                          {char.name}
-                        </div>
-                        <div className="flex justify-between w-full px-1 text-[8px] md:text-[10px] font-black bg-black/60 backdrop-blur-md rounded-lg p-1.5 border border-white/10">
-                          <span className="text-red-400 flex items-center gap-1">
-                            <Zap size={10} />{" "}
-                            {char.atk ||
-                              char.stats?.SHOOTING ||
-                              char.stats?.BATTING ||
-                              0}
-                          </span>
-                          <span className="text-blue-400 flex items-center gap-1">
-                            <ShieldCheck size={10} />{" "}
-                            {char.def ||
-                              char.stats?.DEFENDING ||
-                              char.stats?.BOWLING ||
-                              0}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
             )}
           </AnimatePresence>
         </div>
-
-        {renderSquad(p2Squad, "CPU SQUAD", false)}
+        {renderSquad(p2Squad, false)}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BackgroundManager from "./BackgroundManager";
@@ -22,10 +22,11 @@ const animeMediaMobile = [
   "/naruto-in-fall.720x1280.mp4",
 ];
 
-const sportsMedia = ["/cricket_hero.png", "/football_hero.png"];
+const sportsMedia = ["/football_bg.mp4", "/cricket_bg.mp4"];
 
 export default function Layout({ user, setUser, children }) {
   const location = useLocation();
+  const bgmRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== "undefined") return window.innerWidth < 768;
@@ -38,27 +39,69 @@ export default function Layout({ user, setUser, children }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const lastDomain = localStorage.getItem("animeDraft_lastDomain") || "anime";
-  const isAnime = lastDomain === "anime";
+  const currentDomainState = location.state?.domain;
+  const lastDomain =
+    currentDomainState ||
+    localStorage.getItem("animeDraft_lastDomain") ||
+    "anime";
+
+  const forceVideoScreens = ["/", "/domain"];
+  const isVideoScreen = forceVideoScreens.includes(location.pathname);
+  const isAnime = isVideoScreen || lastDomain === "anime";
+
   const activeAnimeMedia = isMobile ? animeMediaMobile : animeMediaDesktop;
   const globalMedia = isAnime ? activeAnimeMedia : sportsMedia;
 
+  useEffect(() => {
+    const handleVolumeChange = () => {
+      if (bgmRef.current) {
+        const storedBgmVol = localStorage.getItem("bgmVolume");
+        bgmRef.current.volume =
+          storedBgmVol !== null ? parseFloat(storedBgmVol) : 0.25;
+      }
+    };
+    window.addEventListener("volumeChange", handleVolumeChange);
+    return () => window.removeEventListener("volumeChange", handleVolumeChange);
+  }, []);
+
+  useEffect(() => {
+    const startAudio = () => {
+      if (bgmRef.current && bgmRef.current.paused) {
+        const storedBgmVol = localStorage.getItem("bgmVolume");
+        bgmRef.current.volume =
+          storedBgmVol !== null ? parseFloat(storedBgmVol) : 0.25;
+
+        bgmRef.current.play().catch((err) => {
+          console.log(
+            "Browser is actively blocking playback. Click anywhere to start.",
+          );
+        });
+      }
+    };
+
+    document.body.addEventListener("click", startAudio);
+    startAudio();
+
+    return () => document.body.removeEventListener("click", startAudio);
+  }, []);
+
+  // 🚀 The Navbar is hidden entirely during gameplay to maximize immersion
   const immersiveScreens = ["/hub", "/draft", "/battle", "/result", "/login"];
   const hideNavbar = immersiveScreens.some((path) =>
     location.pathname.startsWith(path),
   );
 
   return (
-    // 🚀 SCROLL FIX: h-[100dvh] locked with overflow-hidden
     <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col font-sans uppercase relative overflow-hidden">
+      <audio ref={bgmRef} src="/anime_bgm.mp3" loop preload="auto" />
+
       <BackgroundManager images={globalMedia} intervalDuration={10000} />
 
+      {/* Navbar sits structurally at the top, perfectly aligning everything below it */}
       {!hideNavbar && <Navbar user={user} setUser={setUser} />}
 
-      {/* 🚀 SCROLL FIX: Removed overflow-y-auto. The children will dictate their own strict bounds now */}
-      <main
-        className={`flex-1 w-full relative z-10 overflow-hidden ${!hideNavbar ? "pt-16 md:pt-20" : ""}`}
-      >
+      {/* 🚀 FIXED: Removed the top padding entirely. Flex-col handles it natively! */}
+      <main className="flex-1 w-full relative z-10 overflow-hidden flex flex-col">
         {children}
       </main>
     </div>
