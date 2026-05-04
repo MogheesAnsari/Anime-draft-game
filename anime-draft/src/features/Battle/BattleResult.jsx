@@ -266,7 +266,6 @@ export default function BattleResult({ user, setUser }) {
         : "border-gray-600";
 
   return (
-    // 🚀 FIXED: Added pb-48 to ensure the bottom fixed buttons never overlap content on mobile!
     <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col items-center pt-8 px-4 md:px-8 uppercase font-sans relative overflow-y-auto overflow-x-hidden custom-scrollbar pb-48">
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
@@ -386,7 +385,6 @@ export default function BattleResult({ user, setUser }) {
                           key={pIdx}
                           className="flex-1 flex flex-col gap-4 md:gap-6 p-2 w-full min-w-0"
                         >
-                          {/* MVP CARD SECTION */}
                           <div
                             className={`flex flex-col w-full min-w-0 bg-black/60 p-4 md:p-5 rounded-3xl border ${isFirst ? "border-[#ff8c32]/50 shadow-[0_0_30px_rgba(255,140,50,0.1)]" : "border-blue-500/50 shadow-[0_0_30px_rgba(37,99,235,0.1)]"}`}
                           >
@@ -423,7 +421,6 @@ export default function BattleResult({ user, setUser }) {
                                   {player.mvp?.slot?.replace("_", " ")}
                                 </div>
 
-                                {/* 🚀 FIXED: Min-W-0 stops breakdown box from blowing out layout */}
                                 {player.mvp?.scoreData?.breakdown && (
                                   <div className="bg-white/5 rounded-xl p-2.5 md:p-3 border border-white/10 w-full min-w-0 overflow-hidden">
                                     <div className="text-[8px] md:text-[9px] text-gray-500 border-b border-white/10 pb-1.5 mb-2 tracking-widest flex items-center gap-1 truncate">
@@ -466,7 +463,6 @@ export default function BattleResult({ user, setUser }) {
                             </div>
                           </div>
 
-                          {/* 🚀 FIXED: Roster Grid is fully constrained and won't cut horizontally */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full min-w-0">
                             {player.characters
                               .filter((c) => c.slot !== player.mvp?.slot)
@@ -505,7 +501,6 @@ export default function BattleResult({ user, setUser }) {
         </AnimatePresence>
       </div>
 
-      {/* 🚀 FIXED: Fixed Bottom Navigation Bar now correctly hovers over the expanded padding */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -513,6 +508,7 @@ export default function BattleResult({ user, setUser }) {
         className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 px-4 z-[9000] flex justify-center border-t border-white/5 pointer-events-auto"
       >
         <div className="flex flex-wrap justify-center gap-3 md:gap-4 max-w-3xl w-full">
+          {/* 🚀 FIXED: Dynamic Routing based on Domain */}
           <button
             onClick={() => {
               localStorage.removeItem("animeDraft_lastBattle");
@@ -526,8 +522,21 @@ export default function BattleResult({ user, setUser }) {
                     resetToken: Date.now(),
                   },
                 });
+              } else if (mode === "pool choice") {
+                navigate("/draft/pool", {
+                  state: {
+                    mode: state?.mode,
+                    universe: state?.universe,
+                    domain: state?.domain,
+                    isRetry: true,
+                    resetToken: Date.now(),
+                  },
+                });
               } else {
-                navigate("/draft", {
+                // Determine the correct base route
+                const draftRoute =
+                  domain === "sports" ? "/draft/sports" : "/draft/anime";
+                navigate(draftRoute, {
                   state: {
                     mode: state?.mode,
                     universe: state?.universe,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -11,6 +11,7 @@ import {
   Play,
   Gavel,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
 
 const animeUniverses = [
@@ -40,12 +41,16 @@ export default function CombatHub() {
     state?.domain || localStorage.getItem("animeDraft_lastDomain") || "anime";
   const isAnime = domain === "anime";
 
-  const [selectedUniverse, setSelectedUniverse] = useState("all");
-  const [selectedMode, setSelectedMode] = useState("Player vs CPU");
+  // 🚀 FIXED: Start with nothing selected
+  const [selectedUniverse, setSelectedUniverse] = useState(null);
+  const [selectedMode, setSelectedMode] = useState(null);
 
-  // Set default selection based on domain
+  const modeSectionRef = useRef(null);
+
+  // 🚀 FIXED: Reset selections entirely if the user switches domains
   useEffect(() => {
-    setSelectedUniverse(isAnime ? "all" : "football");
+    setSelectedUniverse(null);
+    setSelectedMode(null);
   }, [isAnime]);
 
   const universes = isAnime ? animeUniverses : sportsUniverses;
@@ -81,6 +86,19 @@ export default function CombatHub() {
     });
   }
 
+  const handleUniverseSelect = (universeId) => {
+    setSelectedUniverse(universeId);
+
+    if (window.innerWidth < 1024 && modeSectionRef.current) {
+      setTimeout(() => {
+        modeSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
+  };
+
   const handleInitiate = () => {
     if (!selectedUniverse || !selectedMode) return;
 
@@ -111,7 +129,6 @@ export default function CombatHub() {
     ? "shadow-[0_0_20px_rgba(255,140,50,0.3)]"
     : "shadow-[0_0_20px_rgba(16,185,129,0.3)]";
 
-  // Animation variants
   const containerVars = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.05 } },
@@ -120,6 +137,9 @@ export default function CombatHub() {
     hidden: { opacity: 0, y: 10 },
     show: { opacity: 1, y: 0 },
   };
+
+  // 🚀 Helper to check if deployment is unlocked
+  const isReady = selectedUniverse !== null && selectedMode !== null;
 
   return (
     <div className="absolute inset-0 w-full h-full flex flex-col font-sans uppercase p-4 md:p-8 overflow-hidden bg-[#030305]/45 backdrop-blur-sm z-10">
@@ -144,7 +164,7 @@ export default function CombatHub() {
       </header>
 
       {/* Mobile-First Flex Column that becomes a Grid on Desktop */}
-      <div className="flex-1 w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 relative z-10 min-h-0 pb-[100px] overflow-y-auto custom-scrollbar">
+      <div className="flex-1 w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 relative z-10 min-h-0 pb-[100px] overflow-y-auto custom-scrollbar scroll-smooth">
         {/* PANEL 1: UNIVERSE SELECTION */}
         <section className="flex-1 lg:flex-[1.2] flex flex-col bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 md:p-8 shrink-0 lg:min-h-0">
           <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
@@ -167,8 +187,8 @@ export default function CombatHub() {
             animate="show"
             className={`grid gap-3 md:gap-4 lg:overflow-y-auto custom-scrollbar pr-2 pb-2 ${
               universes.length <= 2
-                ? "grid-cols-1 sm:grid-cols-2" // Sports uses fat, beautiful premium cards
-                : "grid-cols-2 sm:grid-cols-3" // Anime uses a tighter grid
+                ? "grid-cols-1 sm:grid-cols-2"
+                : "grid-cols-2 sm:grid-cols-3"
             }`}
           >
             {universes.map((u) => {
@@ -177,14 +197,13 @@ export default function CombatHub() {
                 <motion.button
                   variants={itemVars}
                   key={u.id}
-                  onClick={() => setSelectedUniverse(u.id)}
+                  onClick={() => handleUniverseSelect(u.id)}
                   className={`relative p-4 md:p-6 rounded-2xl md:rounded-[24px] border-2 transition-all duration-300 flex flex-col items-center justify-center text-center overflow-hidden group ${
                     isSelected
                       ? `${themeBorder} ${isAnime ? "bg-[#ff8c32]/10" : "bg-emerald-500/10"} ${themeGlow}`
                       : "border-white/5 bg-black hover:border-white/20 hover:bg-white/5"
                   } ${universes.length <= 2 ? "h-32 md:h-48" : "h-24 md:h-32"}`}
                 >
-                  {/* Subtle active glow inside card */}
                   <div
                     className={`absolute inset-0 opacity-0 transition-opacity duration-500 ${isSelected ? "opacity-100" : "group-hover:opacity-50"}`}
                   >
@@ -205,7 +224,10 @@ export default function CombatHub() {
         </section>
 
         {/* PANEL 2: MODE SELECTION */}
-        <section className="flex-1 lg:flex-[0.8] flex flex-col bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 md:p-8 shrink-0 lg:min-h-0">
+        <section
+          ref={modeSectionRef}
+          className="flex-1 lg:flex-[0.8] flex flex-col bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 md:p-8 shrink-0 lg:min-h-0 scroll-mt-4"
+        >
           <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
             <div className={`p-2 rounded-xl bg-white/5 ${themeColor}`}>
               <Crosshair size={18} />
@@ -263,15 +285,25 @@ export default function CombatHub() {
 
       {/* BOTTOM ACTION BAR */}
       <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center justify-end z-20 pointer-events-none">
+        {/* 🚀 FIXED: Dynamic Button State (Locked vs Ready) */}
         <motion.button
           onClick={handleInitiate}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className={`pointer-events-auto w-full max-w-2xl py-5 md:py-6 rounded-2xl md:rounded-[24px] flex items-center justify-center gap-3 transition-all shadow-2xl ${themeBg} text-black hover:brightness-110`}
+          disabled={!isReady}
+          whileHover={isReady ? { scale: 1.02 } : {}}
+          whileTap={isReady ? { scale: 0.98 } : {}}
+          className={`pointer-events-auto w-full max-w-2xl py-5 md:py-6 rounded-2xl md:rounded-[24px] flex items-center justify-center gap-3 transition-all ${
+            isReady
+              ? `${themeBg} text-black hover:brightness-110 shadow-2xl ${isAnime ? "shadow-[0_0_30px_rgba(255,140,50,0.4)]" : "shadow-[0_0_30px_rgba(16,185,129,0.4)]"}`
+              : "bg-gray-800/80 border border-white/5 text-gray-500 cursor-not-allowed backdrop-blur-md"
+          }`}
         >
-          <Play size={20} fill="currentColor" />
+          {isReady ? (
+            <Play size={20} fill="currentColor" />
+          ) : (
+            <Lock size={20} />
+          )}
           <span className="text-base md:text-xl font-black tracking-[0.2em] italic">
-            INITIATE DEPLOYMENT
+            {isReady ? "INITIATE DEPLOYMENT" : "AWAITING DIRECTIVES"}
           </span>
         </motion.button>
       </div>
