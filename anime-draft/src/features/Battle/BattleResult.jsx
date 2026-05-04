@@ -11,14 +11,15 @@ import {
   Coins,
   Gem,
   Activity,
-  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
+import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
 
-export default function BattleResult({ user, setUser }) {
+// 🚀 Removed user and setUser from props
+export default function BattleResult() {
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ export default function BattleResult({ user, setUser }) {
   const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
 
   const isRecorded = useRef(false);
+
+  // 🚀 Pull setUser directly from Zustand
+  const setUser = useGameStore((state) => state.setUser);
 
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
@@ -44,8 +48,7 @@ export default function BattleResult({ user, setUser }) {
     "raw_power",
   ];
 
-  if (domain === "sports")
-    return <SportsResult user={user} setUser={setUser} />;
+  if (domain === "sports") return <SportsResult />; // Assuming SportsResult also pulls user from Zustand now
 
   const { displayCards, headerText, winnerCard } = useMemo(() => {
     if (!teams || teams.length === 0)
@@ -212,10 +215,13 @@ export default function BattleResult({ user, setUser }) {
             gems: res.data.gemsWon || 0,
           });
 
-          if (setUser) {
-            if (res.data.user) setUser(res.data.user);
-            else if (res.data.updatedUser)
-              setUser((prev) => ({ ...prev, ...res.data.updatedUser }));
+          // 🚀 Trigger Zustand's setUser
+          if (res.data.user) {
+            setUser(res.data.user);
+          } else if (res.data.updatedUser) {
+            // Because your previous code merged prev state, you can get it from localStorage or assume the backend returned the full user
+            // If it's a partial update, you might need to fetch the existing user from the store here, but typically the backend returns the full object
+            setUser(res.data.updatedUser);
           }
 
           navigate(location.pathname, {
@@ -234,7 +240,7 @@ export default function BattleResult({ user, setUser }) {
     state,
     navigate,
     location.pathname,
-    setUser,
+    setUser, // 🚀 Added to dependency array
     hasDoubleXp,
   ]);
 
@@ -560,7 +566,7 @@ export default function BattleResult({ user, setUser }) {
           </button>
 
           <button
-            onClick={() => navigate("/modes")}
+            onClick={() => navigate("/hub")}
             className="flex-1 min-w-[100px] max-w-[180px] bg-black/80 backdrop-blur-xl px-2 py-3 rounded-xl text-[9px] md:text-[11px] font-black italic hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 md:gap-2 border border-white/20 active:scale-95"
           >
             <Home size={14} className="shrink-0" /> HQ

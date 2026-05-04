@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getRankTier } from "../../features/Draft/Anime/utils/draftUtils";
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
 
-export default function Dashboard({ user, setUser }) {
+export default function Dashboard() {
+  const user = useGameStore((state) => state.user);
   const [editing, setEditing] = useState(false);
   const [newName, setNewName] = useState(user?.username || "");
   const [newAvatar, setNewAvatar] = useState(user?.avatar || "");

@@ -2,8 +2,11 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Zap } from "lucide-react";
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
 
 export default function HomeTerminal() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const navigate = useNavigate();
   const lastDomain = localStorage.getItem("animeDraft_lastDomain") || "anime";
   const isAnime = lastDomain === "anime";

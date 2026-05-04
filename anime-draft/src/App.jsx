@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -32,67 +32,33 @@ import Leaderboard from "./components/Shared/Leaderboard";
 import Dashboard from "./components/Shared/Dashboard";
 
 export default function App() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("commander");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("commander", JSON.stringify(user));
-    }
-  }, [user]);
+  // 🚀 ZUSTAND UPGRADE:
+  // We completely removed useState and useEffect for localStorage.
+  // The Zustand store (useGameStore) handles all of that globally now.
 
   return (
     <Router>
-      <Layout user={user} setUser={setUser}>
+      {/* 🚀 ZUSTAND UPGRADE: Removed user and setUser props from Layout and all Routes */}
+      <Layout>
         <Routes>
-          <Route
-            path="/"
-            element={<HomeTerminal user={user} setUser={setUser} />}
-          />
-          <Route path="/domain" element={<DomainSelection user={user} />} />
-          <Route path="/hub" element={<CombatHub user={user} />} />
+          <Route path="/" element={<HomeTerminal />} />
+          <Route path="/domain" element={<DomainSelection />} />
+          <Route path="/hub" element={<CombatHub />} />
 
-          <Route
-            path="/draft/anime"
-            element={<AnimeDraftManager user={user} setUser={setUser} />}
-          />
-          <Route
-            path="/draft/sports"
-            element={<SportsDraftManager user={user} setUser={setUser} />}
-          />
-          <Route
-            path="/draft/pool"
-            element={<PoolChoiceManager user={user} setUser={setUser} />}
-          />
+          <Route path="/draft/anime" element={<AnimeDraftManager />} />
+          <Route path="/draft/sports" element={<SportsDraftManager />} />
+          <Route path="/draft/pool" element={<PoolChoiceManager />} />
 
           {/* 🚀 FIXED: Added Missing Auction Routes */}
           <Route path="/auction-difficulty" element={<AuctionDifficulty />} />
-          <Route path="/auction-room" element={<AuctionRoom user={user} />} />
-          <Route
-            path="/auction-build"
-            element={<AuctionSquadBuilder user={user} />}
-          />
+          <Route path="/auction-room" element={<AuctionRoom />} />
+          <Route path="/auction-build" element={<AuctionSquadBuilder />} />
 
-          <Route
-            path="/result"
-            element={<BattleResult user={user} setUser={setUser} />}
-          />
-          <Route
-            path="/shop"
-            element={<Shop user={user} setUser={setUser} />}
-          />
+          <Route path="/result" element={<BattleResult />} />
+          <Route path="/shop" element={<Shop />} />
           <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/leaderboard" element={<Leaderboard user={user} />} />
-          <Route
-            path="/dashboard"
-            element={<Dashboard user={user} setUser={setUser} />}
-          />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

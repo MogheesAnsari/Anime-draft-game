@@ -11,8 +11,13 @@ import SportsArena from "../../Battle/SportsArena";
 import TacticalInventory from "../../Battle/TacticalInventory";
 import { generateCpuTeam } from "./utils/sportsUtils";
 import { PackageOpen, Users } from "lucide-react";
+import useGameStore from "../../../store/useGameStore"; // 🚀 Store
 
-export default function SportsDraftManager({ user, setUser }) {
+export default function SportsDraftManager() {
+  const user = useGameStore((state) => state.user);
+  // 🚀 FIXED: Added setUser just in case it's needed elsewhere in the file
+  const setUser = useGameStore((state) => state.setUser);
+
   const { state } = useLocation();
   const navigate = useNavigate();
   const universe = state?.universe || "football";
@@ -56,7 +61,6 @@ export default function SportsDraftManager({ user, setUser }) {
   });
   const [boostOverlay, setBoostOverlay] = useState(null);
 
-  // 🚀 FIXED: Finds the exact Double XP pass object so we can pass it to the HUD
   const xpPassObject = user?.inventory?.find(
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
@@ -100,7 +104,6 @@ export default function SportsDraftManager({ user, setUser }) {
     const newTeam = { ...team };
     Object.keys(newTeam).forEach((slot) => {
       if (newTeam[slot]) {
-        // 🚀 FIXED: Deep Cloning forces the React UI to visually register the changes
         newTeam[slot] = JSON.parse(JSON.stringify(newTeam[slot]));
 
         let statsObj = newTeam[slot].stats || {};
@@ -234,15 +237,14 @@ export default function SportsDraftManager({ user, setUser }) {
           onAbort={() => navigate("/modes")}
           rosterCount={Object.keys(boostedTeam).length}
           maxRoster={slots.length}
-          xpPassObject={xpPassObject} // 🚀 Passed to HUD
+          xpPassObject={xpPassObject}
         />
       )}
+
       {!battleData && (
         <TacticalInventory
-          user={user}
-          setUser={setUser}
+          // 🚀 FIXED: Removed user/setUser props. Zustand handles it directly!
           onDeployBoost={handleDeployBoost}
-          activeDomain="sports" // 🚀 FIXED: Tells inventory to only show Sports items!
         />
       )}
 

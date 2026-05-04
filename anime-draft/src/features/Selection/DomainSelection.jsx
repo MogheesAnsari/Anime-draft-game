@@ -1,87 +1,57 @@
 import React from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Swords, Trophy, ChevronLeft, ShieldAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // 🚀 1. Import the hook
+import useGameStore from "../../store/useGameStore"; // 🚀 Import Store
 
 export default function DomainSelection() {
+  // 🚀 2. Initialize the navigate function right at the top of the component
   const navigate = useNavigate();
+
+  // 🚀 Pull global state and actions from Zustand
+  const user = useGameStore((state) => state.user);
+  const setActiveDomain = useGameStore((state) => state.setActiveDomain);
+
+  // 🚀 The function now has access to 'navigate'
   const handleSelectDomain = (domain) => {
-    localStorage.setItem("animeDraft_lastDomain", domain);
-    navigate("/hub", { state: { domain } });
+    setActiveDomain(domain); // Updates the store and localStorage
+    navigate("/hub", { state: { domain } }); // Navigates to the Combat Hub smoothly
   };
 
   return (
-    // 🚀 SCROLL FIX: 'absolute inset-0'
-    <div className="absolute inset-0 w-full h-full bg-transparent flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden uppercase font-black italic text-white">
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-4 left-4 z-50 p-2.5 bg-black/50 hover:bg-white/10 border border-white/10 rounded-xl transition-all backdrop-blur-md shadow-xl"
-      >
-        <ChevronLeft size={20} />
-      </button>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-md">
+      <h1 className="text-4xl md:text-6xl font-black italic text-white mb-12 tracking-tighter uppercase">
+        SELECT YOUR <span className="text-[#ff8c32]">SECTOR</span>
+      </h1>
 
-      <div className="text-center mb-6 md:mb-8 relative z-10 w-full shrink-0">
-        <h2 className="text-[9px] md:text-[10px] text-gray-400 tracking-[0.4em] mb-2 flex items-center justify-center gap-2 drop-shadow-md">
-          <ShieldAlert size={12} className="text-blue-400" /> DIRECTIVE REQUIRED
-        </h2>
-        <h1 className="text-2xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-gray-500 tracking-tighter drop-shadow-lg">
-          SELECT <span className="text-white">DOMAIN</span>
-        </h1>
-      </div>
-
-      <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative z-10 shrink-0">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.02 }}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+        {/* ANIME SECTOR */}
+        <button
           onClick={() => handleSelectDomain("anime")}
-          className="relative h-[180px] md:h-[260px] rounded-[24px] md:rounded-[32px] border border-white/10 hover:border-[#ff8c32] bg-black/60 backdrop-blur-xl overflow-hidden cursor-pointer group shadow-2xl transition-all"
+          className="group relative overflow-hidden rounded-[32px] border-2 border-[#ff8c32]/30 bg-black/40 p-8 transition-all hover:border-[#ff8c32] hover:shadow-[0_0_40px_rgba(255,140,50,0.2)]"
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-[#ff8c32]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <Swords
-            size={100}
-            className="absolute -right-4 -bottom-4 md:-right-6 md:-bottom-6 text-[#ff8c32] opacity-10 group-hover:opacity-30 transition-all duration-700 pointer-events-none"
-          />
-          <div className="relative h-full p-5 md:p-6 flex flex-col justify-end">
-            <div className="text-[8px] md:text-[9px] text-[#ff8c32] tracking-widest border border-[#ff8c32]/30 bg-[#ff8c32]/10 px-2 py-1 rounded-full w-fit mb-2 backdrop-blur-md">
-              SECTOR 01
-            </div>
-            <h2 className="text-xl md:text-3xl text-white tracking-tighter mb-1 group-hover:text-[#ff8c32] transition-colors drop-shadow-md">
-              ANIME REALM
+          <div className="relative z-10">
+            <h2 className="text-3xl font-black italic text-[#ff8c32] mb-2">
+              ANIME
             </h2>
-            <p className="text-[9px] md:text-[10px] text-gray-400 font-bold normal-case not-italic tracking-wide drop-shadow-md max-w-[90%]">
-              Draft legendary warriors. Utilize tactical IQ to crush opposing
-              commanders.
+            <p className="text-xs text-gray-400 font-bold tracking-widest">
+              MULTIVERSE BATTLEGROUND
             </p>
           </div>
-        </motion.div>
+        </button>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          whileHover={{ scale: 1.02 }}
+        {/* SPORTS SECTOR */}
+        <button
           onClick={() => handleSelectDomain("sports")}
-          className="relative h-[180px] md:h-[260px] rounded-[24px] md:rounded-[32px] border border-white/10 hover:border-emerald-500 bg-black/60 backdrop-blur-xl overflow-hidden cursor-pointer group shadow-2xl transition-all"
+          className="group relative overflow-hidden rounded-[32px] border-2 border-emerald-500/30 bg-black/40 p-8 transition-all hover:border-emerald-500 hover:shadow-[0_0_40px_rgba(16,185,129,0.2)]"
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <Trophy
-            size={100}
-            className="absolute -right-4 -bottom-4 md:-right-6 md:-bottom-6 text-emerald-500 opacity-10 group-hover:opacity-30 transition-all duration-700 pointer-events-none"
-          />
-          <div className="relative h-full p-5 md:p-6 flex flex-col justify-end">
-            <div className="text-[8px] md:text-[9px] text-emerald-400 tracking-widest border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 rounded-full w-fit mb-2 backdrop-blur-md">
-              SECTOR 02
-            </div>
-            <h2 className="text-xl md:text-3xl text-white tracking-tighter mb-1 group-hover:text-emerald-400 transition-colors drop-shadow-md">
-              SPORTS ARENA
+          <div className="relative z-10">
+            <h2 className="text-3xl font-black italic text-emerald-400 mb-2">
+              SPORTS
             </h2>
-            <p className="text-[9px] md:text-[10px] text-gray-400 font-bold normal-case not-italic tracking-wide drop-shadow-md max-w-[90%]">
-              Scout world-class athletes. Master team synergy to dominate the
-              pitch.
+            <p className="text-xs text-gray-400 font-bold tracking-widest">
+              PREMIUM ATHLETIC ARENA
             </p>
           </div>
-        </motion.div>
+        </button>
       </div>
     </div>
   );

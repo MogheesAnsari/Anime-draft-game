@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Lock,
 } from "lucide-react";
+import useGameStore from "../../store/useGameStore";
 
 const animeUniverses = [
   { id: "all", name: "ALL MULTIVERSE" },
@@ -35,19 +36,19 @@ const sportsUniverses = [
 ];
 
 export default function CombatHub() {
+  const user = useGameStore((state) => state.user);
+  const activeDomain = useGameStore((state) => state.activeDomain);
   const { state } = useLocation();
   const navigate = useNavigate();
   const domain =
     state?.domain || localStorage.getItem("animeDraft_lastDomain") || "anime";
   const isAnime = domain === "anime";
 
-  // 🚀 FIXED: Start with nothing selected
   const [selectedUniverse, setSelectedUniverse] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null);
 
   const modeSectionRef = useRef(null);
 
-  // 🚀 FIXED: Reset selections entirely if the user switches domains
   useEffect(() => {
     setSelectedUniverse(null);
     setSelectedMode(null);
@@ -55,6 +56,7 @@ export default function CombatHub() {
 
   const universes = isAnime ? animeUniverses : sportsUniverses;
 
+  // Base modes for ALL domains (Sports will only see these 3)
   const modes = [
     {
       id: "Player vs CPU",
@@ -67,22 +69,23 @@ export default function CombatHub() {
       desc: "Local 1v1 Clash",
     },
     {
-      id: "Pool Choice",
-      icon: <LayoutGrid size={20} />,
-      desc: "6v6 Grid Draft",
-    },
-    {
       id: "Team Battle",
       icon: <ShieldCheck size={20} />,
       desc: "2v2 Co-op Mode",
     },
   ];
 
+  // Anime-exclusive modes
   if (isAnime) {
     modes.splice(2, 0, {
       id: "Anime Auction",
       icon: <Gavel size={20} />,
       desc: "Bid coins on premium warriors",
+    });
+    modes.splice(3, 0, {
+      id: "Pool Choice",
+      icon: <LayoutGrid size={20} />,
+      desc: "6v6 Grid Draft",
     });
   }
 
@@ -138,7 +141,6 @@ export default function CombatHub() {
     show: { opacity: 1, y: 0 },
   };
 
-  // 🚀 Helper to check if deployment is unlocked
   const isReady = selectedUniverse !== null && selectedMode !== null;
 
   return (
@@ -285,7 +287,6 @@ export default function CombatHub() {
 
       {/* BOTTOM ACTION BAR */}
       <div className="absolute bottom-0 left-0 w-full p-4 md:p-6 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center justify-end z-20 pointer-events-none">
-        {/* 🚀 FIXED: Dynamic Button State (Locked vs Ready) */}
         <motion.button
           onClick={handleInitiate}
           disabled={!isReady}

@@ -10,8 +10,11 @@ import AnimeTeamDock from "./components/AnimeTeamDock";
 import AnimeRulesModal from "./components/AnimeRulesModal";
 import BattleArena from "../../Battle/BattleArena";
 import TacticalInventory from "../../Battle/TacticalInventory";
+import useGameStore from "../../../store/useGameStore"; // 🚀 Store
 
-export default function AnimeDraftManager({ user, setUser }) {
+export default function AnimeDraftManager() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const { state } = useLocation();
   const navigate = useNavigate();
 
@@ -58,7 +61,6 @@ export default function AnimeDraftManager({ user, setUser }) {
   let maxTurns = 1;
   if (safeMode.includes("1v1v1v1") || safeMode.includes("royale")) maxTurns = 4;
   else if (safeMode.includes("2v2") || safeMode.includes("team")) maxTurns = 4;
-  // 🚀 FIXED: Added "player vs player" to the string checker so it successfully triggers 2 turns!
   else if (
     safeMode.includes("pvp") ||
     safeMode.includes("1v1") ||
@@ -192,7 +194,6 @@ export default function AnimeDraftManager({ user, setUser }) {
   if (dbLoading)
     return (
       <div className="h-[100dvh] w-full bg-[#030303] flex flex-col items-center justify-center overflow-hidden relative font-sans uppercase italic">
-        {/* 🌌 DYNAMIC BACKGROUND HUD */}
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
           <motion.div
@@ -203,7 +204,6 @@ export default function AnimeDraftManager({ user, setUser }) {
         </div>
 
         <div className="relative z-10 flex flex-col items-center">
-          {/* ⚛️ CORE REACTOR ANIMATION */}
           <div className="relative w-24 h-24 mb-8">
             <motion.div
               animate={{ rotate: 360 }}
@@ -224,7 +224,6 @@ export default function AnimeDraftManager({ user, setUser }) {
             </div>
           </div>
 
-          {/* 📟 GLITCH TEXT */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -241,7 +240,6 @@ export default function AnimeDraftManager({ user, setUser }) {
             </div>
           </motion.div>
 
-          {/* 🔋 TACTICAL PROGRESS BAR */}
           <div className="w-64 h-1 bg-white/5 border border-white/10 relative overflow-hidden">
             <motion.div
               initial={{ x: "-100%" }}
@@ -255,7 +253,6 @@ export default function AnimeDraftManager({ user, setUser }) {
             />
           </div>
 
-          {/* 🤖 LOGS (Optional: Adds flavor) */}
           <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-1 opacity-40">
             {[
               "ROSTER_SCAN: OK",
@@ -273,7 +270,6 @@ export default function AnimeDraftManager({ user, setUser }) {
           </div>
         </div>
 
-        {/* VIGNETTE OVERLAY */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)] pointer-events-none" />
       </div>
     );
@@ -317,10 +313,8 @@ export default function AnimeDraftManager({ user, setUser }) {
 
       {!isFighting && (
         <TacticalInventory
-          user={user}
-          setUser={setUser}
+          // 🚀 FIXED: Removed user/setUser props here too!
           onDeployBoost={handleDeployBoost}
-          activeDomain="anime"
         />
       )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../services/api";
+import useGameStore from "../../store/useGameStore"; // 🚀 Import Store
 import {
   Briefcase,
   X,
@@ -11,22 +12,19 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-export default function TacticalInventory({
-  user,
-  setUser,
-  onDeployBoost,
-  activeDomain,
-}) {
+// 🚀 Removed user, setUser, activeDomain from props
+export default function TacticalInventory({ onDeployBoost }) {
   const [isOpen, setIsOpen] = useState(false);
   const [consumingItem, setConsumingItem] = useState(null);
   const [feedback, setFeedback] = useState("");
 
   const isProcessing = useRef(false);
 
-  // Dynamically determine theme based on active domain or fallback to localStorage
-  const fallbackDomain =
-    localStorage.getItem("animeDraft_lastDomain") || "anime";
-  const currentDomain = activeDomain || fallbackDomain;
+  // 🚀 Pull global state directly from Zustand
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
+  const currentDomain = useGameStore((state) => state.activeDomain);
+
   const isSports = currentDomain === "sports";
 
   const themeBorder = isSports
@@ -41,7 +39,6 @@ export default function TacticalInventory({
   const groupedBoosts = useMemo(() => {
     const combatBoosts =
       user?.inventory?.filter((item) => {
-        // 🚀 FIXED: Expand check to include ARTIFACTS and SKIP items
         const isCombatItem =
           item?.type === "BOOST" ||
           item?.type === "ARTIFACT" ||
@@ -49,7 +46,6 @@ export default function TacticalInventory({
           item?.id?.toLowerCase().includes("artifact") ||
           item?.id?.toLowerCase().includes("skip");
 
-        // 🚀 FIXED: Allow items that match the domain OR are universal (no domain/"all")
         const matchesDomain =
           !item?.domain ||
           item?.domain === currentDomain ||
@@ -78,7 +74,7 @@ export default function TacticalInventory({
 
     if (itemIndex > -1) {
       updatedInventory.splice(itemIndex, 1);
-      setUser((prev) => ({ ...prev, inventory: updatedInventory }));
+      setUser({ ...user, inventory: updatedInventory }); // 🚀 Zustand setUser
     }
 
     try {
@@ -88,7 +84,7 @@ export default function TacticalInventory({
       });
 
       if (res.data && res.data.newInventory) {
-        setUser((prev) => ({ ...prev, inventory: res.data.newInventory }));
+        setUser({ ...user, inventory: res.data.newInventory }); // 🚀 Zustand setUser
       }
 
       onDeployBoost(item.id);
@@ -100,7 +96,7 @@ export default function TacticalInventory({
       }, 1500);
     } catch (err) {
       console.error("Deploy Error:", err);
-      setUser((prev) => ({ ...prev, inventory: previousInventory }));
+      setUser({ ...user, inventory: previousInventory }); // 🚀 Revert using Zustand
       setFeedback(
         err.response?.data?.error === "ITEM_NOT_FOUND_IN_INVENTORY"
           ? "ITEM ALREADY USED."

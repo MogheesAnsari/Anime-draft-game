@@ -15,8 +15,11 @@ import {
   FastForward,
   SkipForward,
 } from "lucide-react";
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
 
-export default function AuctionRoom({ user }) {
+export default function AuctionRoom() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const { state } = useLocation();
   const navigate = useNavigate();
 

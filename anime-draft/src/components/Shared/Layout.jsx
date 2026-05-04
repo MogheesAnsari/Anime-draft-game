@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BackgroundManager from "./BackgroundManager";
+import useGameStore from "../../store/useGameStore"; // 🚀 Store Import
 
 const animeMediaDesktop = [
   "/satoru-gojo-shattered-sky.3840x2160.mp4",
@@ -24,9 +25,14 @@ const animeMediaMobile = [
 
 const sportsMedia = ["/football.mp4"];
 
-export default function Layout({ user, setUser, children }) {
+// 🚀 FIXED: Removed user/setUser from props since they come from the store now
+export default function Layout({ children }) {
   const location = useLocation();
   const bgmRef = useRef(null);
+
+  // 🚀 ZUSTAND UPGRADE: Pull state and actions directly
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
 
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window !== "undefined") return window.innerWidth < 768;
@@ -85,7 +91,6 @@ export default function Layout({ user, setUser, children }) {
     return () => document.body.removeEventListener("click", startAudio);
   }, []);
 
-  // 🚀 The Navbar is hidden entirely during gameplay to maximize immersion
   const immersiveScreens = ["/hub", "/draft", "/battle", "/result", "/login"];
   const hideNavbar = immersiveScreens.some((path) =>
     location.pathname.startsWith(path),
@@ -97,10 +102,9 @@ export default function Layout({ user, setUser, children }) {
 
       <BackgroundManager images={globalMedia} intervalDuration={10000} />
 
-      {/* Navbar sits structurally at the top, perfectly aligning everything below it */}
+      {/* 🚀 FIXED: setUser is now defined and can be passed to Navbar safely */}
       {!hideNavbar && <Navbar user={user} setUser={setUser} />}
 
-      {/* 🚀 FIXED: Removed the top padding entirely. Flex-col handles it natively! */}
       <main className="flex-1 w-full relative z-10 overflow-hidden flex flex-col">
         {children}
       </main>

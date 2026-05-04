@@ -14,9 +14,12 @@ import {
   Swords,
   Trophy,
 } from "lucide-react";
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
 import api from "../../services/api";
 
-export default function Shop({ user, setUser }) {
+export default function Shop() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const navigate = useNavigate();
   // 🚀 FIXED: Added Top-Level Domain Toggle (Anime vs Sports)
   const [activeDomain, setActiveDomain] = useState("ANIME");

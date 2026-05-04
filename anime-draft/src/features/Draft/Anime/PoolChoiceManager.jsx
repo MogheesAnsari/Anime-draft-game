@@ -6,8 +6,11 @@ import api from "../../../services/api";
 
 // 🚀 IMPORT THE AUDIO HOOK
 import { useSFX } from "../../../hooks/useSFX";
+import useGameStore from "../../../store/useGameStore"; // 🚀 Store
 
-export default function PoolChoiceManager({ user }) {
+export default function PoolChoiceManager() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const { state } = useLocation();
   const navigate = useNavigate();
   const universe = state?.universe || "all";

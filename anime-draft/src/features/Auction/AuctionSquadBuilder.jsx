@@ -14,7 +14,7 @@ import {
   Brain,
   CheckCircle2,
 } from "lucide-react";
-
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
 const ANIME_SLOTS = [
   { id: "captain", label: "CAPTAIN", icon: "Crown" },
   { id: "vice_cap", label: "CAPTAIN VICE", icon: "Swords" },
@@ -24,7 +24,9 @@ const ANIME_SLOTS = [
   { id: "raw_power", label: "POWER", icon: "Flame" },
 ];
 
-export default function AuctionSquadBuilder({ user }) {
+export default function AuctionSquadBuilder() {
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
   const { state } = useLocation();
   const navigate = useNavigate();
 

@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { getRankTier } from "../../features/Draft/Anime/utils/draftUtils";
 
+import useGameStore from "../../store/useGameStore"; // 🚀 Store
+
 export default function Leaderboard() {
+  const user = useGameStore((state) => state.user);
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
