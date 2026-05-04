@@ -2,42 +2,51 @@ import React from "react";
 import { motion } from "framer-motion";
 import { getRoleStats } from "../utils/sportsConfig";
 import { getStatValue } from "../utils/sportsUtils";
-import { Star, Flame } from "lucide-react";
+import { Trophy, Zap, Crown } from "lucide-react";
 
-const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
+const SportsCardDisplay = ({ currentCard, universe, onClick, index = 0 }) => {
   const getTierStyles = (tier) => {
     switch (tier) {
       case "S+":
         return {
-          wrapper:
-            "border-yellow-400 shadow-[0_20px_60px_rgba(250,204,21,0.8)] z-50",
-          badge:
-            "bg-gradient-to-br from-yellow-300 via-yellow-500 to-orange-600 text-black",
-          glow: "bg-gradient-to-t from-black via-black/40 to-yellow-500/40",
+          border: "border-yellow-400",
+          shadow: "shadow-[0_0_40px_rgba(250,204,21,0.5)]",
+          glow: "bg-gradient-to-t from-black via-[#3a2000]/60 to-transparent",
+          badgeBg:
+            "bg-gradient-to-br from-yellow-300 via-yellow-500 to-orange-600",
+          textColor:
+            "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]",
+          icon: <Crown size={12} className="text-black sm:w-4 sm:h-4" />,
           isLegendary: true,
-          icon: <Flame size={16} className="fill-black" />,
         };
       case "S":
         return {
-          wrapper:
-            "border-purple-500 shadow-[0_15px_40px_rgba(168,85,247,0.6)] z-40",
-          badge: "bg-gradient-to-br from-purple-400 to-indigo-700 text-white",
-          glow: "bg-gradient-to-t from-black via-black/60 to-purple-500/30",
+          border: "border-purple-400",
+          shadow: "shadow-[0_0_30px_rgba(168,85,247,0.4)]",
+          glow: "bg-gradient-to-t from-black via-[#230046]/60 to-transparent",
+          badgeBg:
+            "bg-gradient-to-br from-purple-400 via-purple-600 to-indigo-800",
+          textColor:
+            "text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]",
+          icon: <Zap size={12} className="text-white sm:w-4 sm:h-4" />,
           isLegendary: true,
-          icon: <Star size={16} className="fill-white" />,
         };
       case "A":
         return {
-          wrapper: "border-blue-400 shadow-xl z-30",
-          badge: "bg-blue-600 text-white",
-          glow: "bg-gradient-to-t from-black via-black/70 to-transparent",
+          border: "border-blue-400",
+          shadow: "shadow-[0_10px_20px_rgba(56,189,248,0.2)]",
+          glow: "bg-gradient-to-t from-black via-[#001a33]/60 to-transparent",
+          badgeBg: "bg-gradient-to-br from-blue-400 to-blue-700",
+          textColor: "text-white",
           isLegendary: false,
         };
       default:
         return {
-          wrapper: "border-gray-600 opacity-95 z-20 shadow-lg",
-          badge: "bg-gray-800 text-gray-300",
-          glow: "bg-gradient-to-t from-black via-black/80 to-transparent",
+          border: "border-gray-500",
+          shadow: "shadow-xl",
+          glow: "bg-gradient-to-t from-black via-black/70 to-transparent",
+          badgeBg: "bg-gradient-to-br from-gray-500 to-gray-800",
+          textColor: "text-gray-300",
           isLegendary: false,
         };
     }
@@ -47,86 +56,86 @@ const SportsCardDisplay = ({ currentCard, universe, onClick, index }) => {
   const role = currentCard?.role || "DEFAULT";
   const statLabels = getRoleStats(universe, role);
 
-  // 🚀 FAST & ATTRACTIVE ENTRY ANIMATION
-  const anim =
-    currentCard?.tier === "S+" || currentCard?.tier === "S"
-      ? {
-          initial: { opacity: 0, scale: 0.5, y: 100, filter: "brightness(2)" },
-          animate: { opacity: 1, scale: 1, y: 0, filter: "brightness(1)" },
-          transition: { type: "spring", stiffness: 300, damping: 15 },
-        }
-      : {
-          initial: { opacity: 0, scale: 0.9, y: 30 },
-          animate: { opacity: 1, scale: 1, y: 0 },
-          transition: { type: "spring", stiffness: 400, damping: 25 },
-        };
-
   return (
     <motion.div
-      initial={anim.initial}
-      animate={anim.animate}
-      transition={anim.transition}
-      whileHover={{ scale: 1.05, y: -10 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={() => onClick(currentCard)}
-      // 📱 MOBILE SIZING FIX: `w-full max-w-[260px]` ensures they fill the screen on mobile when stacked vertically!
-      className={`relative w-full max-w-[260px] md:max-w-[240px] aspect-[3/4] cursor-pointer rounded-3xl overflow-hidden border-[3px] transition-all duration-300 ${style.wrapper} mx-auto`}
+      // A simple tap effect so the user knows they clicked it
+      whileTap={{ scale: 0.96 }}
+      onClick={() => onClick && onClick(currentCard)}
+      className={`relative w-full max-w-[180px] sm:max-w-[240px] aspect-[3/4] cursor-pointer rounded-[16px] sm:rounded-[20px] overflow-hidden border-[2px] sm:border-[3px] ${style.border} ${style.shadow} mx-auto group bg-black`}
     >
+      {/* STATIC BACKGROUND ARTWORK */}
       <img
         src={currentCard?.img || "/zoro.svg"}
-        className="absolute inset-0 w-full h-full object-cover bg-black"
+        className="absolute inset-0 w-full h-full object-cover"
         alt={currentCard?.name}
       />
+
+      {/* VIBRANT BASE OVERLAY */}
       <div className={`absolute inset-0 ${style.glow}`}></div>
 
+      {/* STATIC HOLOGRAPHIC GLARE (Only for Legendaries) */}
       {style.isLegendary && (
-        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-          <div className="absolute top-[-100%] left-[-100%] w-[300%] h-[300%] bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 translate-x-[-100%] animate-shimmer" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none mix-blend-overlay opacity-50">
+          <div className="w-[200%] h-[200%] bg-gradient-to-tr from-transparent via-white to-transparent opacity-40 rotate-[35deg] translate-x-[-30%] translate-y-[-20%]" />
         </div>
       )}
 
-      <div
-        className={`absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-xl font-black italic text-lg backdrop-blur-md border z-20 ${style.badge}`}
-      >
-        {style.icon ? style.icon : currentCard?.tier || "C"}
+      {/* SLEEK TOP HUD: Role & Tier side-by-side */}
+      <div className="absolute top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 flex justify-between items-start z-20 pointer-events-none">
+        {role !== "DEFAULT" ? (
+          <div className="bg-black/80 backdrop-blur-md border border-white/10 px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
+            <Trophy size={10} className="text-gray-400 sm:w-3 sm:h-3" />
+            <span className="text-[7px] sm:text-[9px] font-black tracking-widest text-white uppercase">
+              {role}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}{" "}
+        {/* Spacer */}
+        <div
+          className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg font-black italic text-sm sm:text-lg shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/20 ${style.badgeBg} ${style.isLegendary ? "text-black" : "text-white"}`}
+        >
+          {style.icon ? style.icon : currentCard?.tier || "C"}
+        </div>
       </div>
 
-      <div className="absolute bottom-0 p-3 w-full flex flex-col gap-1 z-20 text-white bg-gradient-to-t from-black via-black/95 to-transparent border-t border-white/10">
+      {/* CINEMATIC NAMEPLATE */}
+      <div className="absolute bottom-[36px] sm:bottom-[46px] left-0 w-full bg-gradient-to-r from-transparent via-black/90 to-transparent py-1 sm:py-2 z-20">
         <h2
-          className={`text-sm md:text-sm font-black italic truncate text-center uppercase tracking-wide ${style.isLegendary ? "text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.8)]" : "text-white"}`}
+          className={`text-[11px] sm:text-[15px] font-black italic text-center uppercase tracking-[0.15em] leading-none ${style.textColor}`}
         >
           {currentCard?.name}
         </h2>
+      </div>
 
-        <div className="grid grid-cols-2 gap-1.5 mt-2 px-1">
-          {statLabels.map((s, idx) => {
-            const statValue = getStatValue(currentCard, s);
-            const colors = [
-              "text-red-400",
-              "text-blue-400",
-              "text-green-400",
-              "text-purple-400",
-            ];
+      {/* EDGE-TO-EDGE HUD STRIP FOR STATS */}
+      <div className="absolute bottom-0 left-0 w-full h-[36px] sm:h-[46px] bg-black/90 backdrop-blur-xl border-t border-white/20 z-20 flex flex-row items-center divide-x divide-white/10">
+        {statLabels.map((s, idx) => {
+          const statValue = getStatValue(currentCard, s);
+          const statColors = [
+            "text-[#ff4d4d]", // Red
+            "text-[#3399ff]", // Blue
+            "text-[#00ff99]", // Neon Green
+            "text-[#cc66ff]", // Purple
+          ];
 
-            return (
-              <div
-                key={s}
-                className="bg-black/60 backdrop-blur-sm rounded-lg border border-white/10 flex flex-col items-center justify-center py-1.5"
+          return (
+            <div
+              key={s}
+              className="flex-1 flex flex-col items-center justify-center h-full pt-0.5"
+            >
+              <span
+                className={`text-[5px] sm:text-[7px] font-black tracking-widest uppercase opacity-80 ${statColors[idx % statColors.length]}`}
               >
-                <span
-                  className={`text-[7px] md:text-[8px] font-black tracking-widest ${colors[idx % colors.length]}`}
-                >
-                  {s}
-                </span>
-                <span
-                  className={`text-[12px] md:text-[14px] font-black leading-none mt-1 ${style.isLegendary ? "text-white drop-shadow-[0_0_3px_white]" : "text-gray-300"}`}
-                >
-                  {statValue}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                {s}
+              </span>
+              <span className="text-[12px] sm:text-[16px] font-black text-white leading-none tracking-tighter mt-[1px]">
+                {statValue}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );

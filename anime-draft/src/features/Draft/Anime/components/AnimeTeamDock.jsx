@@ -90,7 +90,8 @@ export default function AnimeTeamDock({
         animate={{ y: 0, opacity: 1 }}
         className="w-full max-w-5xl mx-auto flex flex-col items-center"
       >
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-2 sm:gap-3 w-full">
+        {/* 🚀 FIXED: Tighter gaps for mobile */}
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center gap-1.5 sm:gap-3 w-full">
           {slots.map((slot) => {
             const char = team[slot.id];
 
@@ -100,7 +101,8 @@ export default function AnimeTeamDock({
                 onClick={() => onAssign(slot.id)}
                 whileHover={!char ? { scale: 1.02 } : {}}
                 whileTap={!char ? { scale: 0.95 } : {}}
-                className={`relative w-full sm:w-[15%] sm:max-w-[120px] aspect-[3/4] rounded-xl md:rounded-2xl border-2 flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${
+                /* 🚀 FIXED: h-[75px] strictly compresses height on mobile. Returns to aspect-[3/4] on PC */
+                className={`relative w-full sm:w-[15%] sm:max-w-[120px] h-[75px] sm:h-auto sm:aspect-[3/4] rounded-lg md:rounded-2xl border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${
                   char
                     ? `border-${theme.from.split("-")[1]}-500 shadow-[0_0_15px_rgba(255,255,255,0.1)] bg-black`
                     : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 backdrop-blur-md border-dashed"
@@ -115,55 +117,57 @@ export default function AnimeTeamDock({
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
-                    <div className="absolute inset-0 p-1 flex flex-col justify-between z-10 text-center">
-                      <div className="w-full bg-black/60 backdrop-blur-sm py-0.5 rounded border border-white/10">
-                        <span className="text-[6px] md:text-[8px] font-black text-gray-300 tracking-widest leading-none block truncate px-1 uppercase">
+                    {/* 🚀 FIXED: Reduced padding inside full slots to fit 75px height */}
+                    <div className="absolute inset-0 p-0.5 sm:p-1 flex flex-col justify-between z-10 text-center">
+                      <div className="w-full bg-black/60 backdrop-blur-sm py-[2px] rounded border border-white/10">
+                        <span className="text-[5px] sm:text-[6px] md:text-[8px] font-black text-gray-300 tracking-widest leading-none block truncate px-1 uppercase">
                           {slot.label}
                         </span>
                       </div>
 
-                      <div className="w-full flex flex-col items-center bg-black/80 rounded-b-lg border-t border-white/10 p-1">
+                      <div className="w-full flex flex-col items-center bg-black/90 rounded-b-lg border-t border-white/10 p-0.5 sm:p-1">
                         <span
-                          className={`text-[7px] md:text-[9px] font-black italic truncate w-full leading-none mb-1 uppercase ${char.tier === "S+" ? "text-yellow-400" : "text-white"}`}
+                          className={`text-[6px] sm:text-[7px] md:text-[9px] font-black italic truncate w-full leading-none mb-[2px] sm:mb-1 uppercase ${char.tier === "S+" ? "text-yellow-400" : "text-white"}`}
                         >
                           {char.name}
                         </span>
 
-                        <div className="grid grid-cols-2 gap-0.5 w-full">
-                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
-                            <span className="text-[5px] text-red-400 font-black">
+                        {/* 🚀 FIXED: grid-cols-4 on mobile puts all stats on 1 line. grid-cols-2 on PC. */}
+                        <div className="grid grid-cols-4 sm:grid-cols-2 gap-[1px] sm:gap-0.5 w-full">
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-0.5 sm:gap-1 py-[1px]">
+                            <span className="text-[4px] sm:text-[5px] text-red-400 font-black">
                               A
                             </span>
                             <AnimatedNumber
                               value={char.atk || char.ATK}
-                              className="text-[6px] font-black text-gray-200"
+                              className="text-[5px] sm:text-[6px] font-black text-gray-200"
                             />
                           </div>
-                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
-                            <span className="text-[5px] text-blue-400 font-black">
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-0.5 sm:gap-1 py-[1px]">
+                            <span className="text-[4px] sm:text-[5px] text-blue-400 font-black">
                               D
                             </span>
                             <AnimatedNumber
                               value={char.def || char.DEF}
-                              className="text-[6px] font-black text-gray-200"
+                              className="text-[5px] sm:text-[6px] font-black text-gray-200"
                             />
                           </div>
-                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
-                            <span className="text-[5px] text-green-400 font-black">
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-0.5 sm:gap-1 py-[1px]">
+                            <span className="text-[4px] sm:text-[5px] text-green-400 font-black">
                               S
                             </span>
                             <AnimatedNumber
                               value={char.spd || char.SPD}
-                              className="text-[6px] font-black text-gray-200"
+                              className="text-[5px] sm:text-[6px] font-black text-gray-200"
                             />
                           </div>
-                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-1">
-                            <span className="text-[5px] text-cyan-400 font-black">
+                          <div className="bg-white/5 rounded-[2px] flex items-center justify-center gap-0.5 sm:gap-1 py-[1px]">
+                            <span className="text-[4px] sm:text-[5px] text-cyan-400 font-black">
                               I
                             </span>
                             <AnimatedNumber
                               value={char.iq || char.IQ}
-                              className="text-[6px] font-black text-gray-200"
+                              className="text-[5px] sm:text-[6px] font-black text-gray-200"
                             />
                           </div>
                         </div>
@@ -172,10 +176,11 @@ export default function AnimeTeamDock({
                   </>
                 ) : (
                   <>
-                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-1 shadow-inner">
-                      <Plus size={14} className="text-gray-500" />
+                    {/* 🚀 FIXED: Smaller empty plus icon on mobile */}
+                    <div className="w-5 h-5 md:w-8 md:h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-0.5 md:mb-1 shadow-inner">
+                      <Plus size={12} className="text-gray-500 md:w-4 md:h-4" />
                     </div>
-                    <span className="text-[6px] md:text-[8px] font-black text-gray-500 text-center px-1 tracking-widest leading-tight uppercase">
+                    <span className="text-[5px] md:text-[8px] font-black text-gray-500 text-center px-1 tracking-widest leading-tight uppercase">
                       {slot.label}
                     </span>
                   </>

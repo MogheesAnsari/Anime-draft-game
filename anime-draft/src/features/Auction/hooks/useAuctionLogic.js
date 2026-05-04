@@ -12,7 +12,10 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [currentBid, setCurrentBid] = useState(0);
   const [highestBidder, setHighestBidder] = useState(null);
-  const [timer, setTimer] = useState(3);
+
+  // 🚀 FIXED: Default timer set to 5 seconds
+  const [timer, setTimer] = useState(5);
+
   const [isAuctionActive, setIsAuctionActive] = useState(false);
   const [auctionComplete, setAuctionComplete] = useState(false);
 
@@ -56,7 +59,10 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
     setCurrentIndex((prev) => prev + 1);
     setCurrentBid(10);
     setHighestBidder(null);
-    setTimer(3);
+
+    // 🚀 FIXED: Timer resets to 5 when a new lot drops
+    setTimer(5);
+
     setIsAuctionActive(true);
   }, []);
 
@@ -78,7 +84,9 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
 
       setCurrentBid(amount);
       setHighestBidder(playerIndex);
-      setTimer(3);
+
+      // 🚀 FIXED: Timer resets to 5 every time someone bids
+      setTimer(5);
     },
     [isAuctionActive, currentBid, purses, rosters],
   );
@@ -91,8 +99,6 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
     clearTimeout(cpuDecisionTimeout.current);
   }, []);
 
-  // 🚀 FIXED: Auto-Finish Monitor
-  // Instantly triggers finish when everyone's roster is perfectly full
   useEffect(() => {
     const isHumanFull = rosters[0].length >= 8;
     const isCpu1Full = rosters[1].length >= 6;
@@ -110,7 +116,6 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
     }
   }, [rosters, auctionComplete, finishAuctionEarly]);
 
-  // 🚀 FIXED: Instant CPU Simulation for Skipped Lots
   const skipCurrentLot = useCallback(() => {
     setIsAuctionActive(false);
     clearTimeout(phaseTimeout.current);
@@ -119,12 +124,11 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
 
     let simPurses = [...purses];
     let simRosters = [...rosters];
-    let simBid = 10; // Reset bid to base 10 for CPU war
+    let simBid = 10;
     let simWinner = null;
     let activeBidders = [1, 2, 3];
     let safeLoop = 0;
 
-    // Hyper-speed while loop to simulate CPUs fighting over it
     while (activeBidders.length > 0 && safeLoop < 100) {
       safeLoop++;
       let bidPlaced = false;
@@ -161,7 +165,6 @@ export const useAuctionLogic = (universe = "all", difficulty = "MEDIUM") => {
       setPurses(simPurses);
     }
 
-    // Instantly bring in the next card after simulation (0.5s delay for UI smoothness)
     phaseTimeout.current = setTimeout(() => {
       startNextLot();
     }, 500);

@@ -23,7 +23,7 @@ export default function TacticalInventory({
 
   const isProcessing = useRef(false);
 
-  // 🚀 Dynamically determine theme based on active domain or fallback to localStorage
+  // Dynamically determine theme based on active domain or fallback to localStorage
   const fallbackDomain =
     localStorage.getItem("animeDraft_lastDomain") || "anime";
   const currentDomain = activeDomain || fallbackDomain;
@@ -41,9 +41,21 @@ export default function TacticalInventory({
   const groupedBoosts = useMemo(() => {
     const combatBoosts =
       user?.inventory?.filter((item) => {
-        const isBoost = item?.id?.includes("boost") || item?.type === "BOOST";
-        const matchesDomain = item?.domain === currentDomain;
-        return isBoost && matchesDomain;
+        // 🚀 FIXED: Expand check to include ARTIFACTS and SKIP items
+        const isCombatItem =
+          item?.type === "BOOST" ||
+          item?.type === "ARTIFACT" ||
+          item?.id?.toLowerCase().includes("boost") ||
+          item?.id?.toLowerCase().includes("artifact") ||
+          item?.id?.toLowerCase().includes("skip");
+
+        // 🚀 FIXED: Allow items that match the domain OR are universal (no domain/"all")
+        const matchesDomain =
+          !item?.domain ||
+          item?.domain === currentDomain ||
+          item?.domain === "all";
+
+        return isCombatItem && matchesDomain;
       }) || [];
 
     const grouped = combatBoosts.reduce((acc, item) => {
@@ -101,11 +113,12 @@ export default function TacticalInventory({
   };
 
   const getBoostIcon = (id) => {
-    if (id.includes("skip"))
+    const lowerId = id.toLowerCase();
+    if (lowerId.includes("skip"))
       return <FastForward size={16} className="text-blue-400" />;
-    if (id.includes("iq") || id.includes("tactics"))
+    if (lowerId.includes("iq") || lowerId.includes("tactics"))
       return <Brain size={16} className="text-cyan-400" />;
-    if (id.includes("atk") || id.includes("power"))
+    if (lowerId.includes("atk") || lowerId.includes("power"))
       return <Zap size={16} className="text-red-400" />;
     return <ShieldCheck size={16} className={themeText} />;
   };
@@ -177,7 +190,7 @@ export default function TacticalInventory({
                   <div className="flex flex-col items-center justify-center text-center text-gray-500 py-10 border border-dashed border-white/10 rounded-2xl">
                     <Briefcase size={40} className="mb-3 opacity-20" />
                     <p className="text-xs font-black tracking-widest uppercase">
-                      NO TACTICAL BOOSTS DETECTED.
+                      NO COMBAT ASSETS DETECTED.
                     </p>
                     <p className="text-[8px] mt-2 opacity-50 uppercase">
                       Verify you purchased items for the {currentDomain} sector.
