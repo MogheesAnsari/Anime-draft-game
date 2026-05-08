@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { io } from "socket.io-client"; // 🚀 1. Import Socket Client
+import { io } from "socket.io-client";
 
+// 🚀 LIVE BACKEND URL
 const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
 // 🎲 Casino-Grade Shuffle
@@ -14,7 +15,6 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// 🚀 2. Added isOnline and roomId with default local values
 export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
@@ -26,20 +26,20 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
   const pityBonus = useRef(0);
   const seenHistory = useRef(new Set());
 
-  // 🚀 3. Socket State
   const [socket, setSocket] = useState(null);
 
-  // 🚀 4. MULTIPLAYER SYNC EFFECT
+  // 🚀 SOCKET SYNC ENGINE
   useEffect(() => {
-    if (!isOnline || !roomId) return; // Ignore if playing locally
+    if (!isOnline || !roomId) return;
 
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
+
     newSocket.emit("join_match", { roomId });
 
     newSocket.on("opponent_action", (data) => {
+      // If the opponent drafts someone, we instantly remove them from our local pool
       if (data.type === "SPORTS_PICK") {
-        // If the opponent drafts someone, remove them from our pool so we can't roll them!
         setCharacterPool((prev) => prev.filter((p) => p.id !== data.player.id));
         seenHistory.current.add(data.player.name.toLowerCase());
       }
@@ -187,7 +187,7 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     setDraftOptions([]);
     setCurrentDraftSlot(null);
 
-    // 🚀 MULTIPLAYER: Tell opponent we drafted this player so they can't get them
+    // 🚀 SYNC: Tell opponent we drafted this player so they are removed from their screen too
     if (isOnline && socket) {
       socket.emit("game_action", { roomId, type: "SPORTS_PICK", player });
     }
@@ -219,5 +219,6 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     resetDraft,
     characterPool,
     skips,
+    socket, // 🚀 EXPORTED FOR THE MANAGER
   };
 }

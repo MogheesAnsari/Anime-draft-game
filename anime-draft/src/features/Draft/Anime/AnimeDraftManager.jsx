@@ -10,7 +10,7 @@ import AnimeTeamDock from "./components/AnimeTeamDock";
 import AnimeRulesModal from "./components/AnimeRulesModal";
 import BattleArena from "../../Battle/BattleArena";
 import TacticalInventory from "../../Battle/TacticalInventory";
-import useGameStore from "../../../store/useGameStore"; // 🚀 Store
+import useGameStore from "../../../store/useGameStore";
 
 export default function AnimeDraftManager() {
   const user = useGameStore((state) => state.user);
@@ -27,6 +27,9 @@ export default function AnimeDraftManager() {
   const roomId = state?.roomId || null;
   const onlinePlayers = state?.players || [];
 
+  // 🚀 STRICT TURN LOCK: Grab the index passed from Lobby
+  const myPlayerIndex = state?.myPlayerIndex || 1;
+
   const {
     playerTurn,
     team,
@@ -39,6 +42,7 @@ export default function AnimeDraftManager() {
     assign,
     nextTurn,
     characterPool,
+    socket, // 🚀 Pull the socket from the hook to listen for the Battle Start!
   } = useDraftLogic("anime", universe, mode, isRetry, isOnline, roomId);
 
   const [loading, setLoading] = useState(false);
@@ -86,15 +90,13 @@ export default function AnimeDraftManager() {
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
 
-  // 🚀 MULTIPLAYER TURN VALIDATION LOGIC
+  // 🚀 PERFECT MULTIPLAYER TURN VALIDATION
   let isMyTurn = true;
   let waitingMessage = "WAITING FOR OPPONENT...";
 
   if (isOnline && onlinePlayers.length > 0) {
-    // Check which index the local user holds in the server's room list
-    const myIndex =
-      onlinePlayers.findIndex((p) => p.username === user.username) + 1;
-    isMyTurn = playerTurn === myIndex;
+    // Compare the global turn against YOUR strictly assigned index
+    isMyTurn = playerTurn === myPlayerIndex;
 
     // Display the opponent's name dynamically if it's not our turn
     if (!isMyTurn) {
@@ -103,6 +105,34 @@ export default function AnimeDraftManager() {
         waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
     }
   }
+
+  // 🚀 NEW: LISTENER FOR BATTLE START
+  // When Player 2 clicks "Engage", they send us their final team. We catch it here and jump to the arena!
+  useEffect(() => {
+    if (isOnline && socket) {
+      const handleOpponentAction = (data) => {
+        if (data.type === "BATTLE_START") {
+          const finalTeams = [...completedTeams, data.team];
+          const scores = finalTeams.map((t) => calculateTeamScore(t));
+
+          setBattleData({
+            teams: finalTeams,
+            result: { scores },
+            mode,
+            universe,
+            domain: "anime",
+            hasDoubleXp: !!xpPassObject,
+            artifacts: finalTeams.map(() => null),
+          });
+
+          setIsFighting(true); // Snap out of the waiting screen instantly!
+        }
+      };
+
+      socket.on("opponent_action", handleOpponentAction);
+      return () => socket.off("opponent_action", handleOpponentAction);
+    }
+  }, [isOnline, socket, completedTeams, mode, universe, xpPassObject]);
 
   const handleDeployBoost = (boostId) => {
     if (boostId === "boost_skip") {
@@ -211,6 +241,15 @@ export default function AnimeDraftManager() {
       const emptyArtifacts = newBattleData.teams.map(() => null);
       setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
       setIsFighting(true);
+
+      // 🚀 NEW: SEND BATTLE START SIGNAL TO PLAYER 1
+      if (isOnline && socket) {
+        socket.emit("game_action", {
+          roomId,
+          type: "BATTLE_START",
+          team: { ...boostedTeam },
+        });
+      }
     }
     setLoading(false);
   };
@@ -276,25 +315,7 @@ export default function AnimeDraftManager() {
               className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-[#ff8c32] to-transparent shadow-[0_0_10px_#ff8c32]"
             />
           </div>
-
-          <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-1 opacity-40">
-            {[
-              "ROSTER_SCAN: OK",
-              "AURA_CALC: ACTIVE",
-              "DOMAIN_SYNC: 98%",
-              "LATENCY: 12MS",
-            ].map((log, i) => (
-              <span
-                key={i}
-                className="text-[8px] font-mono text-white text-left tracking-widest"
-              >
-                {log}
-              </span>
-            ))}
-          </div>
         </div>
-
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)] pointer-events-none" />
       </div>
     );
 
@@ -302,7 +323,7 @@ export default function AnimeDraftManager() {
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden flex flex-col uppercase relative">
       {showRules && <AnimeRulesModal onClose={() => setShowRules(false)} />}
 
-      {/* 🚀 MULTIPLAYER: ENEMY TURN BLOCKER OVERLAY */}
+      {/* 🚀 MULTIPLAYER: PERFECT ENEMY TURN BLOCKER OVERLAY */}
       <AnimatePresence>
         {isOnline && !isMyTurn && !isFighting && !dbLoading && (
           <motion.div

@@ -3,9 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Loader2, X, AlertTriangle } from "lucide-react";
 import useGameStore from "../../store/useGameStore";
-import { io } from "socket.io-client"; // 🚀 Import Socket.io client
+import { io } from "socket.io-client";
 
-// 🚀 Point this to your Node.js backend URL
+// 🚀 LIVE BACKEND URL
 const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
 export default function Lobby() {
@@ -22,11 +22,9 @@ export default function Lobby() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // 1. Establish Connection to the server
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
-    // 2. Tell the server we want to play
     newSocket.emit("join_matchmaking", {
       user,
       domain,
@@ -34,15 +32,22 @@ export default function Lobby() {
       universe,
     });
 
-    // 3. Listen for a successful match from the server!
     newSocket.on("match_ready", (data) => {
       setMatchStatus("OPPONENT FOUND! INITIATING...");
 
-      // Give the user a 2-second visual confirmation before routing to the draft
+      // 🚀 STRICT TURN ASSIGNMENT LOGIC
+      // We calculate exactly who is Player 1 and Player 2 before loading the draft
+      const myPlayerIndex =
+        data.players.findIndex(
+          (p) => p.username.toLowerCase() === user.username.toLowerCase(),
+        ) + 1;
+      const opp = data.players.find(
+        (p) => p.username.toLowerCase() !== user.username.toLowerCase(),
+      );
+
       setTimeout(() => {
         const draftRoute =
           domain === "sports" ? "/draft/sports" : "/draft/anime";
-        // 🚀 Pass the roomId and players so the Draft Manager knows it's an online game
         navigate(draftRoute, {
           state: {
             mode,
@@ -51,18 +56,18 @@ export default function Lobby() {
             isOnline: true,
             roomId: data.roomId,
             players: data.players,
+            myPlayerIndex: myPlayerIndex || 1, // Lock in the turn order!
+            opponentName: opp ? opp.username : "OPPONENT",
           },
         });
       }, 2000);
     });
 
     return () => {
-      // Cleanup connection if they navigate away
       newSocket.disconnect();
     };
   }, [domain, mode, universe, user, navigate]);
 
-  // 4. The Bot Fill Timer (Fallback Logic)
   useEffect(() => {
     if (matchStatus !== "SEARCHING FOR COMMANDERS") return;
 
@@ -70,15 +75,13 @@ export default function Lobby() {
       setTimeWaiting((prev) => prev + 1);
     }, 1000);
 
-    // If waiting 30 seconds, force start a local match with Bots
     if (timeWaiting >= 30) {
       clearInterval(timer);
       setMatchStatus("NETWORK TIMEOUT. DEPLOYING CPU BOT...");
 
-      if (socket) socket.disconnect(); // Leave the online queue
+      if (socket) socket.disconnect();
 
       setTimeout(() => {
-        // Fallback to local draft (isOnline becomes false)
         const draftRoute =
           domain === "sports" ? "/draft/sports" : "/draft/anime";
         navigate(draftRoute, {
@@ -92,7 +95,6 @@ export default function Lobby() {
 
   const handleCancel = () => {
     if (socket) socket.disconnect();
-    // Return to the Combat Hub
     navigate("/hub", { state: { isOnline: true, domain } });
   };
 
@@ -103,7 +105,6 @@ export default function Lobby() {
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] flex flex-col items-center justify-center uppercase font-sans relative overflow-hidden text-white">
-      {/* Radar Background Animation */}
       <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
         <motion.div
           animate={{ scale: [1, 2, 3], opacity: [0.5, 0, 0] }}

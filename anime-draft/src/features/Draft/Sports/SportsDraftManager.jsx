@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSportConfig } from "./utils/sportsConfig";
@@ -11,7 +11,7 @@ import SportsArena from "../../Battle/SportsArena";
 import TacticalInventory from "../../Battle/TacticalInventory";
 import { generateCpuTeam } from "./utils/sportsUtils";
 import { PackageOpen, Users } from "lucide-react";
-import useGameStore from "../../../store/useGameStore"; // 🚀 Store
+import useGameStore from "../../../store/useGameStore";
 
 export default function SportsDraftManager() {
   const user = useGameStore((state) => state.user);
@@ -23,10 +23,13 @@ export default function SportsDraftManager() {
   const savedMode = localStorage.getItem("animeDraft_mode") || "PVE";
   const mode = state?.mode || savedMode;
 
-  // 🚀 ONLINE MULTIPLAYER DATA EXTRACTION
+  // 🚀 ONLINE MULTIPLAYER DATA
   const isOnline = state?.isOnline || false;
   const roomId = state?.roomId || null;
   const onlinePlayers = state?.players || [];
+
+  // 🚀 STRICT TURN LOCK
+  const myPlayerIndex = state?.myPlayerIndex || 1;
 
   const getMatchConfig = (m) => {
     const safeMode = String(m).toUpperCase();
@@ -39,7 +42,6 @@ export default function SportsDraftManager() {
   const config = getSportConfig(universe);
   const slots = config.slots;
 
-  // 🚀 Pass the online data to the hook
   const {
     dbLoading,
     team,
@@ -51,12 +53,14 @@ export default function SportsDraftManager() {
     resetDraft,
     characterPool,
     skips,
+    socket, // 🚀 Pull socket from the hook
   } = useSportsDraftLogic(universe, isOnline, roomId);
 
   const [loading, setLoading] = useState(false);
   const [battleData, setBattleData] = useState(null);
   const [packState, setPackState] = useState("closed");
   const [finishedTeams, setFinishedTeams] = useState([]);
+
   const currentHumanIndex = finishedTeams.length + 1;
 
   const [activeBoosts, setActiveBoosts] = useState({
@@ -70,14 +74,12 @@ export default function SportsDraftManager() {
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
 
-  // 🚀 MULTIPLAYER TURN VALIDATION LOGIC
+  // 🚀 PERFECT MULTIPLAYER TURN VALIDATION
   let isMyTurn = true;
   let waitingMessage = "WAITING FOR OPPONENT...";
 
   if (isOnline && onlinePlayers.length > 0) {
-    const myIndex =
-      onlinePlayers.findIndex((p) => p.username === user.username) + 1;
-    isMyTurn = currentHumanIndex === myIndex;
+    isMyTurn = currentHumanIndex === myPlayerIndex;
 
     if (!isMyTurn) {
       const opp = onlinePlayers[currentHumanIndex - 1];
@@ -85,6 +87,36 @@ export default function SportsDraftManager() {
         waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
     }
   }
+
+  // 🚀 NEW: NETWORK LISTENERS FOR TURN TRANSITIONS & BATTLE START
+  useEffect(() => {
+    if (isOnline && socket) {
+      const handleOpponentAction = (data) => {
+        // Opponent finished their squad and passed the turn to us!
+        if (data.type === "NEXT_TURN") {
+          setFinishedTeams((prev) => [...prev, data.team]);
+        }
+        // Opponent clicked Engage Match! Transition us both to the Arena instantly!
+        else if (data.type === "BATTLE_START") {
+          setFinishedTeams((prev) => {
+            const allSquads = [...prev, data.team];
+            setBattleData({
+              teams: allSquads,
+              result: { scores: allSquads.map(() => 0) },
+              mode,
+              universe,
+              domain: "sports",
+              hasDoubleXp: !!xpPassObject,
+            });
+            return prev;
+          });
+        }
+      };
+
+      socket.on("opponent_action", handleOpponentAction);
+      return () => socket.off("opponent_action", handleOpponentAction);
+    }
+  }, [isOnline, socket, mode, universe, xpPassObject]);
 
   const getGlobalNames = () => {
     const names = new Set();
@@ -170,13 +202,19 @@ export default function SportsDraftManager() {
 
   const handleConfirmOrFight = async () => {
     if (currentHumanIndex < matchConfig.human) {
-      // 🚀 Save the completed team and advance the turn
       const finalTeam = { ...boostedTeam };
       setFinishedTeams([...finishedTeams, finalTeam]);
       resetDraft();
       setActiveBoosts({ atk: 0, iq: false, skips: 0 });
 
-      // Note: In the final polish, we will emit this 'finalTeam' via socket so the opponent receives it.
+      // 🚀 EMIT TURN FINISH TO OPPONENT
+      if (isOnline && socket) {
+        socket.emit("game_action", {
+          roomId,
+          type: "NEXT_TURN",
+          team: finalTeam,
+        });
+      }
     } else {
       try {
         setLoading(true);
@@ -207,6 +245,16 @@ export default function SportsDraftManager() {
           domain: "sports",
           hasDoubleXp,
         });
+
+        // 🚀 EMIT MATCH ENGAGE TO OPPONENT
+        if (isOnline && socket) {
+          socket.emit("game_action", {
+            roomId,
+            type: "BATTLE_START",
+            team: { ...boostedTeam },
+          });
+        }
+
         setLoading(false);
       } catch (err) {
         alert("Match Engine Error!");
@@ -226,6 +274,7 @@ export default function SportsDraftManager() {
         WARMING UP PITCH...
       </div>
     );
+
   const isSquadComplete = Object.keys(boostedTeam).length === slots.length;
 
   return (

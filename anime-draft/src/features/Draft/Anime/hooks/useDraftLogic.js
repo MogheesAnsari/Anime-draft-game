@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { io } from "socket.io-client"; // 🚀 1. Import Socket Client
+import { io } from "socket.io-client";
 
 const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
-// 🚀 2. Added isOnline and roomId with default local values
 export const useDraftLogic = (
   domain,
   universe,
@@ -21,26 +20,30 @@ export const useDraftLogic = (
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
 
-  // 🚀 3. Socket State
   const [socket, setSocket] = useState(null);
 
-  // 🚀 4. MULTIPLAYER SYNC EFFECT
+  // 🚀 SOCKET SYNC ENGINE
   useEffect(() => {
-    if (!isOnline || !roomId) return; // Ignore completely if playing locally
+    if (!isOnline || !roomId) return;
 
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
-    // Tell server we are entering the active game room
     newSocket.emit("join_match", { roomId });
 
-    // Listen for the opponent's moves
     newSocket.on("opponent_action", (data) => {
+      // Sync card pulls and skips to keep pools identical
       if (data.type === "PULL" || data.type === "SKIP") {
-        // If opponent pulls or skips, we must remove that card from our pool too!
         setCharacterPool((prev) => prev.slice(1));
-      } else if (data.type === "NEXT_TURN") {
-        // Opponent locked in their squad, it's our turn now
+      }
+      // 🚀 CRITICAL: Sync character assignment to remove drafted IDs from both pools
+      else if (data.type === "ASSIGN") {
+        setCharacterPool((prev) =>
+          prev.filter((char) => char.id !== data.characterId),
+        );
+      }
+      // Sync turn transitions
+      else if (data.type === "NEXT_TURN") {
         setCompletedTeams((prev) => [...prev, data.team]);
         setPlayerTurn((prev) => prev + 1);
       }
@@ -49,7 +52,7 @@ export const useDraftLogic = (
     return () => newSocket.disconnect();
   }, [isOnline, roomId]);
 
-  // 🛰️ Dynamic Mission Data Fetching
+  // 🛰️ Mission Data Fetching
   useEffect(() => {
     const fetchFromDB = async () => {
       setDbLoading(true);
@@ -57,7 +60,6 @@ export const useDraftLogic = (
         const isSports = domain === "sports";
         const endpoint = isSports ? "players" : "characters";
         const queryParam = isSports ? "sport" : "universe";
-
         const baseUrl = `https://anime-draft-game-1.onrender.com/api/${endpoint}`;
 
         let queryValue = universe;
@@ -70,6 +72,7 @@ export const useDraftLogic = (
 
         const res = await axios.get(finalUrl);
         if (res.data?.length > 0) {
+          // Note: In a production multiplayer environment, the seed should ideally come from the server
           const shuffled = [...res.data].sort(() => 0.5 - Math.random());
           setCharacterPool(shuffled);
           setCurrentCard(null);
@@ -92,7 +95,6 @@ export const useDraftLogic = (
     setCurrentCard(nextCard);
     setCharacterPool((prev) => prev.slice(1));
 
-    // 🚀 MULTIPLAYER: Tell the opponent we pulled a card
     if (isOnline && socket) {
       socket.emit("game_action", { roomId, type: "PULL" });
     }
@@ -100,8 +102,19 @@ export const useDraftLogic = (
 
   const assign = (slotId) => {
     if (!currentCard || team[slotId]) return;
-    setTeam({ ...team, [slotId]: currentCard });
+
+    const assignedChar = currentCard;
+    setTeam({ ...team, [slotId]: assignedChar });
     setCurrentCard(null);
+
+    // 🚀 SYNC ASSIGNMENT: Tell opponent which ID is now unavailable
+    if (isOnline && socket) {
+      socket.emit("game_action", {
+        roomId,
+        type: "ASSIGN",
+        characterId: assignedChar.id,
+      });
+    }
   };
 
   const nextTurn = () => {
@@ -112,7 +125,6 @@ export const useDraftLogic = (
     setCurrentCard(null);
     setPlayerTurn((prev) => prev + 1);
 
-    // 🚀 MULTIPLAYER: Send our completed team to the opponent
     if (isOnline && socket) {
       socket.emit("game_action", {
         roomId,
@@ -134,7 +146,6 @@ export const useDraftLogic = (
       if (skips > 0) {
         setSkips(0);
         pull();
-        // 🚀 MULTIPLAYER: Sync skip
         if (isOnline && socket) {
           socket.emit("game_action", { roomId, type: "SKIP" });
         }
@@ -143,5 +154,6 @@ export const useDraftLogic = (
     assign,
     nextTurn,
     characterPool,
+    socket, // 🚀 Exported for Battle Start signals in the Manager
   };
 };
