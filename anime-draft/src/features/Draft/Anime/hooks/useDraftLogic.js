@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { io } from "socket.io-client"; // 🚀 1. Import Socket Client
 
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
 // 🚀 2. Added isOnline and roomId with default local values
 export const useDraftLogic = (

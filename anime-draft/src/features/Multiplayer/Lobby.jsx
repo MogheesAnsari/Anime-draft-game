@@ -6,7 +6,7 @@ import useGameStore from "../../store/useGameStore";
 import { io } from "socket.io-client"; // 🚀 Import Socket.io client
 
 // 🚀 Point this to your Node.js backend URL
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
 export default function Lobby() {
   const { state } = useLocation();
