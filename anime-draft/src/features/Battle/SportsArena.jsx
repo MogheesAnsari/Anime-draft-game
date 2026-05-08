@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLocation } from "react-router-dom"; // 🚀 Added useLocation
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -7,6 +8,7 @@ import {
   TrendingUp,
   FastForward,
   CircleDot,
+  Globe, // 🚀 Added Globe icon
 } from "lucide-react";
 import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import {
@@ -16,6 +18,10 @@ import {
 } from "../Draft/Sports/utils/sportsUtils";
 
 const SportsArena = ({ allTeams = [], universe, onComplete }) => {
+  const { state } = useLocation();
+  // 🚀 Catch the online flag to prevent desyncing players!
+  const isOnline = state?.isOnline || false;
+
   const [phase, setPhase] = useState("INTRO");
   const [currentSlotIdx, setCurrentSlotIdx] = useState(0);
   const [isFastForward, setIsFastForward] = useState(false);
@@ -40,7 +46,7 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
   const [stadium] = useState(getRandomStadium(sportId));
   const [clashText, setClashText] = useState("");
 
-  // 👥 Dynamic Multiplayer Scoreboard
+  // 🏆 Dynamic Multiplayer Scoreboard
   const [liveScore, setLiveScore] = useState(allTeams.map(() => 0));
 
   const getAuraProvider = (team) => team["mgr"] || team["imp"] || null;
@@ -155,18 +161,28 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-[#050508] text-white flex flex-col items-center justify-center font-black uppercase italic overflow-hidden z-[5000] perspective-[1000px]">
-      <button
-        onClick={() => setIsFastForward(!isFastForward)}
-        className={`absolute top-6 right-6 z-[6000] p-3 rounded-full border-2 backdrop-blur-md transition-all flex items-center gap-2 ${isFastForward ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.6)]" : "bg-black/50 text-gray-400 border-white/20 hover:text-white"}`}
-      >
-        <FastForward
-          size={20}
-          className={isFastForward ? "animate-pulse" : ""}
-        />
-        <span className="text-[10px] font-black tracking-widest hidden md:block">
-          {isFastForward ? "2X SPEED" : "1X SPEED"}
-        </span>
-      </button>
+      {/* 🚀 FIXED: Dynamic Speed Button / Multiplayer Lock */}
+      {isOnline ? (
+        <div className="absolute top-6 right-6 z-[6000] bg-blue-600/20 border border-blue-500/50 px-4 py-2 rounded-full flex items-center gap-2 text-blue-400 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.3)] animate-pulse">
+          <Globe size={16} />
+          <span className="text-[10px] md:text-xs tracking-widest">
+            LIVE MATCH SYNCED
+          </span>
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsFastForward(!isFastForward)}
+          className={`absolute top-6 right-6 z-[6000] p-3 rounded-full border-2 backdrop-blur-md transition-all flex items-center gap-2 ${isFastForward ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.6)]" : "bg-black/50 text-gray-400 border-white/20 hover:text-white"}`}
+        >
+          <FastForward
+            size={20}
+            className={isFastForward ? "animate-pulse" : ""}
+          />
+          <span className="text-[10px] font-black tracking-widest hidden md:block">
+            {isFastForward ? "2X SPEED" : "1X SPEED"}
+          </span>
+        </button>
+      )}
 
       {/* 🏆 DYNAMIC SCOREBOARD (Supports up to 4 Players) */}
       {phase !== "INTRO" && phase !== "STADIUM_REVEAL" && (
@@ -201,7 +217,7 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
         </motion.div>
       )}
 
-      {/* 👔 COMPACT MULTIPLAYER AURA HUD */}
+      {/* 🔮 COMPACT MULTIPLAYER AURA HUD */}
       {phase !== "INTRO" &&
         phase !== "STADIUM_REVEAL" &&
         phase !== "FINISHER" && (
@@ -320,7 +336,7 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
               />
             </div>
 
-            {/* 💥 RESPONSIVE GRID FOR 2-4 PLAYERS */}
+            {/* ⚔️ RESPONSIVE GRID FOR 2-4 PLAYERS */}
             <motion.div
               animate={{
                 x: [-15, 15, -10, 10, -5, 5, 0],

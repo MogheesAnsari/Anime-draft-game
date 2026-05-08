@@ -15,10 +15,16 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import useGameStore from "../../store/useGameStore"; // 🚀 ZUSTAND STORE
 
-export default function Navbar({ user, setUser }) {
+// 🚀 FIXED: Removed user and setUser props!
+export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 🚀 Pull user data and actions globally
+  const user = useGameStore((state) => state.user);
+  const setUser = useGameStore((state) => state.setUser);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -60,22 +66,22 @@ export default function Navbar({ user, setUser }) {
     localStorage.setItem("sfxVolume", val);
   };
 
-  // 🚀 FIXED: Dashboard now points to "/" (Home)
   const navLinks = [
     { name: "DASHBOARD", path: "/dashboard", icon: <LayoutGrid size={14} /> },
     { name: "MARKET", path: "/shop", icon: <ShoppingCart size={14} /> },
     { name: "RANKINGS", path: "/leaderboard", icon: <Trophy size={14} /> },
   ];
 
-  // 🚀 FIXED: Dynamic Avatar Fallback
   const userAvatar =
     user?.avatar ||
     user?.profileImage ||
     `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || "draft"}`;
 
+  // If there is no user, don't render the navbar at all (prevents crashes)
+  if (!user) return null;
+
   return (
     <>
-      {/* 🚀 FIXED: Removed absolute/fixed. It now sits perfectly in the layout flow */}
       <nav className="w-full px-4 md:px-6 py-3 md:py-4 flex items-center justify-between z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 shrink-0">
         {/* LEFT: Logo */}
         <div className="flex-1 flex items-center">
@@ -119,13 +125,13 @@ export default function Navbar({ user, setUser }) {
 
         {/* RIGHT: Stats, Profile & Mobile Menu */}
         <div className="flex-1 flex items-center justify-end gap-3 md:gap-4 relative">
-          {/* Stats (Hidden on very small screens to save space) */}
+          {/* Stats */}
           <div className="hidden sm:flex items-center gap-3 text-[10px] md:text-xs font-black bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
             <span className="text-yellow-400 flex items-center gap-1">
-              🪙 {user?.coins || 738258}
+              🪙 {user?.coins || 0}
             </span>
             <span className="text-pink-400 flex items-center gap-1">
-              💎 {user?.gems || 68747}
+              💎 {user?.gems || 0}
             </span>
           </div>
 
@@ -168,10 +174,13 @@ export default function Navbar({ user, setUser }) {
                   >
                     <User size={14} /> PROFILE
                   </button>
+
+                  {/* 🚀 FIXED: LOGOUT LOGIC WIRING */}
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
-                      /* Add logout logic here */ navigate("/login");
+                      setUser(null); // Zustand will now clear the localStorage automatically
+                      navigate("/login"); // Route to login screen
                     }}
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs font-black text-red-400 hover:bg-red-500/20 transition-colors text-left border-t border-white/5"
                   >
@@ -192,7 +201,7 @@ export default function Navbar({ user, setUser }) {
         </div>
       </nav>
 
-      {/* 🚀 MOBILE NAVIGATION DRAWER */}
+      {/* MOBILE NAVIGATION DRAWER */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-[9999] flex justify-end md:hidden">
@@ -248,7 +257,7 @@ export default function Navbar({ user, setUser }) {
         )}
       </AnimatePresence>
 
-      {/* 🚀 SETTINGS MODAL */}
+      {/* SETTINGS MODAL */}
       <AnimatePresence>
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 pointer-events-auto">
@@ -321,7 +330,6 @@ export default function Navbar({ user, setUser }) {
                 </div>
               </div>
 
-              {/* 🚀 FIXED: Admin Link is now secured inside the settings */}
               <div className="mt-8 pt-6 border-t border-white/10">
                 <button
                   onClick={() => {

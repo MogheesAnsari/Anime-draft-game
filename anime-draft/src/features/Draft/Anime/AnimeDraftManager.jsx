@@ -22,6 +22,11 @@ export default function AnimeDraftManager() {
   const universe = state?.universe || "all";
   const isRetry = state?.isRetry || false;
 
+  // 🚀 ONLINE MULTIPLAYER DATA EXTRACTION
+  const isOnline = state?.isOnline || false;
+  const roomId = state?.roomId || null;
+  const onlinePlayers = state?.players || [];
+
   const {
     playerTurn,
     team,
@@ -34,7 +39,7 @@ export default function AnimeDraftManager() {
     assign,
     nextTurn,
     characterPool,
-  } = useDraftLogic("anime", universe, mode, isRetry);
+  } = useDraftLogic("anime", universe, mode, isRetry, isOnline, roomId);
 
   const [loading, setLoading] = useState(false);
   const [isFighting, setIsFighting] = useState(false);
@@ -80,6 +85,24 @@ export default function AnimeDraftManager() {
   const xpPassObject = user?.inventory?.find(
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
+
+  // 🚀 MULTIPLAYER TURN VALIDATION LOGIC
+  let isMyTurn = true;
+  let waitingMessage = "WAITING FOR OPPONENT...";
+
+  if (isOnline && onlinePlayers.length > 0) {
+    // Check which index the local user holds in the server's room list
+    const myIndex =
+      onlinePlayers.findIndex((p) => p.username === user.username) + 1;
+    isMyTurn = playerTurn === myIndex;
+
+    // Display the opponent's name dynamically if it's not our turn
+    if (!isMyTurn) {
+      const opp = onlinePlayers[playerTurn - 1];
+      if (opp)
+        waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
+    }
+  }
 
   const handleDeployBoost = (boostId) => {
     if (boostId === "boost_skip") {
@@ -164,7 +187,8 @@ export default function AnimeDraftManager() {
     setLoading(true);
     let finalTeams = [];
 
-    if (safeMode.includes("cpu") || safeMode.includes("pve")) {
+    // Local Logic remains 100% untouched
+    if (!isOnline && (safeMode.includes("cpu") || safeMode.includes("pve"))) {
       finalTeams = [
         { ...boostedTeam },
         generateCpuTeam(characterPool, animeSlots),
@@ -278,6 +302,26 @@ export default function AnimeDraftManager() {
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden flex flex-col uppercase relative">
       {showRules && <AnimeRulesModal onClose={() => setShowRules(false)} />}
 
+      {/* 🚀 MULTIPLAYER: ENEMY TURN BLOCKER OVERLAY */}
+      <AnimatePresence>
+        {isOnline && !isMyTurn && !isFighting && !dbLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[5000] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center"
+          >
+            <div className="w-16 h-16 border-4 border-t-[#ff8c32] border-r-[#ff8c32] border-b-transparent border-l-transparent rounded-full animate-spin mb-6" />
+            <h2 className="text-2xl md:text-4xl font-black italic text-[#ff8c32] tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_20px_rgba(255,140,50,0.5)]">
+              {waitingMessage}
+            </h2>
+            <p className="text-gray-400 text-[10px] md:text-xs tracking-[0.4em] font-bold mt-4">
+              REAL-TIME NETWORK SYNC ACTIVE
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {boostOverlay && (
           <motion.div
@@ -311,12 +355,7 @@ export default function AnimeDraftManager() {
 
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/5 to-[#050505] pointer-events-none" />
 
-      {!isFighting && (
-        <TacticalInventory
-          // 🚀 FIXED: Removed user/setUser props here too!
-          onDeployBoost={handleDeployBoost}
-        />
-      )}
+      {!isFighting && <TacticalInventory onDeployBoost={handleDeployBoost} />}
 
       <div className="shrink-0 z-20">
         <AnimeTacticalHUD

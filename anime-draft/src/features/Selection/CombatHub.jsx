@@ -42,6 +42,9 @@ export default function CombatHub() {
   const navigate = useNavigate();
   const domain =
     state?.domain || localStorage.getItem("animeDraft_lastDomain") || "anime";
+
+  // 🚀 Catch the online flag passed from DomainSelection
+  const isOnline = state?.isOnline || false;
   const isAnime = domain === "anime";
 
   const [selectedUniverse, setSelectedUniverse] = useState(null);
@@ -56,17 +59,12 @@ export default function CombatHub() {
 
   const universes = isAnime ? animeUniverses : sportsUniverses;
 
-  // Base modes for ALL domains (Sports will only see these 3)
-  const modes = [
-    {
-      id: "Player vs CPU",
-      icon: <Cpu size={20} />,
-      desc: "Tactical match against AI",
-    },
+  // 🚀 STEP 5: Dynamic Modes based on Online Status
+  let modes = [
     {
       id: "Player vs Player",
       icon: <Users size={20} />,
-      desc: "Local 1v1 Clash",
+      desc: "1v1 Clash",
     },
     {
       id: "Team Battle",
@@ -75,14 +73,23 @@ export default function CombatHub() {
     },
   ];
 
+  // 🚀 Only add PvE if they are playing Locally
+  if (!isOnline) {
+    modes.unshift({
+      id: "Player vs CPU",
+      icon: <Cpu size={20} />,
+      desc: "Tactical match against AI",
+    });
+  }
+
   // Anime-exclusive modes
   if (isAnime) {
-    modes.splice(2, 0, {
+    modes.push({
       id: "Anime Auction",
       icon: <Gavel size={20} />,
       desc: "Bid coins on premium warriors",
     });
-    modes.splice(3, 0, {
+    modes.push({
       id: "Pool Choice",
       icon: <LayoutGrid size={20} />,
       desc: "6v6 Grid Draft",
@@ -105,6 +112,20 @@ export default function CombatHub() {
   const handleInitiate = () => {
     if (!selectedUniverse || !selectedMode) return;
 
+    // 🚀 STEP 3: Route to Lobby if Online
+    if (isOnline) {
+      navigate("/lobby", {
+        state: {
+          mode: selectedMode,
+          universe: selectedUniverse,
+          domain,
+          isOnline: true,
+        },
+      });
+      return; // Stop execution here, don't run local logic
+    }
+
+    // --- Standard Local Routing ---
     if (isAnime) {
       if (selectedMode === "Anime Auction")
         navigate("/auction-difficulty", {
@@ -148,14 +169,14 @@ export default function CombatHub() {
       {/* HEADER */}
       <header className="flex items-center gap-4 mb-6 relative z-10 w-full max-w-6xl mx-auto shrink-0 border-b border-white/10 pb-4">
         <button
-          onClick={() => navigate("/domain")}
+          onClick={() => navigate("/domain", { state: { isOnline } })} // 🚀 Pass state back
           className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all backdrop-blur-md text-gray-300 hover:text-white"
         >
           <ChevronLeft size={24} />
         </button>
         <div>
           <span className="text-[10px] md:text-xs text-gray-400 font-mono tracking-[0.4em] drop-shadow-md">
-            SECTOR SECURED
+            {isOnline ? "🌐 ONLINE MATCHMAKING" : "🛡️ LOCAL COMBAT"}
           </span>
           <h1
             className={`text-2xl md:text-4xl font-black italic tracking-tighter drop-shadow-lg ${themeColor}`}
@@ -298,13 +319,22 @@ export default function CombatHub() {
               : "bg-gray-800/80 border border-white/5 text-gray-500 cursor-not-allowed backdrop-blur-md"
           }`}
         >
+          {/* 🚀 Dynamic Icon and Text for Online Mode */}
           {isReady ? (
-            <Play size={20} fill="currentColor" />
+            isOnline ? (
+              <Globe size={20} />
+            ) : (
+              <Play size={20} fill="currentColor" />
+            )
           ) : (
             <Lock size={20} />
           )}
           <span className="text-base md:text-xl font-black tracking-[0.2em] italic">
-            {isReady ? "INITIATE DEPLOYMENT" : "AWAITING DIRECTIVES"}
+            {!isReady
+              ? "AWAITING DIRECTIVES"
+              : isOnline
+                ? "SEARCH FOR MATCH"
+                : "INITIATE DEPLOYMENT"}
           </span>
         </motion.button>
       </div>

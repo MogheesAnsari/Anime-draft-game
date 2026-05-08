@@ -15,7 +15,6 @@ import useGameStore from "../../../store/useGameStore"; // 🚀 Store
 
 export default function SportsDraftManager() {
   const user = useGameStore((state) => state.user);
-  // 🚀 FIXED: Added setUser just in case it's needed elsewhere in the file
   const setUser = useGameStore((state) => state.setUser);
 
   const { state } = useLocation();
@@ -23,6 +22,11 @@ export default function SportsDraftManager() {
   const universe = state?.universe || "football";
   const savedMode = localStorage.getItem("animeDraft_mode") || "PVE";
   const mode = state?.mode || savedMode;
+
+  // 🚀 ONLINE MULTIPLAYER DATA EXTRACTION
+  const isOnline = state?.isOnline || false;
+  const roomId = state?.roomId || null;
+  const onlinePlayers = state?.players || [];
 
   const getMatchConfig = (m) => {
     const safeMode = String(m).toUpperCase();
@@ -35,6 +39,7 @@ export default function SportsDraftManager() {
   const config = getSportConfig(universe);
   const slots = config.slots;
 
+  // 🚀 Pass the online data to the hook
   const {
     dbLoading,
     team,
@@ -46,7 +51,7 @@ export default function SportsDraftManager() {
     resetDraft,
     characterPool,
     skips,
-  } = useSportsDraftLogic(universe);
+  } = useSportsDraftLogic(universe, isOnline, roomId);
 
   const [loading, setLoading] = useState(false);
   const [battleData, setBattleData] = useState(null);
@@ -64,6 +69,22 @@ export default function SportsDraftManager() {
   const xpPassObject = user?.inventory?.find(
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
+
+  // 🚀 MULTIPLAYER TURN VALIDATION LOGIC
+  let isMyTurn = true;
+  let waitingMessage = "WAITING FOR OPPONENT...";
+
+  if (isOnline && onlinePlayers.length > 0) {
+    const myIndex =
+      onlinePlayers.findIndex((p) => p.username === user.username) + 1;
+    isMyTurn = currentHumanIndex === myIndex;
+
+    if (!isMyTurn) {
+      const opp = onlinePlayers[currentHumanIndex - 1];
+      if (opp)
+        waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
+    }
+  }
 
   const getGlobalNames = () => {
     const names = new Set();
@@ -149,25 +170,31 @@ export default function SportsDraftManager() {
 
   const handleConfirmOrFight = async () => {
     if (currentHumanIndex < matchConfig.human) {
-      setFinishedTeams([...finishedTeams, boostedTeam]);
+      // 🚀 Save the completed team and advance the turn
+      const finalTeam = { ...boostedTeam };
+      setFinishedTeams([...finishedTeams, finalTeam]);
       resetDraft();
       setActiveBoosts({ atk: 0, iq: false, skips: 0 });
+
+      // Note: In the final polish, we will emit this 'finalTeam' via socket so the opponent receives it.
     } else {
       try {
         setLoading(true);
         let allSquads = [...finishedTeams, boostedTeam];
         let currentGlobalNames = getGlobalNames();
 
-        for (let i = 0; i < matchConfig.cpu; i++) {
-          const cpuTeam = generateCpuTeam(
-            characterPool,
-            slots,
-            currentGlobalNames,
-          );
-          allSquads.push(cpuTeam);
-          Object.values(cpuTeam).forEach((p) =>
-            currentGlobalNames.add(p.name.toLowerCase()),
-          );
+        if (!isOnline) {
+          for (let i = 0; i < matchConfig.cpu; i++) {
+            const cpuTeam = generateCpuTeam(
+              characterPool,
+              slots,
+              currentGlobalNames,
+            );
+            allSquads.push(cpuTeam);
+            Object.values(cpuTeam).forEach((p) =>
+              currentGlobalNames.add(p.name.toLowerCase()),
+            );
+          }
         }
 
         const hasDoubleXp = !!xpPassObject;
@@ -203,6 +230,26 @@ export default function SportsDraftManager() {
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase flex flex-col">
+      {/* 🚀 MULTIPLAYER: ENEMY TURN BLOCKER OVERLAY */}
+      <AnimatePresence>
+        {isOnline && !isMyTurn && !battleData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[8000] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center"
+          >
+            <div className="w-16 h-16 border-4 border-t-emerald-500 border-r-emerald-500 border-b-transparent border-l-transparent rounded-full animate-spin mb-6" />
+            <h2 className="text-2xl md:text-4xl font-black italic text-emerald-500 tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+              {waitingMessage}
+            </h2>
+            <p className="text-gray-400 text-[10px] md:text-xs tracking-[0.4em] font-bold mt-4">
+              REAL-TIME NETWORK SYNC ACTIVE
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {boostOverlay && (
           <motion.div
@@ -241,12 +288,7 @@ export default function SportsDraftManager() {
         />
       )}
 
-      {!battleData && (
-        <TacticalInventory
-          // 🚀 FIXED: Removed user/setUser props. Zustand handles it directly!
-          onDeployBoost={handleDeployBoost}
-        />
-      )}
+      {!battleData && <TacticalInventory onDeployBoost={handleDeployBoost} />}
 
       {!battleData && (
         <div className="flex-1 flex flex-col items-center justify-start px-2 z-10 relative pt-14 md:pt-20">

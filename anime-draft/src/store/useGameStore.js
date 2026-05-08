@@ -12,7 +12,8 @@ const useGameStore = create((set) => ({
     if (userData) {
       localStorage.setItem("commander", JSON.stringify(userData));
     } else {
-      localStorage.removeItem("commander"); // Handle logouts
+      // 🚀 This line ensures that when Navbar calls setUser(null), the user is completely logged out
+      localStorage.removeItem("commander");
     }
     set({ user: userData });
   },

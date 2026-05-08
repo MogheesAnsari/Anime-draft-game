@@ -10,20 +10,28 @@ import {
   Coins,
   Gem,
   ShieldAlert,
+  Globe, // 🚀 Added Globe for Online UI
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import { calculateSportsEffectiveScore } from "../Draft/Sports/utils/sportsUtils";
+import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
 
-export default function SportsResult({ user, setUser }) {
-  // FIXED: Properly defining location so location.pathname doesn't crash the app
+// 🚀 Removed user and setUser from props
+export default function SportsResult() {
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
   const [showCards, setShowCards] = useState(false);
   const [rewardData, setRewardData] = useState(null);
   const isRecorded = useRef(false);
+
+  // 🚀 Pull setUser directly from Zustand
+  const setUser = useGameStore((state) => state.setUser);
+
+  // 🚀 Catch the online flag
+  const isOnline = state?.isOnline || false;
 
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
@@ -120,7 +128,7 @@ export default function SportsResult({ user, setUser }) {
             gemsAdded: res.data.gemsWon || 0,
           });
 
-          // FIXED: Prevents wiping the user object if the backend returns it under a different key
+          // FIXED: Use Zustand's setUser
           if (setUser) {
             if (res.data.user) setUser(res.data.user);
             else if (res.data.updatedUser)
@@ -160,6 +168,16 @@ export default function SportsResult({ user, setUser }) {
 
   return (
     <div className="min-h-screen w-full bg-[#030305] text-white flex flex-col items-center overflow-x-hidden overflow-y-auto custom-scrollbar relative pb-32 uppercase italic font-black">
+      {/* 🚀 FIXED: Online Match Indicator */}
+      {isOnline && (
+        <div className="absolute top-6 left-4 md:left-8 z-[5000] bg-blue-600/20 border border-blue-500/50 px-4 py-2 rounded-full flex items-center gap-2 text-blue-400 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+          <Globe size={16} />
+          <span className="text-[10px] md:text-xs tracking-widest">
+            NETWORK MATCH CONCLUDED
+          </span>
+        </div>
+      )}
+
       <div
         className={`fixed inset-0 bg-gradient-to-b ${bgTheme} to-[#030305] pointer-events-none opacity-80 z-0 transition-colors duration-1000`}
       />
@@ -337,11 +355,37 @@ export default function SportsResult({ user, setUser }) {
       </AnimatePresence>
 
       <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 flex justify-center gap-4 z-50 px-4">
+        {/* 🚀 FIXED: Network Retry Routing */}
         <button
-          onClick={() => navigate("/draft/sports", { state })}
+          onClick={() => {
+            localStorage.removeItem("animeDraft_lastBattle");
+
+            // 🌐 MULTIPLAYER: Route back to the lobby!
+            if (isOnline) {
+              navigate("/lobby", {
+                state: {
+                  mode: state?.mode,
+                  universe: state?.universe,
+                  domain: state?.domain,
+                  isOnline: true,
+                },
+              });
+            } else {
+              // 🛡️ LOCAL: Route to normal draft modes
+              navigate("/draft/sports", {
+                state: {
+                  mode: state?.mode,
+                  universe: state?.universe,
+                  domain: state?.domain,
+                  isRetry: true,
+                  resetToken: Date.now(),
+                },
+              });
+            }
+          }}
           className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all active:scale-95"
         >
-          <RotateCcw size={16} /> PLAY AGAIN
+          <RotateCcw size={16} /> {isOnline ? "PLAY AGAIN" : "RETRY"}
         </button>
         <button
           onClick={() => navigate("/shop")}
@@ -350,7 +394,7 @@ export default function SportsResult({ user, setUser }) {
           <Coins size={16} /> VISIT SHOP
         </button>
         <button
-          onClick={() => navigate("/modes")}
+          onClick={() => navigate("/hub")}
           className="flex-1 max-w-[200px] bg-black/80 hover:bg-white/10 py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest border border-white/20 flex items-center justify-center gap-2 transition-all active:scale-95"
         >
           <Home size={16} /> HUB

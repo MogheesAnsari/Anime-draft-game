@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import useGameStore from "../../store/useGameStore"; // 🚀 ZUSTAND STORE
 
 const AVATARS = [
   { id: 1, name: "GOJO", img: "/gojo.svg" },
@@ -11,12 +12,15 @@ const AVATARS = [
   { id: 6, name: "ITACHI", img: "/itachi.svg" },
 ];
 
-export default function ProfileEntry({ setUser }) {
+// 🚀 FIXED: Removed setUser prop
+export default function ProfileEntry() {
   const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
+  const setUser = useGameStore((state) => state.setUser); // 🚀 Pull from Zustand
 
   const handleEntry = async () => {
     const specialCharRegex = /[._@#$]/;
@@ -28,7 +32,6 @@ export default function ProfileEntry({ setUser }) {
     setLoading(true);
 
     try {
-      // Create or Fetch the user profile from the database
       const res = await axios.post(
         "https://anime-draft-game-1.onrender.com/api/user/access",
         {
@@ -38,11 +41,11 @@ export default function ProfileEntry({ setUser }) {
       );
 
       if (res.status === 200 || res.status === 201) {
-        localStorage.setItem("commander", JSON.stringify(res.data));
+        // Zustand's setUser handles the localStorage internally!
         setUser(res.data);
 
-        // 💥 Force the page to load into the mode selection Menu!
-        window.location.href = "/modes";
+        // 🚀 FIXED: Correctly route to Home Terminal
+        navigate("/");
       }
     } catch (err) {
       setError("🚨 KERNEL OFFLINE. TRY AGAIN.");

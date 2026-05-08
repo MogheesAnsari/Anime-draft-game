@@ -11,6 +11,7 @@ import {
   Coins,
   Gem,
   Activity,
+  Globe, // 🚀 Added Globe for Online UI
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -18,12 +19,14 @@ import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
 import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
 
-// 🚀 Removed user and setUser from props
 export default function BattleResult() {
   const location = useLocation();
   const { state } = location;
   const navigate = useNavigate();
   const domain = state?.domain || "anime";
+
+  // 🚀 Catch the online flag
+  const isOnline = state?.isOnline || false;
 
   const [showStats, setShowStats] = useState(false);
   const [earnedLoot, setEarnedLoot] = useState({ coins: 0, gems: 0 });
@@ -219,8 +222,6 @@ export default function BattleResult() {
           if (res.data.user) {
             setUser(res.data.user);
           } else if (res.data.updatedUser) {
-            // Because your previous code merged prev state, you can get it from localStorage or assume the backend returned the full user
-            // If it's a partial update, you might need to fetch the existing user from the store here, but typically the backend returns the full object
             setUser(res.data.updatedUser);
           }
 
@@ -240,7 +241,7 @@ export default function BattleResult() {
     state,
     navigate,
     location.pathname,
-    setUser, // 🚀 Added to dependency array
+    setUser,
     hasDoubleXp,
   ]);
 
@@ -273,6 +274,16 @@ export default function BattleResult() {
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white flex flex-col items-center pt-8 px-4 md:px-8 uppercase font-sans relative overflow-y-auto overflow-x-hidden custom-scrollbar pb-48">
+      {/* 🚀 FIXED: Online Match Indicator */}
+      {isOnline && (
+        <div className="absolute top-6 left-4 md:left-8 z-[5000] bg-blue-600/20 border border-blue-500/50 px-4 py-2 rounded-full flex items-center gap-2 text-blue-400 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+          <Globe size={16} />
+          <span className="text-[10px] md:text-xs tracking-widest">
+            NETWORK MATCH CONCLUDED
+          </span>
+        </div>
+      )}
+
       <div className="fixed inset-0 pointer-events-none z-0">
         <div
           className={`absolute inset-0 opacity-20 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#ea580c_0%,_transparent_60%)]" : isDefeat ? "bg-[radial-gradient(circle_at_top,_#2563eb_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#4b5563_0%,_transparent_60%)]"}`}
@@ -283,7 +294,7 @@ export default function BattleResult() {
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 w-full px-4"
+          className="text-center mb-8 w-full px-4 pt-10"
         >
           <div className="flex justify-center items-center gap-4 md:gap-6 mb-3">
             <div className="h-[2px] w-8 md:w-24 bg-gradient-to-r from-transparent to-gray-500 rounded-full" />
@@ -514,10 +525,25 @@ export default function BattleResult() {
         className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 px-4 z-[9000] flex justify-center border-t border-white/5 pointer-events-auto"
       >
         <div className="flex flex-wrap justify-center gap-3 md:gap-4 max-w-3xl w-full">
-          {/* 🚀 FIXED: Dynamic Routing based on Domain */}
+          {/* 🚀 FIXED: Network Retry Routing */}
           <button
             onClick={() => {
               localStorage.removeItem("animeDraft_lastBattle");
+
+              // 🌐 MULTIPLAYER: Route back to the lobby!
+              if (isOnline) {
+                navigate("/lobby", {
+                  state: {
+                    mode: state?.mode,
+                    universe: state?.universe,
+                    domain: state?.domain,
+                    isOnline: true,
+                  },
+                });
+                return;
+              }
+
+              // 🛡️ LOCAL: Route to normal draft modes
               if (mode.includes("auction")) {
                 navigate("/auction-difficulty", {
                   state: {
@@ -539,7 +565,6 @@ export default function BattleResult() {
                   },
                 });
               } else {
-                // Determine the correct base route
                 const draftRoute =
                   domain === "sports" ? "/draft/sports" : "/draft/anime";
                 navigate(draftRoute, {
@@ -555,7 +580,8 @@ export default function BattleResult() {
             }}
             className="flex-1 min-w-[100px] max-w-[180px] bg-[#ff8c32] text-black px-2 py-3 rounded-xl text-[9px] md:text-[11px] font-black italic hover:scale-105 transition-transform flex items-center justify-center gap-1.5 md:gap-2 shadow-[0_0_20px_rgba(255,140,50,0.3)] active:scale-95"
           >
-            <RotateCcw size={14} className="shrink-0" /> RETRY
+            <RotateCcw size={14} className="shrink-0" />{" "}
+            {isOnline ? "PLAY AGAIN" : "RETRY"}
           </button>
 
           <button

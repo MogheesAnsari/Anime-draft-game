@@ -2,6 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import "dotenv/config";
+import http from "http"; // 🚀 Added for Socket.io
+import { Server } from "socket.io"; // 🚀 Added for Socket.io
 
 const app = express();
 
@@ -14,12 +16,96 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
+// 🚀 Initialize HTTP Server and Socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("📡 KERNEL_ONLINE: MongoDB Connected Successfully"))
   .catch((err) => console.error("🔥 KERNEL_CRASH: DB Connection Failed", err));
 
 app.get("/api/health", (req, res) => res.status(200).send("ACTIVE"));
+
+// ==========================================
+// 🌐 SOCKET.IO MULTIPLAYER MATCHMAKING & RELAY
+// ==========================================
+const matchmakingQueue = [];
+
+io.on("connection", (socket) => {
+  console.log(`📡 COMMANDER CONNECTED: ${socket.id}`);
+
+  // 1️⃣ Listen for players entering the Lobby
+  socket.on("join_matchmaking", (playerData) => {
+    console.log(
+      `Commander ${playerData.user?.username} searching for: ${playerData.mode}`,
+    );
+
+    const queuedPlayer = { socketId: socket.id, ...playerData };
+    matchmakingQueue.push(queuedPlayer);
+
+    const matchingPlayers = matchmakingQueue.filter(
+      (p) =>
+        p.domain === playerData.domain &&
+        p.mode === playerData.mode &&
+        p.universe === playerData.universe,
+    );
+
+    const playersNeeded = playerData.mode.includes("Player vs Player") ? 2 : 4;
+
+    if (matchingPlayers.length >= playersNeeded) {
+      const roomId = `ROOM_${Date.now()}`;
+      const matchedGroup = matchingPlayers.slice(0, playersNeeded);
+
+      matchedGroup.forEach((p) => {
+        const index = matchmakingQueue.findIndex(
+          (q) => q.socketId === p.socketId,
+        );
+        if (index !== -1) matchmakingQueue.splice(index, 1);
+
+        const playerSocket = io.sockets.sockets.get(p.socketId);
+        if (playerSocket) {
+          playerSocket.join(roomId);
+        }
+      });
+
+      io.to(roomId).emit("match_ready", {
+        roomId,
+        players: matchedGroup.map((p) => p.user),
+        message: "OPPONENT FOUND. INITIATING DRAFT.",
+      });
+
+      console.log(`⚔️ MATCH CREATED: ${roomId}`);
+    }
+  });
+
+  // 🚀 2️⃣ NEW: Re-connect players to their active room when Draft starts
+  socket.on("join_match", ({ roomId }) => {
+    if (roomId) {
+      socket.join(roomId);
+      console.log(`🔗 COMMANDER RE-SYNCED TO MATCH: ${roomId}`);
+    }
+  });
+
+  // 🚀 3️⃣ NEW: Relay game actions (Draft Picks, Skips, Turns) to opponents
+  socket.on("game_action", (data) => {
+    if (data.roomId) {
+      // Broadcasts the action to everyone in the room EXCEPT the sender
+      socket.to(data.roomId).emit("opponent_action", data);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`⚠️ COMMANDER DISCONNECTED: ${socket.id}`);
+    const index = matchmakingQueue.findIndex((q) => q.socketId === socket.id);
+    if (index !== -1) matchmakingQueue.splice(index, 1);
+  });
+});
 
 // ==========================================
 // ⚔️ ANIME MULTIVERSE SCHEMAS & ROUTES
@@ -119,7 +205,6 @@ const PlayerSchema = new mongoose.Schema({
   league: String,
   tier: { type: String, default: "B" },
   role: { type: String, default: "DEFAULT" },
-  // 🚀 FIXED: Switched from strict 'Map' to 'Mixed' so any valid JSON object uploaded is saved perfectly
   stats: { type: mongoose.Schema.Types.Mixed, default: {} },
 });
 const Player = mongoose.model("Player", PlayerSchema);
@@ -336,4 +421,4 @@ app.get("/api/leaderboard", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 ENGINE RUNNING ON PORT ${PORT}`));

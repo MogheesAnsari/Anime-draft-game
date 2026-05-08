@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { io } from "socket.io-client"; // 🚀 1. Import Socket Client
+
+const SOCKET_URL = "http://localhost:5000";
 
 // 🎲 Casino-Grade Shuffle
 const shuffleArray = (array) => {
@@ -11,7 +14,8 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-export function useSportsDraftLogic(universe) {
+// 🚀 2. Added isOnline and roomId with default local values
+export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
   const [team, setTeam] = useState({});
@@ -21,6 +25,28 @@ export function useSportsDraftLogic(universe) {
 
   const pityBonus = useRef(0);
   const seenHistory = useRef(new Set());
+
+  // 🚀 3. Socket State
+  const [socket, setSocket] = useState(null);
+
+  // 🚀 4. MULTIPLAYER SYNC EFFECT
+  useEffect(() => {
+    if (!isOnline || !roomId) return; // Ignore if playing locally
+
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
+    newSocket.emit("join_match", { roomId });
+
+    newSocket.on("opponent_action", (data) => {
+      if (data.type === "SPORTS_PICK") {
+        // If the opponent drafts someone, remove them from our pool so we can't roll them!
+        setCharacterPool((prev) => prev.filter((p) => p.id !== data.player.id));
+        seenHistory.current.add(data.player.name.toLowerCase());
+      }
+    });
+
+    return () => newSocket.disconnect();
+  }, [isOnline, roomId]);
 
   useEffect(() => {
     const fetchPool = async () => {
@@ -76,7 +102,6 @@ export function useSportsDraftLogic(universe) {
   const openDraftOptions = (slotConfig, globalDraftedNames = new Set()) => {
     const draftedIds = Object.values(team).map((p) => p.id);
 
-    // 💥 IMPACT PLAYER RULE (Remains 3 Cards: BAT, BWL, ALL)
     if (slotConfig.role === "IMP") {
       const batPool = shuffleArray(
         characterPool.filter(
@@ -125,7 +150,6 @@ export function useSportsDraftLogic(universe) {
       return;
     }
 
-    // ⚽ STANDARD RULE (FIXED: Now only draws 2 Cards for max excitement!)
     const validPlayers = shuffleArray(
       characterPool.filter(
         (p) =>
@@ -141,7 +165,6 @@ export function useSportsDraftLogic(universe) {
     const usedNamesInThisDraw = new Set();
     let foundSPlus = false;
 
-    // LOOP CHANGED TO 2
     for (let i = 0; i < 2; i++) {
       const { selected, isSPlus } = rollForCard(
         validPlayers,
@@ -163,6 +186,11 @@ export function useSportsDraftLogic(universe) {
     setTeam((prev) => ({ ...prev, [currentDraftSlot.id]: player }));
     setDraftOptions([]);
     setCurrentDraftSlot(null);
+
+    // 🚀 MULTIPLAYER: Tell opponent we drafted this player so they can't get them
+    if (isOnline && socket) {
+      socket.emit("game_action", { roomId, type: "SPORTS_PICK", player });
+    }
   };
 
   const cancelDraft = () => {
@@ -173,7 +201,6 @@ export function useSportsDraftLogic(universe) {
     }
   };
 
-  // 🔄 REQUIRED FOR MULTIPLAYER
   const resetDraft = () => {
     setTeam({});
     setDraftOptions([]);

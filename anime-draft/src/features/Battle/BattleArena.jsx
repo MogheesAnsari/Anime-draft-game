@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -11,6 +12,7 @@ import {
   Target,
   FastForward,
   SkipForward,
+  Globe,
 } from "lucide-react";
 import {
   calculateFinalBattleScore,
@@ -21,6 +23,10 @@ import {
 } from "../Draft/Anime/utils/draftUtils";
 
 const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
+  const { state } = useLocation();
+  // 🚀 Catch the online flag to prevent desyncing players!
+  const isOnline = state?.isOnline || false;
+
   const [phase, setPhase] = useState("INTRO");
   const [currentSlot, setCurrentSlot] = useState(0);
   const [battleDomain] = useState(getRandomDomain());
@@ -40,10 +46,11 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const [isFastForward, setIsFastForward] = useState(false);
   const speedRef = useRef(false);
 
-  // 🚀 FIXED: The Kill-Switch. This instantly stops all visual timers when skipped.
+  // The Kill-Switch. This instantly stops all visual timers when skipped.
   const skipFired = useRef(false);
 
   const toggleSpeed = () => {
+    if (isOnline) return; // Prevent speed toggle in multiplayer
     setIsFastForward(!isFastForward);
     speedRef.current = !isFastForward;
   };
@@ -57,14 +64,16 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     "raw_power",
   ];
 
-  // 🚀 FIXED: Bulletproof Instant Skip Logic
+  // Bulletproof Instant Skip Logic
   const handleTotalSkip = (e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
+    if (isOnline) return; // 🚀 Disable skip in multiplayer to keep players synced!
     if (skipFired.current) return;
+
     skipFired.current = true; // Instantly lock out the useEffect timers
 
     try {
@@ -126,13 +135,12 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
       onComplete({ finalScores: simScores });
     } catch (err) {
       console.error("Critical Skip Error", err);
-      // Fallback: If anything fails, force complete with current scores so the player isn't stuck
       onComplete({ finalScores: capturedScores });
     }
   };
 
   useEffect(() => {
-    if (skipFired.current) return; // 🚀 Prevent timers from running if skipped
+    if (skipFired.current) return; // Prevent timers from running if skipped
 
     let timer;
     const getDelay = (ms) => (speedRef.current ? ms * 0.25 : ms);
@@ -262,40 +270,52 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center font-black uppercase italic overflow-y-auto overflow-x-hidden custom-scrollbar z-[5000]">
+      {/* 🚀 FIXED: Dynamic Button Rendering Based on Online Status */}
       <div className="fixed bottom-8 right-6 md:bottom-12 md:right-12 z-[6000] flex flex-col items-end gap-3 md:gap-4">
-        <button
-          onClick={toggleSpeed}
-          className={`p-3 md:p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
-            isFastForward
-              ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110"
-              : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"
-          }`}
-          title="Toggle 2x Speed"
-        >
-          <FastForward
-            size={20}
-            className={isFastForward ? "animate-pulse" : ""}
-          />
-          <span
-            className={`text-[10px] md:text-sm font-black tracking-widest ${isFastForward ? "block" : "hidden md:block"}`}
-          >
-            {isFastForward ? "2X SPEED" : "SPEED: 1X"}
-          </span>
-        </button>
+        {isOnline ? (
+          <div className="bg-blue-600/20 border border-blue-500/50 px-4 py-2 rounded-full flex items-center gap-2 text-blue-400 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.3)] animate-pulse">
+            <Globe size={16} />
+            <span className="text-[10px] md:text-xs tracking-widest">
+              LIVE MATCH SYNCED
+            </span>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={toggleSpeed}
+              className={`p-3 md:p-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
+                isFastForward
+                  ? "bg-[#ff8c32] text-black border-[#ff8c32] shadow-[0_0_30px_rgba(255,140,50,0.6)] scale-110"
+                  : "bg-black/80 text-white border-white/20 hover:bg-white/10 hover:border-white/50 backdrop-blur-md"
+              }`}
+              title="Toggle 2x Speed"
+            >
+              <FastForward
+                size={20}
+                className={isFastForward ? "animate-pulse" : ""}
+              />
+              <span
+                className={`text-[10px] md:text-sm font-black tracking-widest ${isFastForward ? "block" : "hidden md:block"}`}
+              >
+                {isFastForward ? "2X SPEED" : "SPEED: 1X"}
+              </span>
+            </button>
 
-        <button
-          onClick={handleTotalSkip}
-          className="p-3 md:p-4 rounded-full border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md group"
-          title="Skip Battle"
-        >
-          <SkipForward
-            size={20}
-            className="group-hover:scale-110 transition-transform"
-          />
-          <span className="text-[10px] md:text-sm font-black tracking-widest hidden md:block">
-            INSTANT SKIP
-          </span>
-        </button>
+            <button
+              onClick={handleTotalSkip}
+              className="p-3 md:p-4 rounded-full border-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-md group"
+              title="Skip Battle"
+            >
+              <SkipForward
+                size={20}
+                className="group-hover:scale-110 transition-transform"
+              />
+              <span className="text-[10px] md:text-sm font-black tracking-widest hidden md:block">
+                INSTANT SKIP
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
       {phase === "INTRO" && (

@@ -12,12 +12,16 @@ import HomeTerminal from "./features/Home/HomeTerminal";
 import DomainSelection from "./features/Selection/DomainSelection";
 import CombatHub from "./features/Selection/CombatHub";
 
+// 🌐 Multiplayer & Auth (🚀 NEW IMPORTS)
+import Lobby from "./features/Multiplayer/Lobby";
+import ProfileEntry from "./features/Auth/ProfileEntry"; // <-- Make sure this path matches your folder structure!
+
 // ⚔️ Draft Engines
 import AnimeDraftManager from "./features/Draft/Anime/AnimeDraftManager";
 import PoolChoiceManager from "./features/Draft/Anime/PoolChoiceManager";
 import SportsDraftManager from "./features/Draft/Sports/SportsDraftManager";
 
-// 🔨 Auction Components (🚀 FIXED: Added Missing Imports)
+// 🔨 Auction Components
 import AuctionDifficulty from "./features/Auction/AuctionDifficulty";
 import AuctionRoom from "./features/Auction/AuctionRoom";
 import AuctionSquadBuilder from "./features/Auction/AuctionSquadBuilder";
@@ -32,24 +36,23 @@ import Leaderboard from "./components/Shared/Leaderboard";
 import Dashboard from "./components/Shared/Dashboard";
 
 export default function App() {
-  // 🚀 ZUSTAND UPGRADE:
-  // We completely removed useState and useEffect for localStorage.
-  // The Zustand store (useGameStore) handles all of that globally now.
-
   return (
     <Router>
-      {/* 🚀 ZUSTAND UPGRADE: Removed user and setUser props from Layout and all Routes */}
       <Layout>
         <Routes>
+          {/* 🚀 LOGIN ROUTE */}
+          <Route path="/login" element={<ProfileEntry />} />
+
           <Route path="/" element={<HomeTerminal />} />
           <Route path="/domain" element={<DomainSelection />} />
           <Route path="/hub" element={<CombatHub />} />
+
+          <Route path="/lobby" element={<Lobby />} />
 
           <Route path="/draft/anime" element={<AnimeDraftManager />} />
           <Route path="/draft/sports" element={<SportsDraftManager />} />
           <Route path="/draft/pool" element={<PoolChoiceManager />} />
 
-          {/* 🚀 FIXED: Added Missing Auction Routes */}
           <Route path="/auction-difficulty" element={<AuctionDifficulty />} />
           <Route path="/auction-room" element={<AuctionRoom />} />
           <Route path="/auction-build" element={<AuctionSquadBuilder />} />
