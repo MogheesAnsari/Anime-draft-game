@@ -1,5 +1,14 @@
 import { getRoleStats } from "./sportsConfig";
 
+// 🚀 CUSTOM SEEDED RNG: Ensures both players see the same shuffles and rolls
+const getSeededRandom = (seed) => {
+  let state = seed;
+  return function () {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+};
+
 const stadiums = {
   football: [
     { name: "Camp Nou", city: "Barcelona", buffText: "+10% POSSESSION BOOST" },
@@ -27,9 +36,13 @@ const stadiums = {
   ],
 };
 
-export const getRandomStadium = (sportId) => {
+// 🚀 UPDATED: Accepts optional seed for synchronized stadium selection
+export const getRandomStadium = (sportId, matchSeed = null) => {
   const list = stadiums[sportId] || stadiums.football;
-  return list[Math.floor(Math.random() * list.length)];
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 777777))
+    : Math.random;
+  return list[Math.floor(rng() * list.length)];
 };
 
 export const getSportsPlayText = (slotId, sportId) => {
@@ -147,20 +160,23 @@ export const calculateSportsEffectiveScore = (
   return Math.round(baseTotal * multiplier * auraBonus);
 };
 
-// 🛡️ CPU GENERATOR: Now perfectly blocks names globally!
+// 🛡️ CPU GENERATOR: Synchronized for Multiplayer fallback bots
 export const generateCpuTeam = (
   pool,
   slots = [],
   globalDraftedNames = new Set(),
+  matchSeed = null, // 🚀 NEW: Accept seed for synchronized bot teams
 ) => {
   if (!pool || pool.length === 0) return {};
   const cpuTeam = {};
   const localDraftedNames = new Set();
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 999999))
+    : Math.random;
 
   slots.forEach((slot) => {
     let validPlayers = [];
 
-    // Check globalDraftedNames & localDraftedNames by NAME
     if (slot.role === "IMP") {
       validPlayers = pool.filter(
         (p) =>
@@ -178,8 +194,7 @@ export const generateCpuTeam = (
     }
 
     if (validPlayers.length > 0) {
-      const selected =
-        validPlayers[Math.floor(Math.random() * validPlayers.length)];
+      const selected = validPlayers[Math.floor(rng() * validPlayers.length)];
       cpuTeam[slot.id] = selected;
       localDraftedNames.add(selected.name.toLowerCase());
     } else {
@@ -190,7 +205,7 @@ export const generateCpuTeam = (
       );
       if (fallbackPlayers.length > 0) {
         const selected =
-          fallbackPlayers[Math.floor(Math.random() * fallbackPlayers.length)];
+          fallbackPlayers[Math.floor(rng() * fallbackPlayers.length)];
         cpuTeam[slot.id] = selected;
         localDraftedNames.add(selected.name.toLowerCase());
       }

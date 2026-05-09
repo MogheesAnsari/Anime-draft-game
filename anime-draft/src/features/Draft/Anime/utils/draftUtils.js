@@ -1,3 +1,12 @@
+// 🚀 CUSTOM SEEDED RNG: Ensures both players see the same shuffles, crits, and skill rolls
+const getSeededRandom = (seed) => {
+  let state = seed;
+  return function () {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+};
+
 export const getUniverseSynergy = (team) => {
   const chars = Object.values(team).filter(Boolean);
   if (chars.length < 6) return false;
@@ -43,8 +52,14 @@ export const DOMAINS = [
     buffText: "PURE SKILL (NO BUFFS)",
   },
 ];
-export const getRandomDomain = () =>
-  DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
+
+// 🚀 UPDATED: Accepts matchSeed for synchronized stadium selection
+export const getRandomDomain = (matchSeed = null) => {
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 888888))
+    : Math.random;
+  return DOMAINS[Math.floor(rng() * DOMAINS.length)];
+};
 
 export const ARTIFACTS = [
   {
@@ -96,37 +111,52 @@ export const ARTIFACTS = [
     desc: "Absolute Defense: +30% DEF",
   },
 ];
-export const getRandomArtifact = () =>
-  ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
 
-export const getRoleAction = (char, slot) => {
+// 🚀 UPDATED: Synchronized artifact selection
+export const getRandomArtifact = (matchSeed = null) => {
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 444444))
+    : Math.random;
+  return ARTIFACTS[Math.floor(rng() * ARTIFACTS.length)];
+};
+
+// 🚀 UPDATED: Role actions now use matchSeed so crits trigger identically on both screens
+export const getRoleAction = (char, slot, matchSeed = null, slotIndex = 0) => {
   if (!char) return null;
-  const rng = Math.random();
-  if (slot === "speedster" && rng < 0.2)
+
+  // Create a unique seed for this specific slot clash
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 123456) + slotIndex)
+    : Math.random;
+
+  const roll = rng();
+
+  if (slot === "speedster" && roll < 0.2)
     return {
       text: "SPEED MIRAGE",
       boost: 1.2,
       color: "text-blue-400 border-blue-400",
     };
-  if (slot === "tank" && rng < 0.25)
+  if (slot === "tank" && roll < 0.25)
     return {
       text: "ABSOLUTE BLOCK",
       boost: 1.25,
       color: "text-gray-400 border-gray-400",
     };
-  if (slot === "support" && rng < 0.3)
+  if (slot === "support" && roll < 0.3)
+    // 🚀 FIXED: Standardized with your "200 IQ PLAY" logic
     return {
       text: "200 IQ PLAY",
       boost: 1.3,
       color: "text-purple-400 border-purple-400",
     };
-  if (slot === "raw_power" && rng < 0.15)
+  if (slot === "raw_power" && roll < 0.15)
     return {
       text: "FATAL STRIKE",
       boost: 1.5,
       color: "text-red-500 border-red-500",
     };
-  if (slot === "vice_cap" && rng < 0.2)
+  if (slot === "vice_cap" && roll < 0.2)
     return {
       text: "AURA BURST",
       boost: 1.15,
@@ -285,7 +315,8 @@ export const getCombatTier = (totalScore) => {
   return { tier: "C-CLASS", color: "text-blue-500" };
 };
 
-export const generateCpuTeam = (pool) => {
+// 🚀 UPDATED: CPU teams are now identical for all players in the room
+export const generateCpuTeam = (pool, matchSeed = null) => {
   const SLOTS = [
     "captain",
     "vice_cap",
@@ -295,30 +326,36 @@ export const generateCpuTeam = (pool) => {
     "raw_power",
   ];
   let cpuTeam = {};
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 999999))
+    : Math.random;
+
   let availableChars =
     pool && pool.length > 0
       ? [...pool]
       : [{ name: "BOT", atk: 70, def: 70, spd: 70, iq: 70, img: "/zoro.svg" }];
+
   while (availableChars.length < 6)
     availableChars = [...availableChars, ...availableChars];
-  const shuffled = availableChars.sort(() => 0.5 - Math.random());
+
+  const shuffled = availableChars.sort(() => 0.5 - rng());
   SLOTS.forEach((id, i) => {
     cpuTeam[id] = shuffled[i];
   });
   return cpuTeam;
 };
-// 👹 PHASE 6: RAID BOSS DATA & MATH
+
 export const RAID_BOSSES = [
   {
     id: "boss_aizen",
     name: "AIZEN (HOGYOKU)",
     universe: "bleach",
-    img: "/boss_aizen.jpg", // Add a cool image in public folder
+    img: "/boss_aizen.jpg",
     title: "THE TRANSCENDENT",
     atk: 220,
     def: 240,
     spd: 210,
-    iq: 250, // Peak Intelligence
+    iq: 250,
     maxHp: 12000,
     skill: "KYOKA SUIGETSU: COMPLETE HYPNOSIS",
     passive: { name: "EVOLUTION", effect: "all", boost: 1.2 },
@@ -327,13 +364,13 @@ export const RAID_BOSSES = [
     id: "boss_madara",
     name: "MADARA (TEN-TAILS)",
     universe: "naruto",
-    img: "/boss_madara.jpg", // Add image
+    img: "/boss_madara.jpg",
     title: "GHOST OF THE UCHIHA",
     atk: 250,
     def: 250,
     spd: 220,
     iq: 200,
-    maxHp: 15000, // Massive Tank
+    maxHp: 15000,
     skill: "INFINITE TSUKUYOMI",
     passive: { name: "SIX PATHS CHAKRA", effect: "atk", boost: 1.25 },
   },
@@ -341,18 +378,21 @@ export const RAID_BOSSES = [
     id: "boss_sukuna",
     name: "SUKUNA (TRUE FORM)",
     universe: "jujutsu kaisen",
-    img: "/boss_sukuna.jpg", // Add image
+    img: "/boss_sukuna.jpg",
     title: "KING OF CURSES",
     atk: 280,
     def: 180,
     spd: 240,
-    iq: 180, // Pure Aggression
+    iq: 180,
     maxHp: 10000,
     skill: "MALEVOLENT SHRINE",
     passive: { name: "CURSED REGENERATION", effect: "def", boost: 1.15 },
   },
 ];
 
-export const getRandomRaidBoss = () => {
-  return RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
+export const getRandomRaidBoss = (matchSeed = null) => {
+  const rng = matchSeed
+    ? getSeededRandom(Math.floor(matchSeed * 555555))
+    : Math.random;
+  return RAID_BOSSES[Math.floor(rng() * RAID_BOSSES.length)];
 };

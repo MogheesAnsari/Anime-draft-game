@@ -5,17 +5,30 @@ import { io } from "socket.io-client";
 // 🚀 LIVE BACKEND URL
 const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
-// 🎲 Casino-Grade Shuffle
-const shuffleArray = (array) => {
+// 🚀 CUSTOM SEEDED RNG: Ensures both players shuffle the deck identically!
+const getSeededRandom = (seed) => {
+  let state = seed;
+  return function () {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+};
+
+const shuffleArray = (array, rng) => {
   let shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
 };
 
-export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
+export function useSportsDraftLogic(
+  universe,
+  isOnline = false,
+  roomId = null,
+  matchSeed = null,
+) {
   const [characterPool, setCharacterPool] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
   const [team, setTeam] = useState({});
@@ -25,10 +38,18 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
 
   const pityBonus = useRef(0);
   const seenHistory = useRef(new Set());
+  const rngRef = useRef(Math.random);
 
   const [socket, setSocket] = useState(null);
 
-  // 🚀 SOCKET SYNC ENGINE
+  // 🚀 Initialize deterministic RNG if we are in an online match
+  useEffect(() => {
+    if (matchSeed) {
+      rngRef.current = getSeededRandom(Math.floor(matchSeed * 1000000));
+    }
+  }, [matchSeed]);
+
+  // 🚀 SOCKET SYNC ENGINE (LIVE SPECTATOR MODE)
   useEffect(() => {
     if (!isOnline || !roomId) return;
 
@@ -38,8 +59,21 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     newSocket.emit("join_match", { roomId });
 
     newSocket.on("opponent_action", (data) => {
-      // If the opponent drafts someone, we instantly remove them from our local pool
-      if (data.type === "SPORTS_PICK") {
+      // Spectator watches you open the pack
+      if (data.type === "OPEN_PACK") {
+        setDraftOptions(data.options);
+        setCurrentDraftSlot(data.slotConfig);
+      }
+      // Spectator watches you cancel
+      else if (data.type === "CANCEL_DRAFT") {
+        setDraftOptions([]);
+        setCurrentDraftSlot(null);
+      }
+      // Spectator watches you pick a player
+      else if (data.type === "SPORTS_PICK") {
+        setTeam((prev) => ({ ...prev, [data.slotId]: data.player }));
+        setDraftOptions([]);
+        setCurrentDraftSlot(null);
         setCharacterPool((prev) => prev.filter((p) => p.id !== data.player.id));
         seenHistory.current.add(data.player.name.toLowerCase());
       }
@@ -48,13 +82,15 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     return () => newSocket.disconnect();
   }, [isOnline, roomId]);
 
+  // Fetch Database
   useEffect(() => {
     const fetchPool = async () => {
       try {
         const res = await axios.get(
           `https://anime-draft-game-1.onrender.com/api/players?sport=${universe}`,
         );
-        setCharacterPool(res.data);
+        // Apply seeded shuffle so both pools match perfectly
+        setCharacterPool(shuffleArray(res.data, rngRef.current));
       } catch (err) {
         console.error(err);
       }
@@ -64,7 +100,7 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
   }, [universe]);
 
   const rollForCard = (availablePlayers, usedNamesInThisDraw) => {
-    const roll = Math.random() * 100;
+    const roll = rngRef.current() * 100;
     const currentPity = pityBonus.current;
     let targetTier = "B";
 
@@ -110,6 +146,7 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
             !globalDraftedNames.has(p.name.toLowerCase()) &&
             !draftedIds.includes(p.id),
         ),
+        rngRef.current,
       );
       const bwlPool = shuffleArray(
         characterPool.filter(
@@ -118,6 +155,7 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
             !globalDraftedNames.has(p.name.toLowerCase()) &&
             !draftedIds.includes(p.id),
         ),
+        rngRef.current,
       );
       const allPool = shuffleArray(
         characterPool.filter(
@@ -126,6 +164,7 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
             !globalDraftedNames.has(p.name.toLowerCase()) &&
             !draftedIds.includes(p.id),
         ),
+        rngRef.current,
       );
 
       if (batPool.length < 1 || bwlPool.length < 1 || allPool.length < 1)
@@ -147,6 +186,16 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
       pityBonus.current = foundSPlus ? 0 : pityBonus.current + 1.5;
       setDraftOptions(newOptions);
       setCurrentDraftSlot(slotConfig);
+
+      // 🚀 SYNC: Show opponent the pack you opened
+      if (isOnline && socket) {
+        socket.emit("game_action", {
+          roomId,
+          type: "OPEN_PACK",
+          options: newOptions,
+          slotConfig,
+        });
+      }
       return;
     }
 
@@ -157,7 +206,9 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
           !globalDraftedNames.has(p.name.toLowerCase()) &&
           !draftedIds.includes(p.id),
       ),
+      rngRef.current,
     );
+
     if (validPlayers.length < 2)
       return alert(`Not enough players left for role ${slotConfig.role}!`);
 
@@ -180,16 +231,32 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     pityBonus.current = foundSPlus ? 0 : pityBonus.current + 1.5;
     setDraftOptions(newOptions);
     setCurrentDraftSlot(slotConfig);
+
+    // 🚀 SYNC: Show opponent the pack you opened
+    if (isOnline && socket) {
+      socket.emit("game_action", {
+        roomId,
+        type: "OPEN_PACK",
+        options: newOptions,
+        slotConfig,
+      });
+    }
   };
 
   const selectPlayer = (player) => {
-    setTeam((prev) => ({ ...prev, [currentDraftSlot.id]: player }));
+    const slotId = currentDraftSlot.id;
+    setTeam((prev) => ({ ...prev, [slotId]: player }));
     setDraftOptions([]);
     setCurrentDraftSlot(null);
 
-    // 🚀 SYNC: Tell opponent we drafted this player so they are removed from their screen too
+    // 🚀 SYNC: Tell opponent who you picked
     if (isOnline && socket) {
-      socket.emit("game_action", { roomId, type: "SPORTS_PICK", player });
+      socket.emit("game_action", {
+        roomId,
+        type: "SPORTS_PICK",
+        player,
+        slotId,
+      });
     }
   };
 
@@ -198,6 +265,11 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
       setSkips((prev) => prev - 1);
       setDraftOptions([]);
       setCurrentDraftSlot(null);
+
+      // 🚀 SYNC: Close opponent's view of the pack
+      if (isOnline && socket) {
+        socket.emit("game_action", { roomId, type: "CANCEL_DRAFT" });
+      }
     }
   };
 
@@ -219,6 +291,6 @@ export function useSportsDraftLogic(universe, isOnline = false, roomId = null) {
     resetDraft,
     characterPool,
     skips,
-    socket, // 🚀 EXPORTED FOR THE MANAGER
+    socket,
   };
 }

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useDraftLogic } from "./hooks/useDraftLogic";
 import { calculateTeamScore, generateCpuTeam } from "./utils/draftUtils";
 import { motion, AnimatePresence } from "framer-motion";
+import { LogOut } from "lucide-react"; // 🚀 Added Escape Icon
 
 import AnimeTacticalHUD from "./components/AnimeTacticalHUD";
 import AnimeCardDisplay from "./components/AnimeCardDisplay";
@@ -26,9 +27,8 @@ export default function AnimeDraftManager() {
   const isOnline = state?.isOnline || false;
   const roomId = state?.roomId || null;
   const onlinePlayers = state?.players || [];
-
-  // 🚀 STRICT TURN LOCK: Grab the index passed from Lobby
   const myPlayerIndex = state?.myPlayerIndex || 1;
+  const matchSeed = state?.matchSeed || null; // 🚀 Sync RNG Seed
 
   const {
     playerTurn,
@@ -42,8 +42,16 @@ export default function AnimeDraftManager() {
     assign,
     nextTurn,
     characterPool,
-    socket, // 🚀 Pull the socket from the hook to listen for the Battle Start!
-  } = useDraftLogic("anime", universe, mode, isRetry, isOnline, roomId);
+    socket,
+  } = useDraftLogic(
+    "anime",
+    universe,
+    mode,
+    isRetry,
+    isOnline,
+    roomId,
+    matchSeed,
+  );
 
   const [loading, setLoading] = useState(false);
   const [isFighting, setIsFighting] = useState(false);
@@ -90,24 +98,17 @@ export default function AnimeDraftManager() {
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
 
-  // 🚀 PERFECT MULTIPLAYER TURN VALIDATION
+  // 🚀 REAL USERNAMES & TURN VALIDATION (Works seamlessly for local too!)
   let isMyTurn = true;
-  let waitingMessage = "WAITING FOR OPPONENT...";
+  let activeCommander = `PLAYER 0${playerTurn}`;
 
   if (isOnline && onlinePlayers.length > 0) {
-    // Compare the global turn against YOUR strictly assigned index
     isMyTurn = playerTurn === myPlayerIndex;
-
-    // Display the opponent's name dynamically if it's not our turn
-    if (!isMyTurn) {
-      const opp = onlinePlayers[playerTurn - 1];
-      if (opp)
-        waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
-    }
+    activeCommander =
+      onlinePlayers[playerTurn - 1]?.username || `PLAYER 0${playerTurn}`;
   }
 
-  // 🚀 NEW: LISTENER FOR BATTLE START
-  // When Player 2 clicks "Engage", they send us their final team. We catch it here and jump to the arena!
+  // 🚀 LISTENER FOR BATTLE START FROM OPPONENT
   useEffect(() => {
     if (isOnline && socket) {
       const handleOpponentAction = (data) => {
@@ -125,7 +126,7 @@ export default function AnimeDraftManager() {
             artifacts: finalTeams.map(() => null),
           });
 
-          setIsFighting(true); // Snap out of the waiting screen instantly!
+          setIsFighting(true);
         }
       };
 
@@ -133,6 +134,12 @@ export default function AnimeDraftManager() {
       return () => socket.off("opponent_action", handleOpponentAction);
     }
   }, [isOnline, socket, completedTeams, mode, universe, xpPassObject]);
+
+  // 🚀 ESCAPE HATCH FUNCTION
+  const handleAbortMatch = () => {
+    if (socket) socket.disconnect();
+    navigate("/hub", { state: { isOnline: true, domain: "anime" } });
+  };
 
   const handleDeployBoost = (boostId) => {
     if (boostId === "boost_skip") {
@@ -242,7 +249,7 @@ export default function AnimeDraftManager() {
       setBattleData({ ...newBattleData, artifacts: emptyArtifacts });
       setIsFighting(true);
 
-      // 🚀 NEW: SEND BATTLE START SIGNAL TO PLAYER 1
+      // 🚀 SEND BATTLE START SIGNAL TO PLAYER 1
       if (isOnline && socket) {
         socket.emit("game_action", {
           roomId,
@@ -323,26 +330,6 @@ export default function AnimeDraftManager() {
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden flex flex-col uppercase relative">
       {showRules && <AnimeRulesModal onClose={() => setShowRules(false)} />}
 
-      {/* 🚀 MULTIPLAYER: PERFECT ENEMY TURN BLOCKER OVERLAY */}
-      <AnimatePresence>
-        {isOnline && !isMyTurn && !isFighting && !dbLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[5000] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center"
-          >
-            <div className="w-16 h-16 border-4 border-t-[#ff8c32] border-r-[#ff8c32] border-b-transparent border-l-transparent rounded-full animate-spin mb-6" />
-            <h2 className="text-2xl md:text-4xl font-black italic text-[#ff8c32] tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_20px_rgba(255,140,50,0.5)]">
-              {waitingMessage}
-            </h2>
-            <p className="text-gray-400 text-[10px] md:text-xs tracking-[0.4em] font-bold mt-4">
-              REAL-TIME NETWORK SYNC ACTIVE
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {boostOverlay && (
           <motion.div
@@ -364,6 +351,34 @@ export default function AnimeDraftManager() {
         )}
       </AnimatePresence>
 
+      {/* 🚀 LIVE SPECTATOR STATUS BAR WITH ABORT ESCAPE HATCH */}
+      {isOnline && !isFighting && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5000] flex flex-col items-center pointer-events-auto w-[90%] max-w-[320px]">
+          <div
+            className={`w-full px-4 py-2 rounded-full border-2 backdrop-blur-md shadow-lg flex items-center justify-center gap-2 transition-all ${isMyTurn ? "border-[#ff8c32] bg-[#ff8c32]/10" : "border-gray-500 bg-black/80"}`}
+          >
+            <span
+              className={`w-2 h-2 shrink-0 rounded-full ${isMyTurn ? "bg-[#ff8c32] animate-ping" : "bg-gray-500"}`}
+            />
+            <span
+              className={`text-[10px] sm:text-xs font-black tracking-widest uppercase truncate ${isMyTurn ? "text-[#ff8c32]" : "text-gray-400"}`}
+            >
+              {isMyTurn
+                ? "YOUR TURN TO COMMAND"
+                : `WATCHING ${activeCommander.toUpperCase()}...`}
+            </span>
+          </div>
+          {!isMyTurn && (
+            <button
+              onClick={handleAbortMatch}
+              className="mt-3 flex items-center justify-center gap-1 text-[9px] text-red-500 font-bold border border-red-500/30 bg-red-500/10 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-full transition-all cursor-pointer"
+            >
+              <LogOut size={10} /> ABORT MATCH
+            </button>
+          )}
+        </div>
+      )}
+
       {isFighting && battleData && (
         <BattleArena
           allTeams={battleData.teams}
@@ -376,7 +391,12 @@ export default function AnimeDraftManager() {
 
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/5 to-[#050505] pointer-events-none" />
 
-      {!isFighting && <TacticalInventory onDeployBoost={handleDeployBoost} />}
+      {/* 🚀 LOCK INVENTORY IF NOT YOUR TURN */}
+      {!isFighting && (
+        <div className={!isMyTurn ? "pointer-events-none opacity-50" : ""}>
+          <TacticalInventory onDeployBoost={handleDeployBoost} />
+        </div>
+      )}
 
       <div className="shrink-0 z-20">
         <AnimeTacticalHUD
@@ -390,26 +410,38 @@ export default function AnimeDraftManager() {
         />
       </div>
 
-      <div className="flex-1 min-h-0 flex items-center justify-center w-full px-4 relative z-10">
+      {/* 🚀 GREY OUT AND LOCK THE CARDS IF NOT YOUR TURN */}
+      <div
+        className={`flex-1 min-h-0 flex items-center justify-center w-full px-4 relative z-10 transition-all duration-300 ${!isMyTurn ? "opacity-60 grayscale-[0.4] pointer-events-none" : "opacity-100"}`}
+      >
         <AnimeCardDisplay
           currentCard={currentCard}
           skips={effectiveSkips}
-          onSkip={handleEffectiveSkip}
-          onPull={pull}
+          onSkip={isMyTurn ? handleEffectiveSkip : () => {}}
+          onPull={isMyTurn ? pull : () => {}}
           universe={universe}
         />
       </div>
 
-      <div className="shrink-0 w-full z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-4">
+      {/* 🚀 LOCK THE DOCK IF NOT YOUR TURN */}
+      <div
+        className={`shrink-0 w-full z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-4 transition-all duration-300 ${!isMyTurn ? "pointer-events-none" : ""}`}
+      >
         <AnimeTeamDock
           team={boostedTeam}
           slots={animeSlots}
-          onAssign={assign}
+          onAssign={isMyTurn ? assign : () => {}}
           playerTurn={playerTurn}
           maxTurns={maxTurns}
           loading={loading}
           theme={currentTheme}
-          onAction={playerTurn < maxTurns ? nextTurn : handleFight}
+          onAction={
+            isMyTurn
+              ? playerTurn < maxTurns
+                ? nextTurn
+                : handleFight
+              : () => {}
+          }
         />
       </div>
     </div>

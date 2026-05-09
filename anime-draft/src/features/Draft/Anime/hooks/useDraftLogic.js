@@ -4,6 +4,15 @@ import { io } from "socket.io-client";
 
 const SOCKET_URL = "https://anime-draft-game-1.onrender.com";
 
+// 🚀 CUSTOM SEEDED RNG: Ensures both players shuffle the deck the EXACT same way!
+const getSeededRandom = (seed) => {
+  let state = seed;
+  return function () {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+};
+
 export const useDraftLogic = (
   domain,
   universe,
@@ -11,6 +20,7 @@ export const useDraftLogic = (
   isRetry,
   isOnline = false,
   roomId = null,
+  matchSeed = null, // 🚀 NEW: Receive the seed from the manager
 ) => {
   const [playerTurn, setPlayerTurn] = useState(1);
   const [completedTeams, setCompletedTeams] = useState([]);
@@ -22,7 +32,7 @@ export const useDraftLogic = (
 
   const [socket, setSocket] = useState(null);
 
-  // 🚀 SOCKET SYNC ENGINE
+  // 🚀 SOCKET SYNC ENGINE (LIVE SPECTATOR MODE)
   useEffect(() => {
     if (!isOnline || !roomId) return;
 
@@ -32,19 +42,26 @@ export const useDraftLogic = (
     newSocket.emit("join_match", { roomId });
 
     newSocket.on("opponent_action", (data) => {
-      // Sync card pulls and skips to keep pools identical
-      if (data.type === "PULL" || data.type === "SKIP") {
-        setCharacterPool((prev) => prev.slice(1));
-      }
-      // 🚀 CRITICAL: Sync character assignment to remove drafted IDs from both pools
-      else if (data.type === "ASSIGN") {
+      // 🚀 LIVE UI SYNC: Update our local state based on opponent's moves
+      if (data.type === "PULL") {
+        setCharacterPool((prev) => {
+          if (prev.length === 0) return prev;
+          setCurrentCard(prev[0]); // Show the card to the spectator!
+          return prev.slice(1);
+        });
+      } else if (data.type === "ASSIGN") {
+        // Opponent assigned a card to their team dock
+        setTeam((prev) => ({ ...prev, [data.slotId]: data.character }));
+        setCurrentCard(null);
         setCharacterPool((prev) =>
-          prev.filter((char) => char.id !== data.characterId),
+          prev.filter((char) => char.id !== data.character.id),
         );
-      }
-      // Sync turn transitions
-      else if (data.type === "NEXT_TURN") {
+      } else if (data.type === "SKIP") {
+        setCharacterPool((prev) => prev.slice(1));
+      } else if (data.type === "NEXT_TURN") {
         setCompletedTeams((prev) => [...prev, data.team]);
+        setTeam({});
+        setCurrentCard(null);
         setPlayerTurn((prev) => prev + 1);
       }
     });
@@ -52,7 +69,7 @@ export const useDraftLogic = (
     return () => newSocket.disconnect();
   }, [isOnline, roomId]);
 
-  // 🛰️ Mission Data Fetching
+  // 🛰️ Mission Data Fetching & Sync Shuffling
   useEffect(() => {
     const fetchFromDB = async () => {
       setDbLoading(true);
@@ -72,8 +89,13 @@ export const useDraftLogic = (
 
         const res = await axios.get(finalUrl);
         if (res.data?.length > 0) {
-          // Note: In a production multiplayer environment, the seed should ideally come from the server
-          const shuffled = [...res.data].sort(() => 0.5 - Math.random());
+          // 🚀 DETERMINISTIC SHUFFLE: Use the server seed so both pools are identical
+          const rng = matchSeed
+            ? getSeededRandom(Math.floor(matchSeed * 1000000))
+            : Math.random;
+
+          const shuffled = [...res.data].sort(() => 0.5 - rng());
+
           setCharacterPool(shuffled);
           setCurrentCard(null);
           setSkips(1);
@@ -85,7 +107,7 @@ export const useDraftLogic = (
       }
     };
     if (universe) fetchFromDB();
-  }, [domain, universe, isRetry]);
+  }, [domain, universe, isRetry, matchSeed]);
 
   const pull = () => {
     if (Object.keys(team).length >= 6) return alert("SQUAD FULL!");
@@ -107,12 +129,13 @@ export const useDraftLogic = (
     setTeam({ ...team, [slotId]: assignedChar });
     setCurrentCard(null);
 
-    // 🚀 SYNC ASSIGNMENT: Tell opponent which ID is now unavailable
+    // 🚀 SYNC ASSIGNMENT: Send the full character object so spectator sees the image in the dock
     if (isOnline && socket) {
       socket.emit("game_action", {
         roomId,
         type: "ASSIGN",
-        characterId: assignedChar.id,
+        slotId,
+        character: assignedChar,
       });
     }
   };
@@ -154,6 +177,6 @@ export const useDraftLogic = (
     assign,
     nextTurn,
     characterPool,
-    socket, // 🚀 Exported for Battle Start signals in the Manager
+    socket,
   };
 };

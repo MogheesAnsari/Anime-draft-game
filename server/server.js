@@ -62,29 +62,35 @@ io.on("connection", (socket) => {
       const roomId = `ROOM_${Date.now()}`;
       const matchedGroup = matchingPlayers.slice(0, playersNeeded);
 
-      matchedGroup.forEach((p) => {
-        const index = matchmakingQueue.findIndex(
+      // 🚀 CENTRALIZED SEED: Ensures both players see the SAME random cards/rolls
+      const matchSeed = Math.random();
+
+      // 🚀 THE ULTIMATE FIX: Explicitly assign Player 1 and Player 2 indices
+      matchedGroup.forEach((p, index) => {
+        const qIndex = matchmakingQueue.findIndex(
           (q) => q.socketId === p.socketId,
         );
-        if (index !== -1) matchmakingQueue.splice(index, 1);
+        if (qIndex !== -1) matchmakingQueue.splice(qIndex, 1);
 
         const playerSocket = io.sockets.sockets.get(p.socketId);
         if (playerSocket) {
           playerSocket.join(roomId);
+          // Send specific index to each unique device securely
+          playerSocket.emit("match_ready", {
+            roomId,
+            players: matchedGroup.map((m) => m.user),
+            myPlayerIndex: index + 1, // Will be 1 for first guy, 2 for second guy
+            matchSeed, // Send seed to both clients
+            message: "OPPONENT FOUND. INITIATING DRAFT.",
+          });
         }
-      });
-
-      io.to(roomId).emit("match_ready", {
-        roomId,
-        players: matchedGroup.map((p) => p.user),
-        message: "OPPONENT FOUND. INITIATING DRAFT.",
       });
 
       console.log(`⚔️ MATCH CREATED: ${roomId}`);
     }
   });
 
-  // 🚀 2️⃣ NEW: Re-connect players to their active room when Draft starts
+  // 🚀 2️⃣ Re-connect players to their active room when Draft starts
   socket.on("join_match", ({ roomId }) => {
     if (roomId) {
       socket.join(roomId);
@@ -92,7 +98,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🚀 3️⃣ NEW: Relay game actions (Draft Picks, Skips, Turns) to opponents
+  // 🚀 3️⃣ Relay game actions (Draft Picks, Skips, Turns) to opponents
   socket.on("game_action", (data) => {
     if (data.roomId) {
       // Broadcasts the action to everyone in the room EXCEPT the sender

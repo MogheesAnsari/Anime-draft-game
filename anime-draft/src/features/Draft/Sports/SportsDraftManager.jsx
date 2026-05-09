@@ -10,7 +10,7 @@ import SportsTacticalHUD from "./components/SportsTacticalHUD";
 import SportsArena from "../../Battle/SportsArena";
 import TacticalInventory from "../../Battle/TacticalInventory";
 import { generateCpuTeam } from "./utils/sportsUtils";
-import { PackageOpen, Users } from "lucide-react";
+import { PackageOpen, Users, LogOut } from "lucide-react"; // 🚀 Added Escape Icon
 import useGameStore from "../../../store/useGameStore";
 
 export default function SportsDraftManager() {
@@ -27,9 +27,8 @@ export default function SportsDraftManager() {
   const isOnline = state?.isOnline || false;
   const roomId = state?.roomId || null;
   const onlinePlayers = state?.players || [];
-
-  // 🚀 STRICT TURN LOCK
   const myPlayerIndex = state?.myPlayerIndex || 1;
+  const matchSeed = state?.matchSeed || null; // 🚀 Sync RNG Seed
 
   const getMatchConfig = (m) => {
     const safeMode = String(m).toUpperCase();
@@ -53,8 +52,8 @@ export default function SportsDraftManager() {
     resetDraft,
     characterPool,
     skips,
-    socket, // 🚀 Pull socket from the hook
-  } = useSportsDraftLogic(universe, isOnline, roomId);
+    socket,
+  } = useSportsDraftLogic(universe, isOnline, roomId, matchSeed);
 
   const [loading, setLoading] = useState(false);
   const [battleData, setBattleData] = useState(null);
@@ -74,30 +73,24 @@ export default function SportsDraftManager() {
     (item) => item.id === "pass_xp" || item.type === "PASS",
   );
 
-  // 🚀 PERFECT MULTIPLAYER TURN VALIDATION
+  // 🚀 REAL USERNAMES & TURN VALIDATION
   let isMyTurn = true;
-  let waitingMessage = "WAITING FOR OPPONENT...";
+  let activeCommander = `PLAYER 0${currentHumanIndex}`;
 
   if (isOnline && onlinePlayers.length > 0) {
     isMyTurn = currentHumanIndex === myPlayerIndex;
-
-    if (!isMyTurn) {
-      const opp = onlinePlayers[currentHumanIndex - 1];
-      if (opp)
-        waitingMessage = `WAITING FOR ${opp.username.toUpperCase()} TO DRAFT...`;
-    }
+    activeCommander =
+      onlinePlayers[currentHumanIndex - 1]?.username ||
+      `PLAYER 0${currentHumanIndex}`;
   }
 
-  // 🚀 NEW: NETWORK LISTENERS FOR TURN TRANSITIONS & BATTLE START
+  // 🚀 NETWORK LISTENERS FOR TURN TRANSITIONS & BATTLE START
   useEffect(() => {
     if (isOnline && socket) {
       const handleOpponentAction = (data) => {
-        // Opponent finished their squad and passed the turn to us!
         if (data.type === "NEXT_TURN") {
           setFinishedTeams((prev) => [...prev, data.team]);
-        }
-        // Opponent clicked Engage Match! Transition us both to the Arena instantly!
-        else if (data.type === "BATTLE_START") {
+        } else if (data.type === "BATTLE_START") {
           setFinishedTeams((prev) => {
             const allSquads = [...prev, data.team];
             setBattleData({
@@ -117,6 +110,12 @@ export default function SportsDraftManager() {
       return () => socket.off("opponent_action", handleOpponentAction);
     }
   }, [isOnline, socket, mode, universe, xpPassObject]);
+
+  // 🚀 ESCAPE HATCH FUNCTION
+  const handleAbortMatch = () => {
+    if (socket) socket.disconnect();
+    navigate("/hub", { state: { isOnline: true, domain: "sports" } });
+  };
 
   const getGlobalNames = () => {
     const names = new Set();
@@ -207,7 +206,6 @@ export default function SportsDraftManager() {
       resetDraft();
       setActiveBoosts({ atk: 0, iq: false, skips: 0 });
 
-      // 🚀 EMIT TURN FINISH TO OPPONENT
       if (isOnline && socket) {
         socket.emit("game_action", {
           roomId,
@@ -246,7 +244,6 @@ export default function SportsDraftManager() {
           hasDoubleXp,
         });
 
-        // 🚀 EMIT MATCH ENGAGE TO OPPONENT
         if (isOnline && socket) {
           socket.emit("game_action", {
             roomId,
@@ -279,26 +276,6 @@ export default function SportsDraftManager() {
 
   return (
     <div className="h-[100dvh] w-full bg-[#050505] text-white overflow-hidden relative uppercase flex flex-col">
-      {/* 🚀 MULTIPLAYER: ENEMY TURN BLOCKER OVERLAY */}
-      <AnimatePresence>
-        {isOnline && !isMyTurn && !battleData && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[8000] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center"
-          >
-            <div className="w-16 h-16 border-4 border-t-emerald-500 border-r-emerald-500 border-b-transparent border-l-transparent rounded-full animate-spin mb-6" />
-            <h2 className="text-2xl md:text-4xl font-black italic text-emerald-500 tracking-widest animate-pulse text-center px-4 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]">
-              {waitingMessage}
-            </h2>
-            <p className="text-gray-400 text-[10px] md:text-xs tracking-[0.4em] font-bold mt-4">
-              REAL-TIME NETWORK SYNC ACTIVE
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {boostOverlay && (
           <motion.div
@@ -328,6 +305,34 @@ export default function SportsDraftManager() {
         )}
       </AnimatePresence>
 
+      {/* 🚀 LIVE SPECTATOR STATUS BAR WITH ABORT ESCAPE HATCH */}
+      {isOnline && !battleData && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[5000] flex flex-col items-center pointer-events-auto w-[90%] max-w-[320px]">
+          <div
+            className={`w-full px-4 py-2 rounded-full border-2 backdrop-blur-md shadow-lg flex items-center justify-center gap-2 transition-all ${isMyTurn ? "border-emerald-500 bg-emerald-500/10" : "border-gray-500 bg-black/80"}`}
+          >
+            <span
+              className={`w-2 h-2 shrink-0 rounded-full ${isMyTurn ? "bg-emerald-500 animate-ping" : "bg-gray-500"}`}
+            />
+            <span
+              className={`text-[10px] sm:text-xs font-black tracking-widest uppercase truncate ${isMyTurn ? "text-emerald-500" : "text-gray-400"}`}
+            >
+              {isMyTurn
+                ? "YOUR TURN TO COMMAND"
+                : `WATCHING ${activeCommander.toUpperCase()}...`}
+            </span>
+          </div>
+          {!isMyTurn && (
+            <button
+              onClick={handleAbortMatch}
+              className="mt-3 flex items-center justify-center gap-1 text-[9px] text-red-500 font-bold border border-red-500/30 bg-red-500/10 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-full transition-all cursor-pointer"
+            >
+              <LogOut size={10} /> ABORT MATCH
+            </button>
+          )}
+        </div>
+      )}
+
       {!battleData && (
         <SportsTacticalHUD
           onAbort={() => navigate("/modes")}
@@ -337,10 +342,18 @@ export default function SportsDraftManager() {
         />
       )}
 
-      {!battleData && <TacticalInventory onDeployBoost={handleDeployBoost} />}
-
+      {/* 🚀 LOCK INVENTORY IF NOT YOUR TURN */}
       {!battleData && (
-        <div className="flex-1 flex flex-col items-center justify-start px-2 z-10 relative pt-14 md:pt-20">
+        <div className={!isMyTurn ? "pointer-events-none opacity-50" : ""}>
+          <TacticalInventory onDeployBoost={handleDeployBoost} />
+        </div>
+      )}
+
+      {/* 🚀 LOCK PITCH CLICKS IF NOT YOUR TURN */}
+      {!battleData && (
+        <div
+          className={`flex-1 flex flex-col items-center justify-start px-2 z-10 relative pt-14 md:pt-20 transition-all duration-300 ${!isMyTurn ? "pointer-events-none opacity-60 grayscale-[0.4]" : ""}`}
+        >
           <div className="absolute top-2 z-50 bg-black/80 border border-white/20 px-6 py-2 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <Users
               size={16}
@@ -355,7 +368,7 @@ export default function SportsDraftManager() {
             <span
               className={`text-xs md:text-sm font-black tracking-widest ${currentHumanIndex === 1 ? "text-emerald-400" : currentHumanIndex === 2 ? "text-red-500" : "text-purple-400"}`}
             >
-              PLAYER {currentHumanIndex} DRAFTING
+              {activeCommander.toUpperCase()} DRAFTING
             </span>
           </div>
 
@@ -364,15 +377,15 @@ export default function SportsDraftManager() {
               slots={slots}
               team={boostedTeam}
               sportId={universe}
-              onSlotClick={handleOpenDraft}
+              onSlotClick={isMyTurn ? handleOpenDraft : () => {}}
             />
           </div>
 
-          {isSquadComplete && (
+          {isSquadComplete && isMyTurn && (
             <motion.div
               initial={{ y: 100 }}
               animate={{ y: 0 }}
-              className="fixed bottom-8 left-0 w-full flex justify-center z-[5000] px-4"
+              className="fixed bottom-8 left-0 w-full flex justify-center z-[5000] px-4 pointer-events-auto"
             >
               <button
                 onClick={handleConfirmOrFight}
@@ -380,7 +393,7 @@ export default function SportsDraftManager() {
                 className="w-full max-w-sm h-14 rounded-full font-black text-sm md:text-base italic tracking-[0.2em] bg-gradient-to-r from-emerald-500 to-green-700 shadow-[0_0_50px_rgba(52,211,153,0.8)] text-black transition-all active:scale-95 animate-bounce"
               >
                 {currentHumanIndex < matchConfig.human
-                  ? `CONFIRM P${currentHumanIndex} SQUAD & NEXT`
+                  ? `CONFIRM ${activeCommander} SQUAD & NEXT`
                   : "ENGAGE MATCH"}
               </button>
             </motion.div>
@@ -388,17 +401,18 @@ export default function SportsDraftManager() {
         </div>
       )}
 
+      {/* 🚀 SPECTATOR SEES PACK OPENING AND CLOSING */}
       <AnimatePresence>
         {draftOptions.length > 0 && !battleData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[6000] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 overflow-hidden"
+            className={`absolute inset-0 z-[6000] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 overflow-hidden ${!isMyTurn ? "pointer-events-none" : ""}`}
           >
             {packState !== "open" && (
               <motion.div
-                onClick={packState === "closed" ? openPack : null}
+                onClick={isMyTurn && packState === "closed" ? openPack : null}
                 animate={
                   packState === "opening"
                     ? {
@@ -443,7 +457,7 @@ export default function SportsDraftManager() {
                       key={option.id}
                       currentCard={option}
                       universe={universe}
-                      onClick={handleSelect}
+                      onClick={isMyTurn ? handleSelect : () => {}}
                       index={idx}
                     />
                   ))}
@@ -453,8 +467,8 @@ export default function SportsDraftManager() {
 
             {effectiveSkips > 0 ? (
               <button
-                onClick={handleEffectiveCancel}
-                className="absolute bottom-6 md:bottom-10 text-xs text-red-500 font-black border border-red-500/50 rounded-full px-8 py-3 bg-black/80 hover:bg-red-500/20 transition-all z-50 shadow-xl"
+                onClick={isMyTurn ? handleEffectiveCancel : () => {}}
+                className={`absolute bottom-6 md:bottom-10 text-xs font-black border rounded-full px-8 py-3 transition-all ${isMyTurn ? "text-red-500 border-red-500/50 bg-black/80 hover:bg-red-500/20" : "text-gray-500 border-gray-500/50 bg-black/50"}`}
               >
                 CANCEL SCOUTING ({effectiveSkips} LEFT)
               </button>

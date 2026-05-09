@@ -24,12 +24,15 @@ import {
 
 const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
   const { state } = useLocation();
-  // 🚀 Catch the online flag to prevent desyncing players!
+  // 🚀 Catch the online flag and the deterministic match seed!
   const isOnline = state?.isOnline || false;
+  const matchSeed = state?.matchSeed || null;
 
   const [phase, setPhase] = useState("INTRO");
   const [currentSlot, setCurrentSlot] = useState(0);
-  const [battleDomain] = useState(getRandomDomain());
+
+  // 🚀 USE SEED: Both players will roll the exact same Battle Domain!
+  const [battleDomain] = useState(getRandomDomain(matchSeed));
 
   const [teamArtifacts] = useState(() => {
     if (artifacts && artifacts.length > 0) return artifacts;
@@ -90,10 +93,17 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
 
             if (!char) return { final: 0, base: 0, text: "NO FIGHTER" };
 
-            const rngAction = getRoleAction(char, SLOTS[s]) || {
+            // 🚀 USE SEED: Pass matchSeed and unique slotIndex so crits are identical locally and online
+            const rngAction = getRoleAction(
+              char,
+              SLOTS[s],
+              matchSeed,
+              s + idx * 10,
+            ) || {
               boost: 1,
               text: "ATTACK",
             };
+
             return calculateFinalBattleScore(
               char,
               SLOTS[s],
@@ -184,10 +194,16 @@ const BattleArena = ({ allTeams = [], artifacts = [], onComplete }) => {
     }
 
     if (phase === "CLASH") {
-      const actions = allTeams.map((team) => {
+      const actions = allTeams.map((team, idx) => {
         const char = team[SLOTS[currentSlot]];
         return char
-          ? getRoleAction(char, SLOTS[currentSlot])
+          ? // 🚀 USE SEED: Pass matchSeed and unique slotIndex so crits are identical for both players
+            getRoleAction(
+              char,
+              SLOTS[currentSlot],
+              matchSeed,
+              currentSlot + idx * 10,
+            )
           : { boost: 1, text: "MISSING", color: "text-gray-500" };
       });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useLocation } from "react-router-dom"; // 🚀 Added useLocation
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -8,7 +8,7 @@ import {
   TrendingUp,
   FastForward,
   CircleDot,
-  Globe, // 🚀 Added Globe icon
+  Globe,
 } from "lucide-react";
 import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import {
@@ -19,8 +19,9 @@ import {
 
 const SportsArena = ({ allTeams = [], universe, onComplete }) => {
   const { state } = useLocation();
-  // 🚀 Catch the online flag to prevent desyncing players!
+  // 🚀 Catch the online flag and the deterministic match seed!
   const isOnline = state?.isOnline || false;
+  const matchSeed = state?.matchSeed || null;
 
   const [phase, setPhase] = useState("INTRO");
   const [currentSlotIdx, setCurrentSlotIdx] = useState(0);
@@ -43,7 +44,9 @@ const SportsArena = ({ allTeams = [], universe, onComplete }) => {
   const [capturedScores, setCapturedScores] = useState(
     allTeams.map(() => ({})),
   );
-  const [stadium] = useState(getRandomStadium(sportId));
+
+  // 🚀 USE SEED: Both players will roll the exact same Stadium!
+  const [stadium] = useState(getRandomStadium(sportId, matchSeed));
   const [clashText, setClashText] = useState("");
 
   // 🏆 Dynamic Multiplayer Scoreboard
