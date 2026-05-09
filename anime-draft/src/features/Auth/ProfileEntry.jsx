@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import useGameStore from "../../store/useGameStore"; // 🚀 ZUSTAND STORE
+import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
 
 const AVATARS = [
   { id: 1, name: "GOJO", img: "/gojo.svg" },
@@ -12,15 +12,15 @@ const AVATARS = [
   { id: 6, name: "ITACHI", img: "/itachi.svg" },
 ];
 
-// 🚀 FIXED: Removed setUser prop
 export default function ProfileEntry() {
   const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  
   const navigate = useNavigate();
-  const setUser = useGameStore((state) => state.setUser); // 🚀 Pull from Zustand
+  // 🚀 Pull setUser directly from Zustand (NO MORE PROPS!)
+  const setUser = useGameStore((state) => state.setUser);
 
   const handleEntry = async () => {
     const specialCharRegex = /[._@#$]/;
@@ -41,10 +41,10 @@ export default function ProfileEntry() {
       );
 
       if (res.status === 200 || res.status === 201) {
-        // Zustand's setUser handles the localStorage internally!
+        // 🚀 Zustand's setUser handles the localStorage internally!
         setUser(res.data);
 
-        // 🚀 FIXED: Correctly route to Home Terminal
+        // 🚀 Gracefully route to the Home screen
         navigate("/");
       }
     } catch (err) {
