@@ -18,7 +18,6 @@ import { getSportConfig } from "../Draft/Sports/utils/sportsConfig";
 import { calculateSportsEffectiveScore } from "../Draft/Sports/utils/sportsUtils";
 import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
 
-// 🚀 Removed user and setUser from props
 export default function SportsResult() {
   const location = useLocation();
   const { state } = location;
@@ -36,15 +35,23 @@ export default function SportsResult() {
   const teams = state?.teams || [];
   const rawScores = state?.result?.scores || [];
   const mode = String(state?.mode || "pvp").toLowerCase();
-  const sportId = state?.universe || "football";
-  const config = getSportConfig(sportId);
-  const SLOTS = config.slots;
 
-  const { rankedTeams, statusText } = useMemo(() => {
-    let processedTeams = teams.map((team, idx) => {
+  const domain = state?.domain || "football";
+  const universe = state?.universe || "football";
+  const config = useMemo(() => getSportConfig(universe), [universe]);
+  const hasDoubleXp = state?.hasDoubleXp || false;
+
+  const getAuraProvider = (team) => team["mgr"] || team["imp"] || null;
+
+  const { displayCards, headerText, winnerCard } = useMemo(() => {
+    if (!teams || teams.length === 0)
+      return { displayCards: [], headerText: "ERROR", winnerCard: null };
+
+    let players = teams.map((team, idx) => {
       let charList = [];
-      let bestChar = { name: "N/A", score: 0, slotLabel: "N/A" };
+      let bestChar = { name: "N/A", score: 0, slot: "N/A", scoreData: null };
       let teamTotalScore = 0;
+      const auraProvider = getAuraProvider(team);
 
       const savedDataRaw = localStorage.getItem("animeDraft_lastBattle");
       const parsedData = savedDataRaw ? JSON.parse(savedDataRaw) : {};
@@ -52,122 +59,220 @@ export default function SportsResult() {
         parsedData.finalScores || state?.result?.finalScores || [];
       const teamScores = battleData[idx] || {};
 
-      SLOTS.forEach((slotConfig) => {
-        const char = team[slotConfig.id];
+      config.slots.forEach((slot) => {
+        const char = team[slot.id];
         if (!char) return;
 
-        const slotData = teamScores[slotConfig.id];
+        const slotData = teamScores[slot.id];
         const cScore = slotData
           ? slotData.final
-          : calculateSportsEffectiveScore(char, slotConfig.id, sportId);
+          : calculateSportsEffectiveScore(
+              char,
+              slot.id,
+              universe,
+              auraProvider,
+            );
 
         teamTotalScore += cScore;
         charList.push({
           ...char,
           finalScore: cScore,
-          slotLabel: slotConfig.label,
+          slot: slot.role,
+          scoreData: slotData,
         });
 
         if (cScore > bestChar.score) {
-          bestChar = { ...char, score: cScore, slotLabel: slotConfig.label };
+          bestChar = {
+            ...char,
+            score: cScore,
+            slot: slot.role,
+            scoreData: slotData,
+          };
         }
       });
 
       charList.sort((a, b) => b.finalScore - a.finalScore);
 
+      // 🚀 GRAB ACTUAL USERNAMES IF ONLINE!
+      const onlinePlayers = state?.players || [];
+      const myPlayerIndex = state?.myPlayerIndex || 1;
+
+      let pName = `COMMANDER 0${idx + 1}`;
+      let isMe = idx === 0;
+
+      if (isOnline && onlinePlayers.length > 0) {
+        pName = onlinePlayers[idx]?.username?.toUpperCase() || pName;
+        isMe = idx + 1 === myPlayerIndex;
+      } else {
+        if (idx === 0) pName = "YOUR CLUB";
+      }
+
       return {
         id: idx + 1,
-        isMe: idx === 0,
-        name: idx === 0 ? "YOUR SQUAD" : `PLAYER ${idx + 1}`,
+        isMe: isMe,
+        name: pName,
         score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
         characters: charList,
       };
     });
 
-    processedTeams.sort((a, b) => b.score - a.score);
-    processedTeams.forEach((t, idx) => (t.rank = idx + 1));
+    let builtCards = [];
+    let status = "MATCH OVER";
+    const isTeamMode = mode.includes("2v2") || mode.includes("team");
+    const isRoyaleMode =
+      mode.includes("royale") ||
+      mode.includes("ffa") ||
+      (players.length > 2 && !isTeamMode);
 
-    const myTeam = processedTeams.find((t) => t.isMe);
-    let status = "DEFEAT";
-    if (myTeam && myTeam.rank === 1) {
-      status =
-        processedTeams.length > 1 &&
-        processedTeams[0].score === processedTeams[1].score
-          ? "DRAW"
-          : "VICTORY";
+    if (isTeamMode && players.length >= 4) {
+      const homeScore = players[0].score + players[1].score;
+      const awayScore = players[2].score + players[3].score;
+      const isDraw = homeScore === awayScore;
+      status = isDraw
+        ? "DRAW"
+        : homeScore > awayScore
+          ? "HOME TEAM WINS"
+          : "AWAY TEAM WINS";
+      builtCards = [
+        {
+          title: "HOME TEAM",
+          score: homeScore,
+          rank: homeScore >= awayScore ? 1 : 2,
+          isWinner: !isDraw && homeScore > awayScore,
+          members: [players[0], players[1]],
+        },
+        {
+          title: "AWAY TEAM",
+          score: awayScore,
+          rank: awayScore >= homeScore ? 1 : 2,
+          isWinner: !isDraw && awayScore > homeScore,
+          members: [players[2], players[3]],
+        },
+      ];
+    } else if (isRoyaleMode) {
+      const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+      status = `${sortedPlayers[0].name} SURVIVES`;
+      builtCards = sortedPlayers.map((p, index) => ({
+        title: p.name,
+        score: p.score,
+        rank: index + 1,
+        isWinner: index === 0,
+        members: [p],
+      }));
+    } else {
+      const p1Score = players[0]?.score || 0;
+      const p2Score = players[1]?.score || 0;
+      const isDraw = p1Score === p2Score;
+
+      const myCard = players.find((p) => p.isMe);
+      const amIWinner = myCard && myCard.score >= Math.max(p1Score, p2Score);
+
+      status = isDraw ? "DRAW" : amIWinner ? "VICTORY" : "DEFEAT";
+
+      builtCards = [
+        {
+          title: players[0].name,
+          score: p1Score,
+          rank: p1Score >= p2Score ? 1 : 2,
+          isWinner: !isDraw && p1Score > p2Score,
+          members: [players[0]].filter(Boolean),
+        },
+        {
+          title: players[1].name,
+          score: p2Score,
+          rank: p2Score >= p1Score ? 1 : 2,
+          isWinner: !isDraw && p2Score > p1Score,
+          members: [players[1]].filter(Boolean),
+        },
+      ];
     }
 
-    return { rankedTeams: processedTeams, statusText: status };
-  }, [teams, rawScores, state, sportId, SLOTS]);
+    return {
+      displayCards: builtCards,
+      headerText: status,
+      winnerCard: builtCards.find((c) => c.rank === 1),
+    };
+  }, [teams, rawScores, mode, state, config, universe, isOnline]);
 
-  // 🛡️ REFRESH / F5 BUG FIX:
   useEffect(() => {
-    if (isRecorded.current || rankedTeams.length === 0 || state?.isRecorded)
+    if (isRecorded.current || displayCards.length === 0 || state?.isRecorded)
       return;
     isRecorded.current = true;
 
-    const syncResult = async () => {
+    const syncResultToDatabase = async () => {
       try {
         const cmd = JSON.parse(localStorage.getItem("commander") || "{}");
         if (!cmd.username) return;
 
-        const isWin = statusText === "VICTORY";
+        const isWin =
+          headerText.includes("VICTORY") ||
+          headerText.includes("WINS") ||
+          headerText.includes("SURVIVES");
 
         const res = await axios.post(
           "https://anime-draft-game-1.onrender.com/api/user/record-match",
           {
             username: cmd.username,
             isWin: isWin,
+            hasDoubleXp: hasDoubleXp,
           },
         );
 
         if (res.data) {
-          setRewardData({
-            coinsAdded: res.data.coinsWon || 0,
-            gemsAdded: res.data.gemsWon || 0,
-          });
+          const rawCoins = res.data.coinsWon || 0;
+          const displayCoins = hasDoubleXp ? rawCoins * 2 : rawCoins;
+          setRewardData({ coins: displayCoins, gems: res.data.gemsWon || 0 });
 
-          // FIXED: Use Zustand's setUser
-          if (setUser) {
-            if (res.data.user) setUser(res.data.user);
-            else if (res.data.updatedUser)
-              setUser((prev) => ({ ...prev, ...res.data.updatedUser }));
+          // 🚀 Trigger Zustand's setUser
+          if (res.data.user) {
+            setUser(res.data.user);
+          } else if (res.data.updatedUser) {
+            setUser(res.data.updatedUser);
           }
 
-          // 🛑 CRITICAL FIX: Update URL state so hitting F5 won't reward coins again!
           navigate(location.pathname, {
             state: { ...state, isRecorded: true },
             replace: true,
           });
         }
       } catch (err) {
-        console.error("Match saving failed:", err);
+        console.error("Match record fail", err);
       }
     };
-    syncResult();
-  }, [rankedTeams, statusText, state, navigate, location.pathname, setUser]);
+
+    syncResultToDatabase();
+  }, [
+    displayCards,
+    winnerCard,
+    state,
+    navigate,
+    location.pathname,
+    hasDoubleXp,
+    setUser,
+    headerText,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowCards(true), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  const isVictory = statusText === "VICTORY";
-  const isDraw = statusText === "DRAW";
-  const bgTheme = isVictory
-    ? "from-emerald-900/40"
-    : isDraw
-      ? "from-gray-800/40"
-      : "from-red-900/40";
-  const textTheme = isVictory
-    ? "text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.8)]"
-    : isDraw
-      ? "text-gray-400"
-      : "text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]";
+  if (displayCards.length === 0)
+    return (
+      <div className="h-screen bg-black text-white flex items-center justify-center font-black text-xl italic tracking-widest">
+        DATA CORRUPTED
+      </div>
+    );
+
+  const isVictory =
+    headerText.includes("VICTORY") ||
+    headerText.includes("WINS") ||
+    headerText.includes("SURVIVES");
+  const isDefeat = headerText.includes("DEFEAT");
 
   return (
-    <div className="min-h-screen w-full bg-[#030305] text-white flex flex-col items-center overflow-x-hidden overflow-y-auto custom-scrollbar relative pb-32 uppercase italic font-black">
+    <div className="min-h-[100dvh] w-full bg-[#050505] text-white overflow-y-auto overflow-x-hidden uppercase custom-scrollbar relative flex flex-col items-center pt-8 pb-32 px-2 md:px-8">
       {/* 🚀 FIXED: Online Match Indicator */}
       {isOnline && (
         <div className="absolute top-6 left-4 md:left-8 z-[5000] bg-blue-600/20 border border-blue-500/50 px-4 py-2 rounded-full flex items-center gap-2 text-blue-400 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.2)]">
@@ -178,184 +283,195 @@ export default function SportsResult() {
         </div>
       )}
 
-      <div
-        className={`fixed inset-0 bg-gradient-to-b ${bgTheme} to-[#030305] pointer-events-none opacity-80 z-0 transition-colors duration-1000`}
-      />
-
-      <div className="z-10 mt-10 mb-6 text-center">
-        <motion.h1
-          initial={{ y: -50, opacity: 0, scale: 0.5 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          transition={{ type: "spring", bounce: 0.6 }}
-          className={`text-6xl md:text-8xl tracking-tighter ${textTheme}`}
-        >
-          {statusText}
-        </motion.h1>
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-20">
+        <div
+          className={`absolute inset-0 transition-all duration-1000 ${isVictory ? "bg-[radial-gradient(circle_at_top,_#10b981_0%,_transparent_60%)]" : isDefeat ? "bg-[radial-gradient(circle_at_top,_#ef4444_0%,_transparent_60%)]" : "bg-[radial-gradient(circle_at_top,_#4b5563_0%,_transparent_60%)]"}`}
+        />
       </div>
 
-      {/* 💰 LOOT REVEAL ANIMATION */}
-      <AnimatePresence>
-        {showCards &&
-          rewardData &&
-          rewardData.coinsAdded > 0 &&
-          !state?.isRecorded && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex gap-4 mb-6 z-30"
-            >
-              <div className="bg-yellow-500/10 border border-yellow-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_20px_rgba(234,179,8,0.2)]">
-                <Coins size={18} /> +{rewardData.coinsAdded} COINS
-              </div>
-              {rewardData.gemsAdded > 0 && (
-                <div className="bg-purple-500/10 border border-purple-500/30 px-6 py-2 rounded-full flex items-center gap-2 text-purple-400 font-black shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                  <Gem size={18} /> +{rewardData.gemsAdded} GEM
-                </div>
-              )}
-            </motion.div>
+      <motion.div
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="w-full text-center z-10 mb-8 pt-10"
+      >
+        <div className="flex justify-center items-center gap-4 md:gap-6 mb-4">
+          <div className="h-[2px] w-8 md:w-24 bg-gradient-to-r from-transparent to-gray-500" />
+          {isVictory ? (
+            <Trophy
+              size={48}
+              className="text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
+            />
+          ) : isDefeat ? (
+            <ShieldAlert
+              size={48}
+              className="text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]"
+            />
+          ) : (
+            <Medal size={48} className="text-gray-400" />
           )}
+          <div className="h-[2px] w-8 md:w-24 bg-gradient-to-l from-transparent to-gray-500" />
+        </div>
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-black italic tracking-tighter drop-shadow-2xl">
+          {headerText}
+        </h1>
+      </motion.div>
+
+      <AnimatePresence>
+        {showCards && rewardData?.coins > 0 && !state?.isRecorded && (
+          <motion.div
+            initial={{ scale: 0, rotate: -5 }}
+            animate={{ scale: 1, rotate: 0 }}
+            className="flex flex-wrap justify-center gap-4 mb-10 z-10"
+          >
+            <div className="bg-yellow-500/10 border border-yellow-500/50 px-6 py-2.5 rounded-full flex items-center gap-2 text-yellow-400 font-black shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+              <Coins size={18} /> +{rewardData.coins} COINS
+              {hasDoubleXp && (
+                <span className="ml-2 bg-emerald-500 text-black px-2 py-0.5 rounded text-[8px] animate-pulse">
+                  2X BONUS
+                </span>
+              )}
+            </div>
+            {rewardData.gems > 0 && (
+              <div className="bg-purple-500/10 border border-purple-500/50 px-6 py-2.5 rounded-full flex items-center gap-2 text-purple-400 font-black shadow-[0_0_30px_rgba(168,85,247,0.2)]">
+                <Gem size={18} /> +{rewardData.gems} GEM
+              </div>
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showCards && (
-          <div className="w-full max-w-6xl px-4 z-10 flex flex-col gap-8 items-center">
-            {rankedTeams.map((team, idx) => {
-              const isFirst = team.rank === 1;
-              const cardColor = isFirst
-                ? "border-emerald-500 shadow-[0_0_40px_rgba(52,211,153,0.3)] bg-gradient-to-b from-emerald-900/40 to-black"
-                : "border-white/10 bg-black/60 opacity-90";
-              const titleColor = isFirst ? "text-emerald-400" : "text-gray-400";
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={`w-full max-w-[1400px] grid gap-6 md:gap-8 z-10 ${displayCards.length > 2 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-2 max-w-5xl"}`}
+          >
+            {displayCards.map((card, idx) => {
+              const isFirst = card.rank === 1;
+              const borderStyles = isFirst
+                ? "border-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.15)]"
+                : card.rank === 2
+                  ? "border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.15)]"
+                  : "border-gray-600";
 
               return (
                 <motion.div
                   key={idx}
-                  initial={{ opacity: 0, y: 50, scale: isFirst ? 0.8 : 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: idx * 0.3, type: "spring" }}
-                  className={`w-full ${isFirst ? "max-w-4xl" : "max-w-2xl"} border-2 rounded-[32px] overflow-hidden ${cardColor} relative`}
+                  initial={{ y: 50, opacity: 0, scale: 0.95 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  className={`bg-[#0a0a0c]/80 backdrop-blur-xl border-2 rounded-[32px] overflow-hidden ${borderStyles}`}
                 >
-                  {isFirst && (
-                    <div className="absolute inset-0 holo-shimmer opacity-10 pointer-events-none mix-blend-overlay" />
-                  )}
-
-                  <div className="flex justify-between items-center p-6 border-b border-white/10 relative z-10">
-                    <div className="flex items-center gap-4">
-                      {isFirst ? (
-                        <Crown
-                          size={40}
-                          className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
-                        />
-                      ) : (
-                        <Medal size={24} className="text-gray-500" />
-                      )}
-                      <div>
-                        <div
-                          className={`text-[10px] md:text-xs tracking-widest mb-1 ${titleColor}`}
-                        >
-                          RANK {team.rank} • {team.name}
-                        </div>
-                        <Counter
-                          target={team.score}
-                          className={`text-4xl md:text-6xl font-black ${isFirst ? "text-white" : "text-gray-400"}`}
-                        />
+                  <div className="flex justify-between items-center p-6 md:p-8 bg-white/5 border-b border-white/10 relative">
+                    <div
+                      className={`absolute left-0 top-0 w-2 h-full ${isFirst ? "bg-emerald-500" : "bg-red-500"}`}
+                    />
+                    <div className="pl-4">
+                      <div className="text-xs md:text-sm font-black text-gray-400 tracking-[0.3em] mb-1 flex items-center gap-2">
+                        {card.title}
+                        {displayCards.length > 2 && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-black ${isFirst ? "bg-emerald-500" : "bg-gray-500"}`}
+                          >
+                            #{card.rank}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`text-5xl md:text-7xl font-black italic drop-shadow-md ${isFirst ? "text-emerald-400" : "text-red-400"}`}
+                      >
+                        {card.score}
                       </div>
                     </div>
                     {isFirst && (
-                      <Trophy
-                        size={60}
-                        className="text-emerald-500 opacity-20 absolute right-6"
+                      <Crown
+                        size={48}
+                        className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]"
                       />
                     )}
                   </div>
 
-                  <div
-                    className={`p-6 flex ${isFirst ? "flex-col md:flex-row" : "flex-col"} gap-6 relative z-10`}
-                  >
-                    <div
-                      className={`${isFirst ? "w-full md:w-1/2" : "w-full"} flex flex-col`}
-                    >
-                      <div className="flex gap-4 p-4 rounded-2xl bg-black/80 border border-white/10 shadow-xl relative overflow-hidden">
-                        {isFirst && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent" />
-                        )}
-
+                  <div className="p-4 md:p-6 flex flex-col gap-4">
+                    {card.members.map((player, pIdx) => (
+                      <div
+                        key={pIdx}
+                        className={`bg-black/60 rounded-2xl p-4 border ${isFirst ? "border-emerald-500/30" : "border-red-500/30"} flex items-center gap-4`}
+                      >
                         <div
-                          className={`relative w-24 h-24 shrink-0 rounded-xl overflow-hidden border-2 ${isFirst ? "border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.4)]" : "border-gray-600"}`}
+                          className={`w-20 h-20 md:w-28 md:h-28 shrink-0 rounded-xl border-4 overflow-hidden relative bg-black ${isFirst ? "border-emerald-500" : "border-red-500"}`}
                         >
                           <img
-                            src={team.mvp?.img || "/zoro.svg"}
+                            src={player.mvp?.img}
                             className="w-full h-full object-cover"
                             alt="MVP"
                           />
                           <div
-                            className={`absolute bottom-0 w-full text-center text-[10px] ${isFirst ? "bg-yellow-400 text-black" : "bg-black/80 text-white"}`}
+                            className={`absolute bottom-0 w-full text-center text-[8px] md:text-[10px] font-black py-0.5 ${isFirst ? "bg-emerald-500 text-black" : "bg-red-500 text-white"}`}
                           >
-                            {team.mvp?.tier || "S+"}
+                            {player.mvp?.tier || "S"} TIER
                           </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-center">
+                        <div className="flex-1 min-w-0">
                           <div
-                            className={`text-[10px] font-black flex items-center gap-1 mb-1 tracking-widest ${isFirst ? "text-yellow-400" : "text-gray-400"}`}
+                            className={`text-[10px] font-black mb-1 flex items-center gap-1 ${isFirst ? "text-emerald-400" : "text-red-400"}`}
                           >
-                            <Star
-                              size={12}
-                              className={isFirst ? "fill-yellow-400" : ""}
-                            />{" "}
-                            MVP
+                            <Star size={12} /> {player.name} MVP
                           </div>
-                          <div className="text-xl md:text-2xl font-black truncate text-white">
-                            {team.mvp?.name}
+                          <div className="text-xl md:text-2xl font-black text-white truncate drop-shadow-md">
+                            {player.mvp?.name}
                           </div>
-                          <div className="text-[10px] text-gray-400 tracking-widest">
-                            {team.mvp?.slotLabel}
+                          <div className="text-[10px] text-gray-400 tracking-widest mb-2">
+                            {player.mvp?.slot}
                           </div>
                           <div
-                            className={`text-2xl font-black italic mt-1 ${isFirst ? "text-white" : "text-gray-400"}`}
+                            className={`text-2xl md:text-3xl font-black italic ${isFirst ? "text-emerald-400" : "text-red-400"}`}
                           >
-                            {team.mvp?.score}{" "}
-                            <span className="text-[10px] text-gray-500">
-                              PTS
-                            </span>
+                            {player.mvp?.score}
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
 
-                    <div
-                      className={`${isFirst ? "w-full md:w-1/2" : "w-full"} grid grid-cols-4 sm:grid-cols-5 gap-2 content-start`}
-                    >
-                      {team.characters
-                        .filter((c) => c.slotLabel !== team.mvp?.slotLabel)
-                        .map((char, cIndex) => (
-                          <div
-                            key={cIndex}
-                            className="flex flex-col items-center bg-white/5 rounded-lg p-2 border border-white/5 hover:bg-white/10 transition-colors"
-                          >
-                            <img
-                              src={char.img}
-                              className="w-8 h-8 md:w-10 md:h-10 rounded-md object-cover mb-1 border border-white/10"
-                              alt=""
-                            />
-                            <div className="text-[6px] md:text-[7px] text-emerald-400 font-black">
-                              {char.slotLabel}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                      {card.members.map((player) =>
+                        player.characters
+                          .filter((c) => c.slot !== player.mvp?.slot)
+                          .map((char, cIdx) => (
+                            <div
+                              key={cIdx}
+                              className="flex items-center gap-3 bg-white/5 rounded-xl p-2 border border-white/5"
+                            >
+                              <img
+                                src={char.img}
+                                className="w-10 h-10 rounded-lg object-cover border border-white/10"
+                                alt=""
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[8px] text-gray-500 tracking-widest truncate">
+                                  {char.slot}
+                                </div>
+                                <div className="text-xs text-white font-bold truncate pr-1">
+                                  {char.name}
+                                </div>
+                              </div>
+                              <div className="text-sm font-black italic text-gray-300 pr-2">
+                                {char.finalScore}
+                              </div>
                             </div>
-                            <div className="text-[8px] font-bold truncate w-full text-gray-300 text-center">
-                              {char.name}
-                            </div>
-                          </div>
-                        ))}
+                          )),
+                      )}
                     </div>
                   </div>
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/95 to-transparent pt-12 pb-6 flex justify-center gap-4 z-50 px-4">
-        {/* 🚀 FIXED: Network Retry Routing */}
+      <div className="fixed bottom-0 w-full bg-gradient-to-t from-black via-black to-transparent pt-12 pb-6 px-4 z-50 flex justify-center gap-4">
+        {/* 🚀 FIXED: Network Retry Routing for Sports */}
         <button
           onClick={() => {
             localStorage.removeItem("animeDraft_lastBattle");
@@ -370,29 +486,34 @@ export default function SportsResult() {
                   isOnline: true,
                 },
               });
-            } else {
-              // 🛡️ LOCAL: Route to normal draft modes
-              navigate("/draft/sports", {
-                state: {
-                  mode: state?.mode,
-                  universe: state?.universe,
-                  domain: state?.domain,
-                  isRetry: true,
-                  resetToken: Date.now(),
-                },
-              });
+              return;
             }
+
+            // 🛡️ LOCAL: Route to normal draft modes
+            const draftRoute =
+              domain === "sports" ? "/draft/sports" : "/draft/anime";
+            navigate(draftRoute, {
+              state: {
+                mode: state?.mode,
+                universe: state?.universe,
+                domain: state?.domain,
+                isRetry: true,
+                resetToken: Date.now(),
+              },
+            });
           }}
-          className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all active:scale-95"
+          className="flex-1 max-w-[200px] bg-emerald-500 hover:bg-emerald-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95"
         >
           <RotateCcw size={16} /> {isOnline ? "PLAY AGAIN" : "RETRY"}
         </button>
+
         <button
           onClick={() => navigate("/shop")}
           className="flex-1 max-w-[200px] bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)] transition-all active:scale-95"
         >
           <Coins size={16} /> VISIT SHOP
         </button>
+
         <button
           onClick={() => navigate("/hub")}
           className="flex-1 max-w-[200px] bg-black/80 hover:bg-white/10 py-4 rounded-full text-xs md:text-sm font-black italic tracking-widest border border-white/20 flex items-center justify-center gap-2 transition-all active:scale-95"
@@ -402,24 +523,4 @@ export default function SportsResult() {
       </div>
     </div>
   );
-}
-
-function Counter({ target, className }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    if (start === target) {
-      setCount(target);
-      return;
-    }
-    let incrementTime = 1500 / target;
-    let timer = setInterval(() => {
-      start += Math.ceil(target / 50) || 1;
-      if (start > target) start = target;
-      setCount(start);
-      if (start === target) clearInterval(timer);
-    }, incrementTime);
-    return () => clearInterval(timer);
-  }, [target]);
-  return <span className={className}>{count}</span>;
 }

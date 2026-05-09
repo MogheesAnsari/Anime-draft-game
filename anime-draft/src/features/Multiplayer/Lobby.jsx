@@ -36,7 +36,6 @@ export default function Lobby() {
       setMatchStatus("OPPONENT FOUND! INITIATING...");
 
       // 🚀 STRICT TURN ASSIGNMENT LOGIC
-      // We calculate exactly who is Player 1 and Player 2 before loading the draft
       const myPlayerIndex =
         data.players.findIndex(
           (p) => p.username.toLowerCase() === user.username.toLowerCase(),
@@ -56,8 +55,9 @@ export default function Lobby() {
             isOnline: true,
             roomId: data.roomId,
             players: data.players,
-            myPlayerIndex: myPlayerIndex || 1, // Lock in the turn order!
+            myPlayerIndex: myPlayerIndex || 1,
             opponentName: opp ? opp.username : "OPPONENT",
+            matchSeed: data.matchSeed, // 🚀 CRITICAL FIX: Pass the seed to the Draft Manager!
           },
         });
       }, 2000);

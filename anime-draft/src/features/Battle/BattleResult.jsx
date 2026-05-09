@@ -11,13 +11,13 @@ import {
   Coins,
   Gem,
   Activity,
-  Globe, // 🚀 Added Globe for Online UI
+  Globe,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import SportsResult from "./SportsResult";
 import { calculateEffectiveScore } from "../Draft/Anime/utils/draftUtils";
-import useGameStore from "../../store/useGameStore"; // 🚀 Import Zustand Store
+import useGameStore from "../../store/useGameStore";
 
 export default function BattleResult() {
   const location = useLocation();
@@ -51,7 +51,7 @@ export default function BattleResult() {
     "raw_power",
   ];
 
-  if (domain === "sports") return <SportsResult />; // Assuming SportsResult also pulls user from Zustand now
+  if (domain === "sports") return <SportsResult />;
 
   const { displayCards, headerText, winnerCard } = useMemo(() => {
     if (!teams || teams.length === 0)
@@ -97,10 +97,24 @@ export default function BattleResult() {
 
       charList.sort((a, b) => b.finalScore - a.finalScore);
 
+      // 🚀 GRAB ACTUAL USERNAMES IF ONLINE!
+      const onlinePlayers = state?.players || [];
+      const myPlayerIndex = state?.myPlayerIndex || 1;
+
+      let pName = `COMMANDER 0${idx + 1}`;
+      let isMe = idx === 0;
+
+      if (isOnline && onlinePlayers.length > 0) {
+        pName = onlinePlayers[idx]?.username?.toUpperCase() || pName;
+        isMe = idx + 1 === myPlayerIndex;
+      } else {
+        if (idx === 0) pName = "YOUR SQUAD";
+      }
+
       return {
         id: idx + 1,
-        isMe: idx === 0,
-        name: idx === 0 ? "YOUR SQUAD" : `COMMANDER 0${idx + 1}`,
+        isMe: isMe,
+        name: pName,
         score: rawScores[idx] || teamTotalScore,
         mvp: bestChar,
         characters: charList,
@@ -155,21 +169,22 @@ export default function BattleResult() {
       const p1Score = players[0]?.score || 0;
       const p2Score = players[1]?.score || 0;
       const isDraw = p1Score === p2Score;
-      status = isDraw
-        ? "STALEMATE"
-        : p1Score > p2Score
-          ? "VICTORY ACHIEVED"
-          : "DEFEAT";
+
+      const myCard = players.find((p) => p.isMe);
+      const amIWinner = myCard && myCard.score >= Math.max(p1Score, p2Score);
+
+      status = isDraw ? "STALEMATE" : amIWinner ? "VICTORY ACHIEVED" : "DEFEAT";
+
       builtCards = [
         {
-          title: "YOUR SQUAD",
+          title: players[0].name,
           score: p1Score,
           rank: p1Score >= p2Score ? 1 : 2,
           isWinner: !isDraw && p1Score > p2Score,
           members: [players[0]].filter(Boolean),
         },
         {
-          title: "ENEMY SQUAD",
+          title: players[1].name,
           score: p2Score,
           rank: p2Score >= p1Score ? 1 : 2,
           isWinner: !isDraw && p2Score > p1Score,
@@ -183,7 +198,7 @@ export default function BattleResult() {
       headerText: status,
       winnerCard: builtCards.find((c) => c.rank === 1),
     };
-  }, [teams, rawScores, mode, state, SLOTS]);
+  }, [teams, rawScores, mode, state, SLOTS, isOnline]);
 
   useEffect(() => {
     if (isRecorded.current || displayCards.length === 0 || state?.isRecorded)
@@ -196,9 +211,9 @@ export default function BattleResult() {
         if (!cmd.username) return;
 
         const isWin =
-          winnerCard?.members?.some(
-            (m) => m.name === "YOUR SQUAD" || m.name === "COMMANDER 01",
-          ) || false;
+          headerText.includes("VICTORY") ||
+          headerText.includes("WINS") ||
+          headerText.includes("SURVIVES");
 
         const res = await axios.post(
           "https://anime-draft-game-1.onrender.com/api/user/record-match",
@@ -218,7 +233,6 @@ export default function BattleResult() {
             gems: res.data.gemsWon || 0,
           });
 
-          // 🚀 Trigger Zustand's setUser
           if (res.data.user) {
             setUser(res.data.user);
           } else if (res.data.updatedUser) {
@@ -243,6 +257,7 @@ export default function BattleResult() {
     location.pathname,
     setUser,
     hasDoubleXp,
+    headerText,
   ]);
 
   useEffect(() => {
