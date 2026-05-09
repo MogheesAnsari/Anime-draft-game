@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Terminal, Shield, Globe, Zap, LogOut, Server } from "lucide-react";
 import useGameStore from "../../store/useGameStore"; // 🚀 Zustand Store
@@ -33,14 +33,8 @@ export default function HomeTerminal() {
     setUser(null);
     navigate("/");
   };
-
-  // Fallback if not logged in
   if (!user) {
-    return (
-      <div className="h-[100dvh] w-full bg-[#050505] flex items-center justify-center text-white font-black italic uppercase tracking-widest">
-        UNAUTHORIZED ACCESS. PLEASE LOGIN.
-      </div>
-    );
+    return <Navigate to="/login" replace />; // 🚀 INSTANT REDIRECT
   }
 
   return (
