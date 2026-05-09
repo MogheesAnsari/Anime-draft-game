@@ -38,7 +38,7 @@ export default function HomeTerminal() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[#030305]/80 backdrop-blur-md overflow-hidden relative">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-[#030305]/20 backdrop-blur-md overflow-hidden relative">
       {/* BACKGROUND ELEMENTS */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -53,9 +53,6 @@ export default function HomeTerminal() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center text-center mb-12"
         >
-          <div className="p-4 bg-white/5 border border-white/10 rounded-full mb-4 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-            <Terminal size={32} className="text-[#ff8c32]" />
-          </div>
           <h2 className="text-[10px] md:text-xs text-gray-500 font-mono tracking-[0.5em] mb-2 uppercase">
             COMMAND CENTER SECURED
           </h2>
